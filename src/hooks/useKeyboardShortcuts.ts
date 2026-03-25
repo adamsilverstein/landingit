@@ -9,6 +9,7 @@ interface ShortcutActions {
   cycleFilter: () => void;
   cycleSort: () => void;
   refresh: () => void;
+  toggleMineOnly: () => void;
 }
 
 export function useKeyboardShortcuts(actions: ShortcutActions) {
@@ -65,6 +66,9 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
           break;
         case 'r':
           actions.refresh();
+          break;
+        case 'm':
+          actions.toggleMineOnly();
           break;
         case 'c':
           setViewMode('repos');

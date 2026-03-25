@@ -159,6 +159,13 @@ a {
   border-color: var(--accent);
 }
 
+.filter-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  align-self: center;
+}
+
 /* ── Table ──────────────────────────────────────────────────── */
 .table-container {
   flex: 1;

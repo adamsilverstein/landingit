@@ -23,11 +23,22 @@ export function App() {
   const [cursorIndex, setCursorIndex] = useState(0);
   const [filter, setFilter] = useState<FilterMode>(config.defaults.filter);
   const [sort, setSort] = useState<SortMode>(config.defaults.sort);
+  const [mineOnly, setMineOnly] = useState(true);
+  const [username, setUsername] = useState<string | null>(null);
 
   const octokit = useMemo(
     () => (token ? createClient(token) : null),
     [token]
   );
+
+  // Fetch authenticated user's login
+  useEffect(() => {
+    if (!octokit) return;
+    octokit.users.getAuthenticated().then(
+      ({ data }) => setUsername(data.login),
+      (e) => console.warn('Failed to fetch user:', e)
+    );
+  }, [octokit]);
 
   const { items, loading, error, lastRefresh, refresh } = useGithubData(
     octokit,
@@ -35,9 +46,19 @@ export function App() {
     config.defaults.maxPrsPerRepo
   );
 
+  const toggleMineOnly = useCallback(() => {
+    setMineOnly((prev) => !prev);
+    setCursorIndex(0);
+  }, []);
+
   // Filter and sort
   const filtered = useMemo(() => {
     let result = [...items];
+
+    // Default: show only the authenticated user's PRs
+    if (mineOnly && username) {
+      result = result.filter((pr) => pr.author === username);
+    }
 
     if (filter === 'failing') {
       result = result.filter((pr) => pr.ciStatus === 'failure');
@@ -71,7 +92,7 @@ export function App() {
     });
 
     return result;
-  }, [items, filter, sort]);
+  }, [items, filter, sort, mineOnly, username]);
 
   // Clamp cursor when filtered list shrinks
   useEffect(() => {
@@ -138,8 +159,9 @@ export function App() {
       cycleFilter,
       cycleSort,
       refresh,
+      toggleMineOnly,
     }),
-    [viewMode, setViewMode, moveCursor, openSelected, cycleFilter, cycleSort, refresh]
+    [viewMode, setViewMode, moveCursor, openSelected, cycleFilter, cycleSort, refresh, toggleMineOnly]
   );
 
   useKeyboardShortcuts(shortcutActions);
@@ -158,7 +180,13 @@ export function App() {
         onOpenRepos={() => setViewMode('repos')}
         onSignOut={handleSignOut}
       />
-      <FilterBar active={filter} onFilter={handleSetFilter} />
+      <FilterBar
+        active={filter}
+        onFilter={handleSetFilter}
+        mineOnly={mineOnly}
+        onToggleMine={toggleMineOnly}
+        username={username}
+      />
       <PRTable
         items={filtered}
         cursorIndex={cursorIndex}

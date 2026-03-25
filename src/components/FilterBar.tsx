@@ -10,11 +10,22 @@ const FILTERS: { key: FilterMode; label: string }[] = [
 interface FilterBarProps {
   active: FilterMode;
   onFilter: (mode: FilterMode) => void;
+  mineOnly: boolean;
+  onToggleMine: () => void;
+  username: string | null;
 }
 
-export function FilterBar({ active, onFilter }: FilterBarProps) {
+export function FilterBar({ active, onFilter, mineOnly, onToggleMine, username }: FilterBarProps) {
   return (
     <div className="filter-bar">
+      <button
+        className={`filter-pill ${mineOnly ? 'filter-active' : ''}`}
+        onClick={onToggleMine}
+        title={`Show ${mineOnly ? 'all' : 'only mine'} (m)`}
+      >
+        {mineOnly ? `@${username ?? '...'}` : 'Everyone'}
+      </button>
+      <span className="filter-divider" />
       {FILTERS.map(({ key, label }) => (
         <button
           key={key}
