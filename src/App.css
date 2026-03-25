@@ -1,0 +1,631 @@
+/* ── Reset & Base ────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0d1117;
+  --bg-surface: #161b22;
+  --bg-hover: #1c2128;
+  --bg-selected: #1f2937;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --text-subtle: #6e7681;
+  --accent: #58a6ff;
+  --green: #3fb950;
+  --red: #f85149;
+  --yellow: #d29922;
+  --orange: #db6d28;
+  --blue: #58a6ff;
+  --purple: #bc8cff;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+a {
+  color: var(--accent);
+}
+
+/* ── App Layout ─────────────────────────────────────────────── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.header-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.header-stats {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.header-btn:hover {
+  background: var(--bg-hover);
+}
+
+.header-btn-subtle {
+  color: var(--text-muted);
+  border-color: transparent;
+  background: none;
+}
+
+.header-btn-subtle:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.last-refresh {
+  color: var(--text-subtle);
+  font-size: 12px;
+}
+
+/* ── Spinner ────────────────────────────────────────────────── */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Filter Bar ─────────────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.filter-pill {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 4px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.filter-pill:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.filter-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.filter-active:hover {
+  border-color: var(--accent);
+}
+
+.filter-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  align-self: center;
+}
+
+/* ── Table ──────────────────────────────────────────────────── */
+.table-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.pr-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pr-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 1;
+}
+
+.pr-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable-header:hover {
+  color: var(--text);
+}
+
+.sort-active {
+  color: var(--accent) !important;
+}
+
+.sort-arrow {
+  font-size: 10px;
+}
+
+.pr-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+/* ── PR Row ─────────────────────────────────────────────────── */
+.pr-row {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.pr-row:hover {
+  background: var(--bg-hover);
+}
+
+.pr-row-selected {
+  background: var(--bg-selected);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.col-ci {
+  width: 48px;
+  text-align: center;
+}
+
+.col-repo {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.col-number {
+  color: var(--purple);
+  font-weight: 500;
+}
+
+.col-title {
+  max-width: 500px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-author {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.col-updated {
+  color: var(--text-subtle);
+  font-size: 13px;
+}
+
+.col-reviews {
+  white-space: nowrap;
+}
+
+.col-state {
+  width: 72px;
+}
+
+.state-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.state-open {
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+}
+
+.state-merged {
+  background: rgba(188, 140, 255, 0.15);
+  color: var(--purple);
+  border: 1px solid rgba(188, 140, 255, 0.3);
+}
+
+.state-closed {
+  background: rgba(248, 81, 73, 0.15);
+  color: var(--red);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+.state-draft {
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* ── CI Badge ───────────────────────────────────────────────── */
+.ci-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ci-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.ci-success .ci-dot {
+  background: var(--green);
+}
+.ci-failure .ci-dot {
+  background: var(--red);
+}
+.ci-pending .ci-dot {
+  background: var(--yellow);
+}
+.ci-mixed .ci-dot {
+  background: var(--orange);
+}
+.ci-none .ci-dot {
+  background: var(--text-subtle);
+}
+
+/* ── Review Badges ──────────────────────────────────────────── */
+.review-badges {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.review-badge {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.review-approved {
+  color: var(--green);
+}
+.review-changes {
+  color: var(--red);
+}
+.review-comments {
+  color: var(--blue);
+}
+
+/* ── Empty State ────────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--text-muted);
+  font-size: 15px;
+  padding: 48px;
+}
+
+.empty-state kbd {
+  margin: 0 2px;
+}
+
+/* ── Status Bar ─────────────────────────────────────────────── */
+.status-bar {
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+.status-error {
+  color: var(--red);
+}
+
+.status-shortcuts kbd {
+  display: inline-block;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--text-muted);
+}
+
+/* ── Modal ──────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 360px;
+  max-width: 500px;
+}
+
+.modal-wide {
+  min-width: 420px;
+}
+
+.modal h2 {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.modal-hint {
+  margin-top: 16px;
+  color: var(--text-subtle);
+  font-size: 12px;
+}
+
+.modal-hint kbd {
+  display: inline-block;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-family: inherit;
+}
+
+/* ── Shortcut Table ─────────────────────────────────────────── */
+.shortcut-table {
+  width: 100%;
+}
+
+.shortcut-table td {
+  padding: 4px 0;
+}
+
+.shortcut-table td:first-child {
+  width: 120px;
+}
+
+.shortcut-table kbd {
+  display: inline-block;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--yellow);
+}
+
+/* ── Repo Manager ───────────────────────────────────────────── */
+.repo-list {
+  list-style: none;
+  margin-bottom: 16px;
+}
+
+.repo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.repo-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.repo-disabled {
+  color: var(--text-subtle);
+}
+
+.repo-delete {
+  background: none;
+  border: none;
+  color: var(--text-subtle);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 4px;
+}
+
+.repo-delete:hover {
+  color: var(--red);
+}
+
+.repo-add-form {
+  display: flex;
+  gap: 8px;
+}
+
+.repo-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.repo-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.repo-add-btn {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.repo-add-btn:hover {
+  opacity: 0.9;
+}
+
+.empty-hint {
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+/* ── Token Setup ────────────────────────────────────────────── */
+.token-setup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.token-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 440px;
+  width: 100%;
+}
+
+.token-card h1 {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.token-card p {
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.token-hint {
+  font-size: 13px;
+  margin-bottom: 16px !important;
+}
+
+.token-hint code {
+  background: var(--bg);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.token-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.token-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.token-btn {
+  width: 100%;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.token-btn:hover {
+  opacity: 0.9;
+}
+
+.token-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .col-author,
+  .col-updated {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .col-repo {
+    display: none;
+  }
+}
