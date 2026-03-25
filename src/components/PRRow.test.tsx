@@ -6,6 +6,7 @@ import type { PRItem } from '../types.js';
 
 function makePR(overrides: Partial<PRItem> = {}): PRItem {
   return {
+    kind: 'pr',
     id: 1,
     number: 42,
     title: 'Fix the thing',

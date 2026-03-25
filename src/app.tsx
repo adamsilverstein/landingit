@@ -155,8 +155,10 @@ export function App() {
           cmp = a.author.localeCompare(b.author);
           break;
         case 'reviews': {
-          const scoreA = a.reviewState.approvals * 10 - a.reviewState.changesRequested * 10 + a.reviewState.commentCount;
-          const scoreB = b.reviewState.approvals * 10 - b.reviewState.changesRequested * 10 + b.reviewState.commentCount;
+          const rsA = a.kind === 'pr' ? a.reviewState : { approvals: 0, changesRequested: 0, commentCount: 0 };
+          const rsB = b.kind === 'pr' ? b.reviewState : { approvals: 0, changesRequested: 0, commentCount: 0 };
+          const scoreA = rsA.approvals * 10 - rsA.changesRequested * 10 + rsA.commentCount;
+          const scoreB = rsB.approvals * 10 - rsB.changesRequested * 10 + rsB.commentCount;
           cmp = scoreA - scoreB;
           break;
         }

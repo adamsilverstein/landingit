@@ -13,13 +13,14 @@ describe('loadConfig / saveConfig', () => {
       sort: 'updated',
       filter: 'all',
       maxPrsPerRepo: 30,
+      autoRefreshInterval: 300,
     });
   });
 
   it('round-trips config through save and load', () => {
     const config = {
       repos: [{ owner: 'acme', name: 'app', enabled: true }],
-      defaults: { sort: 'created' as const, filter: 'failing' as const, maxPrsPerRepo: 50 },
+      defaults: { sort: 'created' as const, filter: 'failing' as const, maxPrsPerRepo: 50, autoRefreshInterval: 120 },
     };
     saveConfig(config);
     const loaded = loadConfig();
@@ -36,7 +37,7 @@ describe('loadConfig / saveConfig', () => {
   it('merges partial defaults with default values', () => {
     saveConfig({
       repos: [{ owner: 'a', name: 'b', enabled: true }],
-      defaults: { sort: 'repo', filter: 'all', maxPrsPerRepo: 30 },
+      defaults: { sort: 'repo', filter: 'all', maxPrsPerRepo: 30, autoRefreshInterval: 300 },
     });
     // Simulate a stored config that is missing some defaults
     const stored = JSON.parse(localStorage.getItem('gh-dashboard-config')!);

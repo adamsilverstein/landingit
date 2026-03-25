@@ -70,12 +70,19 @@ export function useGithubData(
 
         if (user) {
           // Use search API to get user's PRs and issues efficiently
-          const [prs, issues] = await Promise.all([
+          const [prResult, issueResult] = await Promise.allSettled([
             fetchUserPRs(client, currentRepos, user),
             fetchUserIssues(client, currentRepos, user),
           ]);
-          allPRs = prs;
-          allIssues = issues;
+          allPRs = prResult.status === 'fulfilled' ? prResult.value : [];
+          allIssues = issueResult.status === 'fulfilled' ? issueResult.value : [];
+
+          if (prResult.status === 'rejected') {
+            console.warn('Failed to fetch user PRs:', prResult.reason);
+          }
+          if (issueResult.status === 'rejected') {
+            console.warn('Failed to fetch user issues:', issueResult.reason);
+          }
         } else {
           // Fallback: fetch all PRs and issues per repo
           const [prResults, issueResults] = await Promise.all([

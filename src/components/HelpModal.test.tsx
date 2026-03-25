@@ -8,11 +8,15 @@ const EXPECTED_SHORTCUTS = [
   'j / ↓',
   'k / ↑',
   'Enter',
+  '/',
+  'Esc',
   'm',
+  't',
   'f',
   's',
   'r',
   'c',
+  'T',
   '?',
 ];
 
@@ -34,9 +38,9 @@ describe('HelpModal', () => {
     render(<HelpModal onClose={() => {}} />);
     expect(screen.getByText('Move down')).toBeInTheDocument();
     expect(screen.getByText('Move up')).toBeInTheDocument();
-    expect(screen.getByText('Open PR in browser')).toBeInTheDocument();
+    expect(screen.getByText('Open item in browser')).toBeInTheDocument();
     expect(screen.getByText('Toggle mine only / everyone')).toBeInTheDocument();
-    expect(screen.getByText('Refresh data')).toBeInTheDocument();
+    expect(screen.getByText('Refresh data (resets auto-refresh timer)')).toBeInTheDocument();
     expect(screen.getByText('Configure repos')).toBeInTheDocument();
     expect(screen.getByText('Toggle this help')).toBeInTheDocument();
   });

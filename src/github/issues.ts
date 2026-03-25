@@ -18,6 +18,7 @@ export async function fetchUserIssues(
 
   const allItems: IssueItem[] = [];
   let page = 1;
+  const MAX_PAGES = 5;
 
   while (true) {
     const { data } = await octokit.search.issuesAndPullRequests({
@@ -67,7 +68,12 @@ export async function fetchUserIssues(
       break;
     }
     page++;
-    if (page > 5) break;
+    if (page > MAX_PAGES) {
+      console.warn(
+        `Issue search hit the ${MAX_PAGES}-page limit (${allItems.length} of ${data.total_count} results). Some issues may not be shown.`
+      );
+      break;
+    }
   }
 
   return allItems;
@@ -91,12 +97,11 @@ export async function fetchAllIssuesForRepo(
     sort: 'updated',
     direction: 'desc',
     per_page: perPage,
+    since: cutoff,
   });
 
   // The issues API also returns pull requests — filter them out
-  const issues = data
-    .filter((item) => !item.pull_request)
-    .filter((item) => item.updated_at >= cutoff);
+  const issues = data.filter((item) => !item.pull_request);
 
   return issues.map((item) => ({
     kind: 'issue',
