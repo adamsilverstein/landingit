@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import type { ViewMode, FilterMode, SortMode } from './types.js';
 import { createClient } from './github/client.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
@@ -73,6 +73,11 @@ export function App() {
     return result;
   }, [items, filter, sort]);
 
+  // Clamp cursor when filtered list shrinks
+  useEffect(() => {
+    setCursorIndex((prev) => Math.min(prev, Math.max(0, filtered.length - 1)));
+  }, [filtered.length]);
+
   const moveCursor = useCallback(
     (delta: number) => {
       setCursorIndex((prev) => {
@@ -124,15 +129,20 @@ export function App() {
     setTokenState(t);
   }, []);
 
-  useKeyboardShortcuts({
-    viewMode,
-    setViewMode,
-    moveCursor,
-    openSelected,
-    cycleFilter,
-    cycleSort,
-    refresh,
-  });
+  const shortcutActions = useMemo(
+    () => ({
+      viewMode,
+      setViewMode,
+      moveCursor,
+      openSelected,
+      cycleFilter,
+      cycleSort,
+      refresh,
+    }),
+    [viewMode, setViewMode, moveCursor, openSelected, cycleFilter, cycleSort, refresh]
+  );
+
+  useKeyboardShortcuts(shortcutActions);
 
   if (!token) {
     return <TokenSetup onSave={handleSaveToken} />;

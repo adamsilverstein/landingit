@@ -16,12 +16,16 @@ export async function getCheckStatus(
     });
     const runs = data.check_runs;
     if (runs.length === 0) return 'none';
-    if (runs.some((r) => r.conclusion === 'failure')) return 'failure';
+    const failConclusions = new Set(['failure', 'timed_out', 'cancelled', 'action_required']);
+    if (runs.some((r) => r.conclusion && failConclusions.has(r.conclusion)))
+      return 'failure';
     if (runs.some((r) => r.status === 'in_progress' || r.status === 'queued'))
       return 'pending';
-    if (runs.every((r) => r.conclusion === 'success')) return 'success';
+    if (runs.every((r) => r.conclusion === 'success' || r.conclusion === 'skipped' || r.conclusion === 'neutral'))
+      return 'success';
     return 'mixed';
-  } catch {
+  } catch (e) {
+    console.warn('Failed to fetch check status:', e);
     return 'none';
   }
 }
@@ -58,7 +62,8 @@ export async function getReviewState(
     ).length;
 
     return { approvals, changesRequested, commentCount };
-  } catch {
+  } catch (e) {
+    console.warn('Failed to fetch review state:', e);
     return { approvals: 0, changesRequested: 0, commentCount: 0 };
   }
 }
