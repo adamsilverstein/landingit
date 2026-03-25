@@ -6,6 +6,7 @@ const SHORTCUTS = [
   ['Enter', 'Open item in browser'],
   ['/', 'Focus search'],
   ['Esc', 'Clear search'],
+  ['p / Space', 'Preview PR details'],
   ['m', 'Toggle mine only / everyone'],
   ['t', 'Cycle type (both / PRs / issues)'],
   ['f', 'Cycle filter (all / failing / needs-review)'],

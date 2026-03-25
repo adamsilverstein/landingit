@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import type { ViewMode, FilterMode, SortMode, SortDirection, ItemTypeFilter } from './types.js';
+import type { ViewMode, FilterMode, SortMode, SortDirection, ItemTypeFilter, PRItem } from './types.js';
 import { createClient } from './github/client.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
 import { useConfig } from './hooks/useConfig.js';
@@ -14,6 +14,7 @@ import { StatusBar } from './components/StatusBar.js';
 import { HelpModal } from './components/HelpModal.js';
 import { RepoManager } from './components/RepoManager.js';
 import { TokenSetup } from './components/TokenSetup.js';
+import { DetailPanel } from './components/DetailPanel.js';
 
 const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review'];
 const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'reviews'];
@@ -33,6 +34,7 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [itemTypeFilter, setItemTypeFilter] = useState<ItemTypeFilter>('both');
+  const [previewItem, setPreviewItem] = useState<PRItem | null>(null);
 
   const octokit = useMemo(
     () => (token ? createClient(token) : null),
@@ -238,12 +240,31 @@ export function App() {
     setTokenState(t);
   }, []);
 
+  const previewSelected = useCallback(() => {
+    const item = filtered[cursorIndex];
+    if (item) {
+      setPreviewItem(item);
+      setViewMode('detail');
+    }
+  }, [filtered, cursorIndex]);
+
+  const handlePreview = useCallback((item: PRItem) => {
+    setPreviewItem(item);
+    setViewMode('detail');
+  }, []);
+
+  const handleCloseDetail = useCallback(() => {
+    setViewMode('list');
+    setPreviewItem(null);
+  }, []);
+
   const shortcutActions = useMemo(
     () => ({
       viewMode,
       setViewMode,
       moveCursor,
       openSelected,
+      previewSelected,
       cycleFilter,
       cycleSort,
       refresh: handleRefresh,
@@ -252,7 +273,7 @@ export function App() {
       focusSearch,
       cycleItemType,
     }),
-    [viewMode, setViewMode, moveCursor, openSelected, cycleFilter, cycleSort, handleRefresh, toggleMineOnly, cycleTheme, focusSearch, cycleItemType]
+    [viewMode, setViewMode, moveCursor, openSelected, previewSelected, cycleFilter, cycleSort, handleRefresh, toggleMineOnly, cycleTheme, focusSearch, cycleItemType]
   );
 
   useKeyboardShortcuts(shortcutActions);
@@ -290,6 +311,7 @@ export function App() {
         sort={sort}
         sortDirection={sortDirection}
         onSort={handleSetSort}
+        onPreview={handlePreview}
       />
       <StatusBar error={error} failedRepos={failedRepos} searchQuery={searchQuery} matchCount={filtered.length} totalCount={items.length} />
 
@@ -303,6 +325,13 @@ export function App() {
           onRemove={removeRepo}
           onAdd={addRepo}
           onClose={() => setViewMode('list')}
+        />
+      )}
+      {viewMode === 'detail' && previewItem && octokit && (
+        <DetailPanel
+          item={previewItem}
+          octokit={octokit}
+          onClose={handleCloseDetail}
         />
       )}
     </div>

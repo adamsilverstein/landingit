@@ -1,5 +1,5 @@
 import React from 'react';
-import type { DashboardItem, SortMode, SortDirection } from '../types.js';
+import type { DashboardItem, SortMode, SortDirection, PRItem } from '../types.js';
 import { PRRow } from './PRRow.js';
 import { SortableHeader } from './SortableHeader.js';
 
@@ -9,9 +9,10 @@ interface PRTableProps {
   sort: SortMode;
   sortDirection: SortDirection;
   onSort: (key: SortMode) => void;
+  onPreview: (item: PRItem) => void;
 }
 
-export function PRTable({ items, cursorIndex, sort, sortDirection, onSort }: PRTableProps) {
+export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPreview }: PRTableProps) {
   if (items.length === 0) {
     return (
       <div className="empty-state">
@@ -45,7 +46,7 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort }: PRT
         </thead>
         <tbody>
           {items.map((item, i) => (
-            <PRRow key={`${item.kind}-${item.id}`} item={item} selected={i === cursorIndex} />
+            <PRRow key={`${item.kind}-${item.id}`} item={item} selected={i === cursorIndex} onPreview={onPreview} />
           ))}
         </tbody>
       </table>
