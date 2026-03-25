@@ -172,8 +172,9 @@ describe('useGithubData', () => {
   });
 
   it('sets error state on fetch failure', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     mockedFetchUserPRs.mockRejectedValue(new Error('Network error'));
-    mockedFetchUserIssues.mockRejectedValue(new Error('Network error'));
+    mockedFetchUserIssues.mockRejectedValue(new Error('Issue fetch error'));
 
     const { result } = renderHook(() =>
       useGithubData(mockOctokit(), repos, 30, 'user'),
@@ -186,5 +187,8 @@ describe('useGithubData', () => {
     // With Promise.allSettled, individual failures are handled gracefully
     // Both fetches fail but the hook returns empty items instead of crashing
     expect(result.current.items).toEqual([]);
+    expect(warnSpy).toHaveBeenCalledWith('Failed to fetch user PRs:', expect.any(Error));
+    expect(warnSpy).toHaveBeenCalledWith('Failed to fetch user issues:', expect.any(Error));
+    warnSpy.mockRestore();
   });
 });

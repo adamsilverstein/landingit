@@ -18,6 +18,7 @@ export async function fetchUserIssues(
 
   const allItems: IssueItem[] = [];
   let page = 1;
+  let totalCount = 0;
   const MAX_PAGES = 5;
 
   while (true) {
@@ -28,6 +29,10 @@ export async function fetchUserIssues(
       per_page: 100,
       page,
     });
+
+    if (page === 1) {
+      totalCount = data.total_count;
+    }
 
     for (const item of data.items) {
       // Skip pull requests returned by the search API
@@ -64,13 +69,13 @@ export async function fetchUserIssues(
       });
     }
 
-    if (allItems.length >= data.total_count || data.items.length < 100) {
+    if (allItems.length >= totalCount || data.items.length < 100) {
       break;
     }
     page++;
     if (page > MAX_PAGES) {
       console.warn(
-        `Issue search hit the ${MAX_PAGES}-page limit (${allItems.length} of ${data.total_count} results). Some issues may not be shown.`
+        `Issue search hit the ${MAX_PAGES}-page limit (${allItems.length} of ${totalCount} results). Some issues may not be shown.`
       );
       break;
     }
