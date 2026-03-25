@@ -77,7 +77,7 @@ export function FilterBar({ active, onFilter, mineOnly, onToggleMine, username, 
             {showHiddenDropdown && (
               <div className="hidden-repos-dropdown">
                 <div className="hidden-repos-header">Hidden Repositories</div>
-                {hiddenRepos!.map((repo) => (
+                {hiddenRepos?.map((repo) => (
                   <button
                     key={`${repo.owner}/${repo.name}`}
                     className="hidden-repo-item"
