@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import type { DashboardItem } from '../types.js';
+import type { DashboardItem, PRItem } from '../types.js';
 import { CIBadge } from './CIBadge.js';
 import { ReviewBadge } from './ReviewBadge.js';
 import { LabelBadge } from './LabelBadge.js';
@@ -8,10 +8,12 @@ import { timeAgo } from '../utils/timeAgo.js';
 interface PRRowProps {
   item: DashboardItem;
   selected: boolean;
+  unseen: boolean;
   onPreview: (item: PRItem) => void;
+  onOpen: (pr: PRItem) => void;
 }
 
-export function PRRow({ item, selected, onPreview }: PRRowProps) {
+export function PRRow({ item, selected, unseen, onPreview, onOpen }: PRRowProps) {
   const ref = useRef<HTMLTableRowElement>(null);
 
   useEffect(() => {
@@ -21,6 +23,7 @@ export function PRRow({ item, selected, onPreview }: PRRowProps) {
   }, [selected]);
 
   const handleClick = () => {
+    onOpen(item);
     onPreview(item);
   };
 
@@ -41,6 +44,7 @@ export function PRRow({ item, selected, onPreview }: PRRowProps) {
         {isPR ? <CIBadge status={item.ciStatus} /> : <span className="ci-badge ci-none"><span className="ci-dot" /></span>}
       </td>
       <td className="col-repo">
+        {unseen && <span className="unseen-dot" title="New activity" />}
         {item.repo.owner}/{item.repo.name}
       </td>
       <td className="col-number">#{item.number}</td>

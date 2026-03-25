@@ -5,6 +5,7 @@ interface HeaderProps {
   lastRefresh: Date | null;
   repoCount: number;
   itemCount: number;
+  unseenCount: number;
   onOpenRepos: () => void;
   onSignOut: () => void;
   autoRefreshSecondsLeft: number | null;
@@ -21,6 +22,7 @@ export function Header({
   lastRefresh,
   repoCount,
   itemCount,
+  unseenCount,
   onOpenRepos,
   onSignOut,
   autoRefreshSecondsLeft,
@@ -33,6 +35,11 @@ export function Header({
           {repoCount} repo{repoCount !== 1 ? 's' : ''} &middot; {itemCount} item
           {itemCount !== 1 ? 's' : ''}
         </span>
+        {unseenCount > 0 && (
+          <span className="unseen-badge" title={`${unseenCount} PR${unseenCount !== 1 ? 's' : ''} with new activity`}>
+            {unseenCount} new
+          </span>
+        )}
       </div>
       <div className="header-right">
         {loading && <span className="spinner" />}
