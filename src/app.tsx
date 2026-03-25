@@ -7,6 +7,7 @@ import { useGithubData } from './hooks/useGithubData.js';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js';
 import { useTheme } from './hooks/useTheme.js';
 import { useAutoRefresh } from './hooks/useAutoRefresh.js';
+import { useLastSeen } from './hooks/useLastSeen.js';
 import { Header } from './components/Header.js';
 import { FilterBar } from './components/FilterBar.js';
 import { PRTable } from './components/PRTable.js';
@@ -16,7 +17,7 @@ import { RepoManager } from './components/RepoManager.js';
 import { TokenSetup } from './components/TokenSetup.js';
 import { DetailPanel } from './components/DetailPanel.js';
 
-const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review'];
+const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'new-activity'];
 const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'reviews'];
 const ITEM_TYPE_CYCLE: ItemTypeFilter[] = ['both', 'prs', 'issues'];
 
@@ -35,6 +36,8 @@ export function App() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [itemTypeFilter, setItemTypeFilter] = useState<ItemTypeFilter>('both');
   const [previewItem, setPreviewItem] = useState<PRItem | null>(null);
+
+  const { markSeen, isUnseen } = useLastSeen();
 
   const octokit = useMemo(
     () => (token ? createClient(token) : null),
@@ -104,6 +107,8 @@ export function App() {
           item.kind === 'pr' &&
           (item.reviewState.changesRequested > 0 || item.reviewState.commentCount > 0)
       );
+    } else if (filter === 'new-activity') {
+      result = result.filter((pr) => isUnseen(pr));
     }
 
     if (searchQuery.trim()) {
@@ -171,7 +176,7 @@ export function App() {
     });
 
     return result;
-  }, [items, filter, sort, sortDirection, searchQuery, itemTypeFilter]);
+  }, [items, filter, sort, sortDirection, searchQuery, itemTypeFilter, isUnseen]);
 
   // Clamp cursor when filtered list shrinks
   useEffect(() => {
@@ -192,8 +197,11 @@ export function App() {
 
   const openSelected = useCallback(() => {
     const item = filtered[cursorIndex];
-    if (item) window.open(item.url, '_blank');
-  }, [filtered, cursorIndex]);
+    if (item) {
+      markSeen(item);
+      window.open(item.url, '_blank');
+    }
+  }, [filtered, cursorIndex, markSeen]);
 
   const cycleFilter = useCallback(() => {
     setFilter((prev) => {
@@ -261,6 +269,11 @@ export function App() {
     setPreviewItem(null);
   }, []);
 
+  const unseenCount = useMemo(
+    () => items.filter((pr) => isUnseen(pr)).length,
+    [items, isUnseen]
+  );
+
   const shortcutActions = useMemo(
     () => ({
       viewMode,
@@ -292,6 +305,7 @@ export function App() {
         lastRefresh={lastRefresh}
         repoCount={enabledRepos.length}
         itemCount={filtered.length}
+        unseenCount={unseenCount}
         onOpenRepos={() => setViewMode('repos')}
         onSignOut={handleSignOut}
         autoRefreshSecondsLeft={autoRefreshSecondsLeft}
@@ -315,6 +329,8 @@ export function App() {
         sortDirection={sortDirection}
         onSort={handleSetSort}
         onPreview={handlePreview}
+        isUnseen={isUnseen}
+        onOpen={markSeen}
       />
       <StatusBar error={error} failedRepos={failedRepos} searchQuery={searchQuery} matchCount={filtered.length} totalCount={items.length} />
 
