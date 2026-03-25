@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { ViewMode, FilterMode, SortMode, SortDirection } from './types.js';
 import { createClient } from './github/client.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
@@ -28,6 +28,8 @@ export function App() {
   const [mineOnly, setMineOnly] = useState(true);
   const [username, setUsername] = useState<string | null>(null);
   const { cycleTheme } = useTheme();
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const octokit = useMemo(
     () => (token ? createClient(token) : null),
@@ -67,6 +69,19 @@ export function App() {
         (pr) =>
           pr.reviewState.changesRequested > 0 || pr.reviewState.commentCount > 0
       );
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter((pr) => {
+        const repoFullName = `${pr.repo.owner}/${pr.repo.name}`.toLowerCase();
+        return (
+          pr.title.toLowerCase().includes(q) ||
+          pr.author.toLowerCase().includes(q) ||
+          repoFullName.includes(q) ||
+          `#${pr.number}`.includes(q)
+        );
+      });
     }
 
     const dir = sortDirection === 'desc' ? -1 : 1;
@@ -117,7 +132,7 @@ export function App() {
     });
 
     return result;
-  }, [items, filter, sort, sortDirection]);
+  }, [items, filter, sort, sortDirection, searchQuery]);
 
   // Clamp cursor when filtered list shrinks
   useEffect(() => {
@@ -172,6 +187,10 @@ export function App() {
     });
   }, []);
 
+  const focusSearch = useCallback(() => {
+    searchInputRef.current?.focus();
+  }, []);
+
   const handleSignOut = useCallback(() => {
     clearToken();
     setTokenState(null);
@@ -193,8 +212,9 @@ export function App() {
       refresh,
       toggleMineOnly,
       cycleTheme,
+      focusSearch,
     }),
-    [viewMode, setViewMode, moveCursor, openSelected, cycleFilter, cycleSort, refresh, toggleMineOnly, cycleTheme]
+    [viewMode, setViewMode, moveCursor, openSelected, cycleFilter, cycleSort, refresh, toggleMineOnly, cycleTheme, focusSearch]
   );
 
   useKeyboardShortcuts(shortcutActions);
@@ -219,6 +239,9 @@ export function App() {
         mineOnly={mineOnly}
         onToggleMine={toggleMineOnly}
         username={username}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchInputRef={searchInputRef}
       />
       <PRTable
         items={filtered}
@@ -227,7 +250,7 @@ export function App() {
         sortDirection={sortDirection}
         onSort={handleSetSort}
       />
-      <StatusBar error={error} failedRepos={failedRepos} />
+      <StatusBar error={error} failedRepos={failedRepos} searchQuery={searchQuery} matchCount={filtered.length} totalCount={items.length} />
 
       {viewMode === 'help' && (
         <HelpModal onClose={() => setViewMode('list')} />

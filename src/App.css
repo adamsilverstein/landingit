@@ -185,6 +185,33 @@ a {
   align-self: center;
 }
 
+/* ── Search Input ──────────────────────────────────────────── */
+.search-input {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  width: 200px;
+  outline: none;
+  transition: border-color 0.15s, width 0.2s;
+}
+
+.search-input::placeholder {
+  color: var(--text-subtle);
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  width: 280px;
+}
+
+.status-match-count {
+  color: var(--accent);
+  font-weight: 500;
+}
+
 /* ── Table ──────────────────────────────────────────────────── */
 .table-container {
   flex: 1;
