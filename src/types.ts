@@ -10,6 +10,7 @@ export interface Config {
     sort: SortMode;
     filter: FilterMode;
     maxPrsPerRepo: number;
+    autoRefreshInterval: number; // seconds, 0 = disabled
   };
 }
 

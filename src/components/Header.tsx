@@ -7,6 +7,13 @@ interface HeaderProps {
   itemCount: number;
   onOpenRepos: () => void;
   onSignOut: () => void;
+  autoRefreshSecondsLeft: number | null;
+}
+
+function formatCountdown(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
 export function Header({
@@ -16,6 +23,7 @@ export function Header({
   itemCount,
   onOpenRepos,
   onSignOut,
+  autoRefreshSecondsLeft,
 }: HeaderProps) {
   return (
     <header className="header">
@@ -31,6 +39,11 @@ export function Header({
         {lastRefresh && !loading && (
           <span className="last-refresh">
             {lastRefresh.toLocaleTimeString()}
+          </span>
+        )}
+        {autoRefreshSecondsLeft !== null && !loading && (
+          <span className="auto-refresh-countdown" title="Time until next auto-refresh">
+            ↻ {formatCountdown(autoRefreshSecondsLeft)}
           </span>
         )}
         <button className="header-btn" onClick={onOpenRepos} title="Manage repos (c)">
