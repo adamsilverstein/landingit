@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { loadConfig, saveConfig } from '../config.js';
-import type { Config, RepoConfig } from '../types.js';
+import type { Config } from '../types.js';
 
 export function useConfig(configPath?: string) {
   const [config, setConfig] = useState<Config>(() => loadConfig(configPath));
@@ -15,44 +15,57 @@ export function useConfig(configPath?: string) {
 
   const addRepo = useCallback(
     (owner: string, name: string) => {
-      const exists = config.repos.some(
-        (r) => r.owner === owner && r.name === name
-      );
-      if (exists) return;
-      const updated = {
-        ...config,
-        repos: [...config.repos, { owner, name, enabled: true }],
-      };
-      persist(updated);
+      setConfig((prev) => {
+        const exists = prev.repos.some(
+          (r) => r.owner === owner && r.name === name
+        );
+        if (exists) return prev;
+        const updated = {
+          ...prev,
+          repos: [...prev.repos, { owner, name, enabled: true }],
+        };
+        saveConfig(updated, configPath);
+        return updated;
+      });
     },
-    [config, persist]
+    [configPath]
   );
 
   const removeRepo = useCallback(
     (index: number) => {
-      const updated = {
-        ...config,
-        repos: config.repos.filter((_, i) => i !== index),
-      };
-      persist(updated);
+      setConfig((prev) => {
+        const updated = {
+          ...prev,
+          repos: prev.repos.filter((_, i) => i !== index),
+        };
+        saveConfig(updated, configPath);
+        return updated;
+      });
     },
-    [config, persist]
+    [configPath]
   );
 
   const toggleRepo = useCallback(
     (index: number) => {
-      const updated = {
-        ...config,
-        repos: config.repos.map((r, i) =>
-          i === index ? { ...r, enabled: !r.enabled } : r
-        ),
-      };
-      persist(updated);
+      setConfig((prev) => {
+        const updated = {
+          ...prev,
+          repos: prev.repos.map((r, i) =>
+            i === index ? { ...r, enabled: !r.enabled } : r
+          ),
+        };
+        saveConfig(updated, configPath);
+        return updated;
+      });
     },
-    [config, persist]
+    [configPath]
   );
 
-  const enabledRepos = config.repos.filter((r) => r.enabled);
+  // Stable reference: only changes when the actual repo list changes
+  const enabledRepos = useMemo(
+    () => config.repos.filter((r) => r.enabled),
+    [config.repos]
+  );
 
   return { config, enabledRepos, addRepo, removeRepo, toggleRepo };
 }
