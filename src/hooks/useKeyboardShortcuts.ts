@@ -11,6 +11,7 @@ interface ShortcutActions {
   refresh: () => void;
   toggleMineOnly: () => void;
   cycleTheme: () => void;
+  focusSearch: () => void;
 }
 
 export function useKeyboardShortcuts(actions: ShortcutActions) {
@@ -76,6 +77,10 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
           break;
         case 't':
           actions.cycleTheme();
+          break;
+        case '/':
+          e.preventDefault();
+          actions.focusSearch();
           break;
       }
     };

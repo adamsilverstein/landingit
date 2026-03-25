@@ -4,6 +4,8 @@ const SHORTCUTS = [
   ['j / ↓', 'Move down'],
   ['k / ↑', 'Move up'],
   ['Enter', 'Open PR in browser'],
+  ['/', 'Focus search'],
+  ['Esc', 'Clear search'],
   ['m', 'Toggle mine only / everyone'],
   ['f', 'Cycle filter (all / failing / needs-review)'],
   ['s', 'Cycle sort (updated / created / repo / status)'],
