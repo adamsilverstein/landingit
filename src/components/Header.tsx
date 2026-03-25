@@ -30,7 +30,7 @@ export function Header({
       <div className="header-left">
         <h1 className="header-title">Git Dashboard</h1>
         <span className="header-stats">
-          {repoCount} repo{repoCount !== 1 ? 's' : ''} &middot; {itemCount} PR
+          {repoCount} repo{repoCount !== 1 ? 's' : ''} &middot; {itemCount} item
           {itemCount !== 1 ? 's' : ''}
         </span>
       </div>

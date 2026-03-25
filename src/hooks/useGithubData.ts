@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Octokit } from '@octokit/rest';
-import type { PRItem, RepoConfig, RepoFetchError } from '../types.js';
+import type { PRItem, DashboardItem, RepoConfig, RepoFetchError } from '../types.js';
 import { fetchUserPRs, fetchAllPRsForRepo } from '../github/pulls.js';
+import { fetchUserIssues, fetchAllIssuesForRepo } from '../github/issues.js';
 import { getCheckStatus, getReviewState } from '../github/checks.js';
 
 interface UseGithubDataResult {
-  items: PRItem[];
+  items: DashboardItem[];
   loading: boolean;
   error: string | null;
   failedRepos: RepoFetchError[];
@@ -19,7 +20,7 @@ export function useGithubData(
   maxPerRepo: number,
   username: string | null
 ): UseGithubDataResult {
-  const [items, setItems] = useState<PRItem[]>([]);
+  const [items, setItems] = useState<DashboardItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [failedRepos, setFailedRepos] = useState<RepoFetchError[]>([]);
@@ -65,19 +66,30 @@ export function useGithubData(
     (async () => {
       try {
         let allPRs: PRItem[];
+        let allIssues: DashboardItem[];
 
         if (user) {
-          // Use search API to get user's PRs efficiently
-          allPRs = await fetchUserPRs(client, currentRepos, user);
+          // Use search API to get user's PRs and issues efficiently
+          const [prs, issues] = await Promise.all([
+            fetchUserPRs(client, currentRepos, user),
+            fetchUserIssues(client, currentRepos, user),
+          ]);
+          allPRs = prs;
+          allIssues = issues;
         } else {
-          // Fallback: fetch all PRs per repo
-          const results = await Promise.allSettled(
-            currentRepos.map((repo) => fetchAllPRsForRepo(client, repo, max))
-          );
+          // Fallback: fetch all PRs and issues per repo
+          const [prResults, issueResults] = await Promise.all([
+            Promise.allSettled(
+              currentRepos.map((repo) => fetchAllPRsForRepo(client, repo, max))
+            ),
+            Promise.allSettled(
+              currentRepos.map((repo) => fetchAllIssuesForRepo(client, repo, max))
+            ),
+          ]);
           allPRs = [];
           const repoErrors: RepoFetchError[] = [];
-          for (let i = 0; i < results.length; i++) {
-            const result = results[i];
+          for (let i = 0; i < prResults.length; i++) {
+            const result = prResults[i];
             if (result.status === 'fulfilled') {
               allPRs = allPRs.concat(result.value);
             } else {
@@ -90,6 +102,12 @@ export function useGithubData(
               });
             }
           }
+          allIssues = [];
+          for (const result of issueResults) {
+            if (result.status === 'fulfilled') {
+              allIssues = allIssues.concat(result.value);
+            }
+          }
           if (!cancelled) {
             setFailedRepos(repoErrors);
           }
@@ -97,7 +115,7 @@ export function useGithubData(
 
         if (cancelled) return;
 
-        // Enrich with CI status and reviews in parallel
+        // Enrich PRs with CI status and reviews in parallel
         const enriched = await Promise.allSettled(
           allPRs.map(async (pr) => {
             // Only fetch CI/reviews for open PRs (closed/merged don't need it)
@@ -129,14 +147,14 @@ export function useGithubData(
 
         if (cancelled) return;
 
-        const finalItems: PRItem[] = enriched
+        const finalPRs: DashboardItem[] = enriched
           .filter(
             (r): r is PromiseFulfilledResult<PRItem> =>
               r.status === 'fulfilled'
           )
           .map((r) => r.value);
 
-        setItems(finalItems);
+        setItems([...finalPRs, ...allIssues]);
         setLastRefresh(new Date());
       } catch (e) {
         if (!cancelled) {

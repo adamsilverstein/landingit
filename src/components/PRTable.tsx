@@ -1,10 +1,10 @@
 import React from 'react';
-import type { PRItem, SortMode, SortDirection } from '../types.js';
+import type { DashboardItem, SortMode, SortDirection } from '../types.js';
 import { PRRow } from './PRRow.js';
 import { SortableHeader } from './SortableHeader.js';
 
 interface PRTableProps {
-  items: PRItem[];
+  items: DashboardItem[];
   cursorIndex: number;
   sort: SortMode;
   sortDirection: SortDirection;
@@ -15,7 +15,7 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort }: PRT
   if (items.length === 0) {
     return (
       <div className="empty-state">
-        No PRs found. Press <kbd>c</kbd> to configure repos, or <kbd>r</kbd> to
+        No items found. Press <kbd>c</kbd> to configure repos, or <kbd>r</kbd> to
         refresh.
       </div>
     );
@@ -32,6 +32,7 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort }: PRT
       <table className="pr-table">
         <thead>
           <tr>
+            <th className="col-type">Type</th>
             <SortableHeader label="CI" sortKey="status" className="col-ci" {...headerProps} />
             <SortableHeader label="Repo" sortKey="repo" className="col-repo" {...headerProps} />
             <SortableHeader label="#" sortKey="number" className="col-number" {...headerProps} />
@@ -44,7 +45,7 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort }: PRT
         </thead>
         <tbody>
           {items.map((item, i) => (
-            <PRRow key={item.id} item={item} selected={i === cursorIndex} />
+            <PRRow key={`${item.kind}-${item.id}`} item={item} selected={i === cursorIndex} />
           ))}
         </tbody>
       </table>

@@ -47,6 +47,7 @@ export async function fetchUserPRs(
       }
 
       allItems.push({
+        kind: 'pr',
         id: item.id,
         number: item.number,
         title: item.title,
@@ -105,6 +106,7 @@ export async function fetchAllPRsForRepo(
     }
 
     return {
+      kind: 'pr',
       id: pr.id,
       number: pr.number,
       title: pr.title,

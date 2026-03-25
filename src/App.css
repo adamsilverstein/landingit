@@ -685,3 +685,58 @@ a {
     display: none;
   }
 }
+
+/* ── Type Badge ─────────────────────────────────────────────── */
+.col-type {
+  width: 56px;
+  text-align: center;
+}
+
+.type-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.type-pr {
+  background: rgba(188, 140, 255, 0.15);
+  color: var(--purple);
+  border: 1px solid rgba(188, 140, 255, 0.3);
+}
+
+.type-issue {
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+}
+
+/* ── Label Badges ──────────────────────────────────────────── */
+.label-badges {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 8px;
+  flex-wrap: wrap;
+}
+
+.label-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Milestone Badge ───────────────────────────────────────── */
+.milestone-badge {
+  font-size: 12px;
+  color: var(--text-muted);
+}
