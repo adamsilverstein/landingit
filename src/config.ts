@@ -9,6 +9,7 @@ const DEFAULT_CONFIG: Config = {
     sort: 'updated',
     filter: 'all',
     maxPrsPerRepo: 30,
+    autoRefreshInterval: 300, // 5 minutes in seconds, 0 = disabled
   },
 };
 

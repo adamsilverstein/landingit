@@ -6,6 +6,7 @@ import { useConfig } from './hooks/useConfig.js';
 import { useGithubData } from './hooks/useGithubData.js';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js';
 import { useTheme } from './hooks/useTheme.js';
+import { useAutoRefresh } from './hooks/useAutoRefresh.js';
 import { Header } from './components/Header.js';
 import { FilterBar } from './components/FilterBar.js';
 import { PRTable } from './components/PRTable.js';
@@ -52,6 +53,20 @@ export function App() {
     config.defaults.maxPrsPerRepo,
     mineOnly ? username : null
   );
+
+  const isModalOpen = viewMode !== 'list';
+
+  const { secondsLeft: autoRefreshSecondsLeft, reset: resetAutoRefresh } = useAutoRefresh({
+    intervalSeconds: config.defaults.autoRefreshInterval,
+    paused: isModalOpen,
+    onRefresh: refresh,
+  });
+
+  // Reset countdown on manual refresh
+  const handleRefresh = useCallback(() => {
+    refresh();
+    resetAutoRefresh();
+  }, [refresh, resetAutoRefresh]);
 
   const toggleMineOnly = useCallback(() => {
     setMineOnly((prev) => !prev);
@@ -209,12 +224,12 @@ export function App() {
       openSelected,
       cycleFilter,
       cycleSort,
-      refresh,
+      refresh: handleRefresh,
       toggleMineOnly,
       cycleTheme,
       focusSearch,
     }),
-    [viewMode, setViewMode, moveCursor, openSelected, cycleFilter, cycleSort, refresh, toggleMineOnly, cycleTheme, focusSearch]
+    [viewMode, setViewMode, moveCursor, openSelected, cycleFilter, cycleSort, handleRefresh, toggleMineOnly, cycleTheme, focusSearch]
   );
 
   useKeyboardShortcuts(shortcutActions);
@@ -232,6 +247,7 @@ export function App() {
         itemCount={filtered.length}
         onOpenRepos={() => setViewMode('repos')}
         onSignOut={handleSignOut}
+        autoRefreshSecondsLeft={autoRefreshSecondsLeft}
       />
       <FilterBar
         active={filter}

@@ -128,6 +128,12 @@ a {
   font-size: 12px;
 }
 
+.auto-refresh-countdown {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Spinner ────────────────────────────────────────────────── */
 .spinner {
   display: inline-block;
