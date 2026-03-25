@@ -1,16 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { PRItem, PRStateFilterKey } from '../types.js';
-
-/** Replicates the PR state filtering logic from app.tsx */
-function filterByPRState(items: PRItem[], filters: Set<PRStateFilterKey>): PRItem[] {
-  if (filters.size === 0) return [];
-  return items.filter((pr) => {
-    if (pr.draft && filters.has('draft')) return true;
-    if (!pr.draft && pr.state === 'open' && filters.has('open')) return true;
-    if (pr.state === 'merged' && filters.has('merged')) return true;
-    return false;
-  });
-}
+import { filterByPRState } from './prStateFilter.js';
 
 function makePR(overrides: Partial<PRItem> = {}): PRItem {
   return {

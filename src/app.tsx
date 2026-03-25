@@ -16,6 +16,7 @@ import { HelpModal } from './components/HelpModal.js';
 import { RepoManager } from './components/RepoManager.js';
 import { TokenSetup } from './components/TokenSetup.js';
 import { DetailPanel } from './components/DetailPanel.js';
+import { filterByPRState } from './utils/prStateFilter.js';
 
 const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'new-activity'];
 const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'reviews'];
@@ -116,18 +117,7 @@ export function App() {
     }
 
     // PR state filter (draft / open / merged toggles)
-    if (prStateFilters.size > 0) {
-      result = result.filter((pr) => {
-        if (pr.kind !== 'pr') return true; // don't filter out issues
-        if (pr.draft && prStateFilters.has('draft')) return true;
-        if (!pr.draft && pr.state === 'open' && prStateFilters.has('open')) return true;
-        if (pr.state === 'merged' && prStateFilters.has('merged')) return true;
-        return false;
-      });
-    } else {
-      // If no state filters are active, show nothing (all toggled off)
-      result = result.filter((pr) => pr.kind !== 'pr');
-    }
+    result = filterByPRState(result, prStateFilters);
 
     if (filter === 'failing') {
       result = result.filter((item) => item.kind === 'pr' && item.ciStatus === 'failure');
