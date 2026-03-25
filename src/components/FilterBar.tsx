@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, type RefObject } from 'react';
-import type { FilterMode, ItemTypeFilter, RepoConfig } from '../types.js';
+import type { FilterMode, ItemTypeFilter, RepoConfig, PRStateFilterKey } from '../types.js';
 
 const FILTERS: { key: FilterMode; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -12,6 +12,12 @@ const ITEM_TYPES: { key: ItemTypeFilter; label: string }[] = [
   { key: 'both', label: 'Both' },
   { key: 'prs', label: 'PRs' },
   { key: 'issues', label: 'Issues' },
+];
+
+const PR_STATE_FILTERS: { key: PRStateFilterKey; label: string }[] = [
+  { key: 'draft', label: 'Draft' },
+  { key: 'open', label: 'Open' },
+  { key: 'merged', label: 'Merged' },
 ];
 
 interface FilterBarProps {
@@ -27,9 +33,11 @@ interface FilterBarProps {
   onSetItemType: (type: ItemTypeFilter) => void;
   hiddenRepos?: RepoConfig[];
   onRestoreRepo?: (owner: string, name: string) => void;
+  prStateFilters: Set<PRStateFilterKey>;
+  onTogglePRState: (key: PRStateFilterKey) => void;
 }
 
-export function FilterBar({ active, onFilter, mineOnly, onToggleMine, username, searchQuery, onSearchChange, searchInputRef, itemTypeFilter, onSetItemType, hiddenRepos, onRestoreRepo }: FilterBarProps) {
+export function FilterBar({ active, onFilter, mineOnly, onToggleMine, username, searchQuery, onSearchChange, searchInputRef, itemTypeFilter, onSetItemType, hiddenRepos, onRestoreRepo, prStateFilters, onTogglePRState }: FilterBarProps) {
   const [showHiddenDropdown, setShowHiddenDropdown] = useState(false);
   const hiddenCount = hiddenRepos?.length ?? 0;
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -113,6 +121,16 @@ export function FilterBar({ active, onFilter, mineOnly, onToggleMine, username, 
           </div>
         </>
       )}
+      <span className="filter-divider" />
+      {PR_STATE_FILTERS.map(({ key, label }) => (
+        <button
+          key={key}
+          className={`filter-pill pr-state-pill pr-state-${key} ${prStateFilters.has(key) ? 'pr-state-active' : ''}`}
+          onClick={() => onTogglePRState(key)}
+        >
+          {label}
+        </button>
+      ))}
       <span className="filter-divider" />
       <input
         ref={searchInputRef}

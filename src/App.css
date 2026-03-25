@@ -191,6 +191,39 @@ a {
   align-self: center;
 }
 
+/* ── PR State Pills ─────────────────────────────────────────── */
+.pr-state-pill {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.pr-state-pill:hover {
+  opacity: 0.8;
+}
+
+.pr-state-pill.pr-state-active {
+  opacity: 1;
+  border-style: solid;
+}
+
+.pr-state-pill.pr-state-draft.pr-state-active {
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  border-color: var(--text-muted);
+}
+
+.pr-state-pill.pr-state-open.pr-state-active {
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--green);
+  border-color: rgba(63, 185, 80, 0.4);
+}
+
+.pr-state-pill.pr-state-merged.pr-state-active {
+  background: rgba(188, 140, 255, 0.15);
+  color: var(--purple);
+  border-color: rgba(188, 140, 255, 0.4);
+}
+
 /* ── Search Input ──────────────────────────────────────────── */
 .search-input {
   background: var(--bg-surface);

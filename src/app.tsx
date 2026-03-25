@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import type { ViewMode, FilterMode, SortMode, SortDirection, ItemTypeFilter, PRItem } from './types.js';
+import type { ViewMode, FilterMode, SortMode, SortDirection, ItemTypeFilter, PRItem, PRStateFilterKey } from './types.js';
 import { createClient } from './github/client.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
 import { useConfig } from './hooks/useConfig.js';
@@ -16,6 +16,7 @@ import { HelpModal } from './components/HelpModal.js';
 import { RepoManager } from './components/RepoManager.js';
 import { TokenSetup } from './components/TokenSetup.js';
 import { DetailPanel } from './components/DetailPanel.js';
+import { filterByPRState } from './utils/prStateFilter.js';
 
 const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'new-activity'];
 const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'reviews'];
@@ -36,6 +37,22 @@ export function App() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [itemTypeFilter, setItemTypeFilter] = useState<ItemTypeFilter>('both');
   const [previewItem, setPreviewItem] = useState<PRItem | null>(null);
+  const [prStateFilters, setPRStateFilters] = useState<Set<PRStateFilterKey>>(
+    () => {
+      try {
+        const stored = localStorage.getItem('gh-dashboard-pr-state-filters');
+        if (stored) {
+          const parsed = JSON.parse(stored) as string[];
+          if (Array.isArray(parsed)) {
+            return new Set<PRStateFilterKey>(
+              parsed.filter((k): k is PRStateFilterKey => k === 'draft' || k === 'open' || k === 'merged')
+            );
+          }
+        }
+      } catch { /* ignore invalid stored data */ }
+      return new Set<PRStateFilterKey>(['draft', 'open']);
+    }
+  );
 
   const { markSeen, isUnseen } = useLastSeen();
 
@@ -88,6 +105,24 @@ export function App() {
     setCursorIndex(0);
   }, []);
 
+  const togglePRStateFilter = useCallback((key: PRStateFilterKey) => {
+    setPRStateFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+    setCursorIndex(0);
+  }, []);
+
+  // Persist PR state filters to localStorage
+  useEffect(() => {
+    localStorage.setItem('gh-dashboard-pr-state-filters', JSON.stringify([...prStateFilters]));
+  }, [prStateFilters]);
+
   // Filter and sort
   const filtered = useMemo(() => {
     let result = [...items];
@@ -98,6 +133,9 @@ export function App() {
     } else if (itemTypeFilter === 'issues') {
       result = result.filter((item) => item.kind === 'issue');
     }
+
+    // PR state filter (draft / open / merged toggles)
+    result = filterByPRState(result, prStateFilters);
 
     if (filter === 'failing') {
       result = result.filter((item) => item.kind === 'pr' && item.ciStatus === 'failure');
@@ -176,7 +214,7 @@ export function App() {
     });
 
     return result;
-  }, [items, filter, sort, sortDirection, searchQuery, itemTypeFilter, isUnseen]);
+  }, [items, filter, sort, sortDirection, searchQuery, itemTypeFilter, prStateFilters, isUnseen]);
 
   // Clamp cursor when filtered list shrinks
   useEffect(() => {
@@ -328,6 +366,8 @@ export function App() {
         onSetItemType={setItemTypeFilter}
         hiddenRepos={hiddenRepos}
         onRestoreRepo={toggleRepoByName}
+        prStateFilters={prStateFilters}
+        onTogglePRState={togglePRStateFilter}
       />
       <PRTable
         items={filtered}

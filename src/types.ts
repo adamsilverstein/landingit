@@ -34,6 +34,7 @@ export interface ReviewState {
 }
 
 export type PRState = 'open' | 'closed' | 'merged';
+export type PRStateFilterKey = 'draft' | 'open' | 'merged';
 
 export interface LabelInfo {
   name: string;
