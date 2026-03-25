@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import type { ViewMode, FilterMode, SortMode } from './types.js';
+import type { ViewMode, FilterMode, SortMode, SortDirection } from './types.js';
 import { createClient } from './github/client.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
 import { useConfig } from './hooks/useConfig.js';
@@ -14,7 +14,7 @@ import { RepoManager } from './components/RepoManager.js';
 import { TokenSetup } from './components/TokenSetup.js';
 
 const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review'];
-const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status'];
+const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'reviews'];
 
 export function App() {
   const [token, setTokenState] = useState<string | null>(() => getToken());
@@ -23,6 +23,7 @@ export function App() {
   const [cursorIndex, setCursorIndex] = useState(0);
   const [filter, setFilter] = useState<FilterMode>(config.defaults.filter);
   const [sort, setSort] = useState<SortMode>(config.defaults.sort);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [mineOnly, setMineOnly] = useState(true);
   const [username, setUsername] = useState<string | null>(null);
 
@@ -66,30 +67,55 @@ export function App() {
       );
     }
 
+    const dir = sortDirection === 'desc' ? -1 : 1;
     result.sort((a, b) => {
+      let cmp = 0;
       switch (sort) {
         case 'updated':
-          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+          cmp = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          break;
         case 'created':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
         case 'repo': {
           const repoA = `${a.repo.owner}/${a.repo.name}`;
           const repoB = `${b.repo.owner}/${b.repo.name}`;
-          return repoA.localeCompare(repoB);
+          cmp = repoA.localeCompare(repoB);
+          break;
         }
         case 'status': {
           const priority: Record<string, number> = {
             failure: 0, pending: 1, mixed: 2, none: 3, success: 4,
           };
-          return (priority[a.ciStatus] ?? 3) - (priority[b.ciStatus] ?? 3);
+          cmp = (priority[a.ciStatus] ?? 3) - (priority[b.ciStatus] ?? 3);
+          break;
+        }
+        case 'number':
+          cmp = a.number - b.number;
+          break;
+        case 'state':
+          cmp = a.state.localeCompare(b.state);
+          break;
+        case 'title':
+          cmp = a.title.localeCompare(b.title);
+          break;
+        case 'author':
+          cmp = a.author.localeCompare(b.author);
+          break;
+        case 'reviews': {
+          const scoreA = a.reviewState.approvals * 10 - a.reviewState.changesRequested * 10 + a.reviewState.commentCount;
+          const scoreB = b.reviewState.approvals * 10 - b.reviewState.changesRequested * 10 + b.reviewState.commentCount;
+          cmp = scoreA - scoreB;
+          break;
         }
         default:
-          return 0;
+          cmp = 0;
       }
+      return cmp * dir;
     });
 
     return result;
-  }, [items, filter, sort]);
+  }, [items, filter, sort, sortDirection]);
 
   // Clamp cursor when filtered list shrinks
   useEffect(() => {
@@ -134,7 +160,14 @@ export function App() {
   }, []);
 
   const handleSetSort = useCallback((key: SortMode) => {
-    setSort(key);
+    setSort((prev) => {
+      if (prev === key) {
+        setSortDirection((d) => (d === 'desc' ? 'asc' : 'desc'));
+      } else {
+        setSortDirection('desc');
+      }
+      return key;
+    });
   }, []);
 
   const handleSignOut = useCallback(() => {
@@ -188,6 +221,7 @@ export function App() {
         items={filtered}
         cursorIndex={cursorIndex}
         sort={sort}
+        sortDirection={sortDirection}
         onSort={handleSetSort}
       />
       <StatusBar error={error} />

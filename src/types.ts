@@ -14,7 +14,8 @@ export interface Config {
 }
 
 export type CIStatus = 'success' | 'failure' | 'pending' | 'none' | 'mixed';
-export type SortMode = 'updated' | 'created' | 'repo' | 'status';
+export type SortMode = 'updated' | 'created' | 'repo' | 'status' | 'number' | 'state' | 'title' | 'author' | 'reviews';
+export type SortDirection = 'asc' | 'desc';
 export type FilterMode = 'all' | 'failing' | 'needs-review';
 export type ViewMode = 'list' | 'repos' | 'help';
 

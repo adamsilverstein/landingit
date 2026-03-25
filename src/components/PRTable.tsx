@@ -1,5 +1,5 @@
 import React from 'react';
-import type { PRItem, SortMode } from '../types.js';
+import type { PRItem, SortMode, SortDirection } from '../types.js';
 import { PRRow } from './PRRow.js';
 import { SortableHeader } from './SortableHeader.js';
 
@@ -7,10 +7,11 @@ interface PRTableProps {
   items: PRItem[];
   cursorIndex: number;
   sort: SortMode;
+  sortDirection: SortDirection;
   onSort: (key: SortMode) => void;
 }
 
-export function PRTable({ items, cursorIndex, sort, onSort }: PRTableProps) {
+export function PRTable({ items, cursorIndex, sort, sortDirection, onSort }: PRTableProps) {
   if (items.length === 0) {
     return (
       <div className="empty-state">
@@ -20,37 +21,25 @@ export function PRTable({ items, cursorIndex, sort, onSort }: PRTableProps) {
     );
   }
 
+  const headerProps = {
+    activeSort: sort,
+    sortDirection,
+    onSort,
+  };
+
   return (
     <div className="table-container">
       <table className="pr-table">
         <thead>
           <tr>
-            <SortableHeader
-              label="CI"
-              sortKey="status"
-              activeSort={sort}
-              onSort={onSort}
-              className="col-ci"
-            />
-            <SortableHeader
-              label="Repo"
-              sortKey="repo"
-              activeSort={sort}
-              onSort={onSort}
-              className="col-repo"
-            />
-            <th className="col-number">#</th>
-            <th className="col-state">State</th>
-            <th className="col-title">Title</th>
-            <th className="col-author">Author</th>
-            <SortableHeader
-              label="Updated"
-              sortKey="updated"
-              activeSort={sort}
-              onSort={onSort}
-              className="col-updated"
-            />
-            <th className="col-reviews">Reviews</th>
+            <SortableHeader label="CI" sortKey="status" className="col-ci" {...headerProps} />
+            <SortableHeader label="Repo" sortKey="repo" className="col-repo" {...headerProps} />
+            <SortableHeader label="#" sortKey="number" className="col-number" {...headerProps} />
+            <SortableHeader label="State" sortKey="state" className="col-state" {...headerProps} />
+            <SortableHeader label="Title" sortKey="title" className="col-title" {...headerProps} />
+            <SortableHeader label="Author" sortKey="author" className="col-author" {...headerProps} />
+            <SortableHeader label="Updated" sortKey="updated" className="col-updated" {...headerProps} />
+            <SortableHeader label="Reviews" sortKey="reviews" className="col-reviews" {...headerProps} />
           </tr>
         </thead>
         <tbody>

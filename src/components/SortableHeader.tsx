@@ -1,10 +1,11 @@
 import React from 'react';
-import type { SortMode } from '../types.js';
+import type { SortMode, SortDirection } from '../types.js';
 
 interface SortableHeaderProps {
   label: string;
   sortKey: SortMode;
   activeSort: SortMode;
+  sortDirection: SortDirection;
   onSort: (key: SortMode) => void;
   className?: string;
 }
@@ -13,10 +14,12 @@ export function SortableHeader({
   label,
   sortKey,
   activeSort,
+  sortDirection,
   onSort,
   className,
 }: SortableHeaderProps) {
   const isActive = activeSort === sortKey;
+  const arrow = isActive ? (sortDirection === 'desc' ? ' ▼' : ' ▲') : '';
   return (
     <th
       className={`sortable-header ${isActive ? 'sort-active' : ''} ${className ?? ''}`}
@@ -31,7 +34,7 @@ export function SortableHeader({
       }}
     >
       {label}
-      {isActive && <span className="sort-arrow"> ▼</span>}
+      {arrow && <span className="sort-arrow">{arrow}</span>}
     </th>
   );
 }
