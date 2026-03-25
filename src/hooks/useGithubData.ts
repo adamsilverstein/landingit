@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Octokit } from '@octokit/rest';
-import type { PRItem, RepoConfig } from '../types.js';
+import type { PRItem, RepoConfig, RepoFetchError } from '../types.js';
 import { fetchUserPRs, fetchAllPRsForRepo } from '../github/pulls.js';
 import { getCheckStatus, getReviewState } from '../github/checks.js';
 
@@ -8,6 +8,7 @@ interface UseGithubDataResult {
   items: PRItem[];
   loading: boolean;
   error: string | null;
+  failedRepos: RepoFetchError[];
   lastRefresh: Date | null;
   refresh: () => void;
 }
@@ -21,6 +22,7 @@ export function useGithubData(
   const [items, setItems] = useState<PRItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [failedRepos, setFailedRepos] = useState<RepoFetchError[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
 
@@ -58,6 +60,7 @@ export function useGithubData(
     fetchingRef.current = true;
     setLoading(true);
     setError(null);
+    setFailedRepos([]);
 
     (async () => {
       try {
@@ -72,10 +75,23 @@ export function useGithubData(
             currentRepos.map((repo) => fetchAllPRsForRepo(client, repo, max))
           );
           allPRs = [];
-          for (const result of results) {
+          const repoErrors: RepoFetchError[] = [];
+          for (let i = 0; i < results.length; i++) {
+            const result = results[i];
             if (result.status === 'fulfilled') {
               allPRs = allPRs.concat(result.value);
+            } else {
+              const repo = currentRepos[i];
+              repoErrors.push({
+                repo: `${repo.owner}/${repo.name}`,
+                message: result.reason instanceof Error
+                  ? result.reason.message
+                  : 'Unknown error',
+              });
             }
+          }
+          if (!cancelled) {
+            setFailedRepos(repoErrors);
           }
         }
 
@@ -139,5 +155,5 @@ export function useGithubData(
     };
   }, [repoKey, refreshCounter, username]);
 
-  return { items, loading, error, lastRefresh, refresh };
+  return { items, loading, error, failedRepos, lastRefresh, refresh };
 }

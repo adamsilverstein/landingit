@@ -20,6 +20,11 @@ export type FilterMode = 'all' | 'failing' | 'needs-review';
 export type ViewMode = 'list' | 'repos' | 'help';
 export type ThemeMode = 'dark' | 'light' | 'system';
 
+export interface RepoFetchError {
+  repo: string;
+  message: string;
+}
+
 export interface ReviewState {
   approvals: number;
   changesRequested: number;

@@ -44,7 +44,7 @@ export function App() {
   }, [octokit]);
 
   // Pass username when mineOnly is true so the hook uses the search API
-  const { items, loading, error, lastRefresh, refresh } = useGithubData(
+  const { items, loading, error, failedRepos, lastRefresh, refresh } = useGithubData(
     octokit,
     enabledRepos,
     config.defaults.maxPrsPerRepo,
@@ -227,7 +227,7 @@ export function App() {
         sortDirection={sortDirection}
         onSort={handleSetSort}
       />
-      <StatusBar error={error} />
+      <StatusBar error={error} failedRepos={failedRepos} />
 
       {viewMode === 'help' && (
         <HelpModal onClose={() => setViewMode('list')} />

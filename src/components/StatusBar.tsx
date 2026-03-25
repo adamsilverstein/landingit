@@ -1,14 +1,20 @@
 import React from 'react';
+import type { RepoFetchError } from '../types.js';
 
 interface StatusBarProps {
   error: string | null;
+  failedRepos: RepoFetchError[];
 }
 
-export function StatusBar({ error }: StatusBarProps) {
+export function StatusBar({ error, failedRepos }: StatusBarProps) {
   return (
     <footer className="status-bar">
       {error ? (
         <span className="status-error">Error: {error}</span>
+      ) : failedRepos.length > 0 ? (
+        <span className="status-warning">
+          ⚠ Failed to fetch: {failedRepos.map((f) => f.repo).join(', ')}
+        </span>
       ) : (
         <span className="status-shortcuts">
           <kbd>?</kbd> help &middot; <kbd>j</kbd>/<kbd>k</kbd> navigate &middot;{' '}
