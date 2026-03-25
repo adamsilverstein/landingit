@@ -8,9 +8,10 @@ import { timeAgo } from '../utils/timeAgo.js';
 interface PRRowProps {
   item: DashboardItem;
   selected: boolean;
+  onPreview: (item: PRItem) => void;
 }
 
-export function PRRow({ item, selected }: PRRowProps) {
+export function PRRow({ item, selected, onPreview }: PRRowProps) {
   const ref = useRef<HTMLTableRowElement>(null);
 
   useEffect(() => {
@@ -20,7 +21,7 @@ export function PRRow({ item, selected }: PRRowProps) {
   }, [selected]);
 
   const handleClick = () => {
-    window.open(item.url, '_blank');
+    onPreview(item);
   };
 
   const isPR = item.kind === 'pr';

@@ -24,13 +24,17 @@ function makePR(overrides: Partial<PRItem> = {}): PRItem {
 }
 
 function renderRow(item: PRItem, selected = false) {
-  return render(
-    <table>
-      <tbody>
-        <PRRow item={item} selected={selected} />
-      </tbody>
-    </table>,
-  );
+  const onPreview = vi.fn();
+  return {
+    ...render(
+      <table>
+        <tbody>
+          <PRRow item={item} selected={selected} onPreview={onPreview} />
+        </tbody>
+      </table>,
+    ),
+    onPreview,
+  };
 }
 
 describe('PRRow', () => {
@@ -90,14 +94,13 @@ describe('PRRow', () => {
     expect(screen.getByText('💬1')).toBeInTheDocument();
   });
 
-  it('opens PR URL when row is clicked', () => {
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
-    const { container } = renderRow(makePR());
+  it('calls onPreview when row is clicked', () => {
+    const { container, onPreview } = renderRow(makePR());
     container.querySelector('tr')!.click();
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://github.com/acme/web/pull/42',
-      '_blank',
+    expect(onPreview).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'https://github.com/acme/web/pull/42',
+      }),
     );
-    openSpy.mockRestore();
   });
 });

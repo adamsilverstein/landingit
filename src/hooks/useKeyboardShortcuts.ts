@@ -6,6 +6,7 @@ interface ShortcutActions {
   setViewMode: (mode: ViewMode) => void;
   moveCursor: (delta: number) => void;
   openSelected: () => void;
+  previewSelected: () => void;
   cycleFilter: () => void;
   cycleSort: () => void;
   refresh: () => void;
@@ -44,6 +45,17 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
         return;
       }
 
+      if (viewMode === 'detail') {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setViewMode('list');
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          actions.openSelected();
+        }
+        return;
+      }
+
       switch (e.key) {
         case '?':
           setViewMode('help');
@@ -60,6 +72,11 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
           break;
         case 'Enter':
           actions.openSelected();
+          break;
+        case 'p':
+        case ' ':
+          e.preventDefault();
+          actions.previewSelected();
           break;
         case 'f':
           actions.cycleFilter();

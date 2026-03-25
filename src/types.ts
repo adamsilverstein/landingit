@@ -19,7 +19,7 @@ export type SortMode = 'updated' | 'created' | 'repo' | 'status' | 'number' | 's
 export type SortDirection = 'asc' | 'desc';
 export type FilterMode = 'all' | 'failing' | 'needs-review';
 export type ItemTypeFilter = 'both' | 'prs' | 'issues';
-export type ViewMode = 'list' | 'repos' | 'help';
+export type ViewMode = 'list' | 'repos' | 'help' | 'detail';
 export type ThemeMode = 'dark' | 'light' | 'system';
 
 export interface RepoFetchError {
@@ -74,3 +74,26 @@ export interface IssueItem {
 }
 
 export type DashboardItem = PRItem | IssueItem;
+
+export interface CheckRun {
+  name: string;
+  status: string;
+  conclusion: string | null;
+}
+
+export interface Reviewer {
+  login: string;
+  state: string;
+}
+
+export interface PRDetail {
+  body: string;
+  labels: string[];
+  checkRuns: CheckRun[];
+  reviewers: Reviewer[];
+  additions: number;
+  deletions: number;
+  changedFiles: number;
+  headBranch: string;
+  baseBranch: string;
+}
