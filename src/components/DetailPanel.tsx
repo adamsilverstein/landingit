@@ -174,9 +174,9 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
                   Checks ({detail.checkRuns.length})
                 </h3>
                 <div className="detail-checks">
-                  {detail.checkRuns.map((run) => (
+                  {detail.checkRuns.map((run, i) => (
                     <CheckRunRow
-                      key={run.name}
+                      key={`${run.name}-${i}`}
                       name={run.name}
                       conclusion={run.conclusion}
                       status={run.status}
