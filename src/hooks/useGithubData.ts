@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Octokit } from '@octokit/rest';
 import type { PRItem, RepoConfig } from '../types.js';
-import { fetchPullsForRepo } from '../github/pulls.js';
+import { fetchUserPRs, fetchAllPRsForRepo } from '../github/pulls.js';
 import { getCheckStatus, getReviewState } from '../github/checks.js';
 
 interface UseGithubDataResult {
@@ -15,7 +15,8 @@ interface UseGithubDataResult {
 export function useGithubData(
   octokit: Octokit | null,
   repos: RepoConfig[],
-  maxPerRepo: number
+  maxPerRepo: number,
+  username: string | null
 ): UseGithubDataResult {
   const [items, setItems] = useState<PRItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,17 +24,16 @@ export function useGithubData(
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
 
-  // Use refs so the fetch function always reads current values
-  // without being recreated on every render
   const octokitRef = useRef(octokit);
   octokitRef.current = octokit;
   const reposRef = useRef(repos);
   reposRef.current = repos;
   const maxRef = useRef(maxPerRepo);
   maxRef.current = maxPerRepo;
+  const usernameRef = useRef(username);
+  usernameRef.current = username;
   const fetchingRef = useRef(false);
 
-  // Stable key: changes only when repo list actually changes
   const repoKey = repos.map((r) => `${r.owner}/${r.name}`).join(',');
 
   const refresh = useCallback(() => {
@@ -44,6 +44,7 @@ export function useGithubData(
     const client = octokitRef.current;
     const currentRepos = reposRef.current;
     const max = maxRef.current;
+    const user = usernameRef.current;
 
     if (!client || currentRepos.length === 0) {
       setItems([]);
@@ -60,23 +61,32 @@ export function useGithubData(
 
     (async () => {
       try {
-        // Fetch PRs from all repos in parallel
-        const results = await Promise.allSettled(
-          currentRepos.map((repo) => fetchPullsForRepo(client, repo, max))
-        );
+        let allPRs: PRItem[];
 
-        if (cancelled) return;
-
-        let allPRs: PRItem[] = [];
-        for (const result of results) {
-          if (result.status === 'fulfilled') {
-            allPRs = allPRs.concat(result.value);
+        if (user) {
+          // Use search API to get user's PRs efficiently
+          allPRs = await fetchUserPRs(client, currentRepos, user);
+        } else {
+          // Fallback: fetch all PRs per repo
+          const results = await Promise.allSettled(
+            currentRepos.map((repo) => fetchAllPRsForRepo(client, repo, max))
+          );
+          allPRs = [];
+          for (const result of results) {
+            if (result.status === 'fulfilled') {
+              allPRs = allPRs.concat(result.value);
+            }
           }
         }
+
+        if (cancelled) return;
 
         // Enrich with CI status and reviews in parallel
         const enriched = await Promise.allSettled(
           allPRs.map(async (pr) => {
+            // Only fetch CI/reviews for open PRs (closed/merged don't need it)
+            if (pr.state !== 'open') return pr;
+
             const [ciResult, reviewResult] = await Promise.allSettled([
               getCheckStatus(
                 client,
@@ -127,7 +137,7 @@ export function useGithubData(
     return () => {
       cancelled = true;
     };
-  }, [repoKey, refreshCounter]);
+  }, [repoKey, refreshCounter, username]);
 
   return { items, loading, error, lastRefresh, refresh };
 }

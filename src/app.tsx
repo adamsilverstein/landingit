@@ -40,10 +40,12 @@ export function App() {
     );
   }, [octokit]);
 
+  // Pass username when mineOnly is true so the hook uses the search API
   const { items, loading, error, lastRefresh, refresh } = useGithubData(
     octokit,
     enabledRepos,
-    config.defaults.maxPrsPerRepo
+    config.defaults.maxPrsPerRepo,
+    mineOnly ? username : null
   );
 
   const toggleMineOnly = useCallback(() => {
@@ -54,11 +56,6 @@ export function App() {
   // Filter and sort
   const filtered = useMemo(() => {
     let result = [...items];
-
-    // Default: show only the authenticated user's PRs
-    if (mineOnly && username) {
-      result = result.filter((pr) => pr.author === username);
-    }
 
     if (filter === 'failing') {
       result = result.filter((pr) => pr.ciStatus === 'failure');
@@ -92,7 +89,7 @@ export function App() {
     });
 
     return result;
-  }, [items, filter, sort, mineOnly, username]);
+  }, [items, filter, sort]);
 
   // Clamp cursor when filtered list shrinks
   useEffect(() => {
