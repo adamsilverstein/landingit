@@ -248,6 +248,9 @@ export function App() {
     }
   }, [filtered, cursorIndex]);
 
+  // NOTE: If a DashboardItem union type (PRItem | IssueItem) is introduced
+  // (e.g. via PR #14), add a type guard here to skip issue items, since the
+  // detail panel currently only supports PRs.
   const handlePreview = useCallback((item: PRItem) => {
     setPreviewItem(item);
     setViewMode('detail');

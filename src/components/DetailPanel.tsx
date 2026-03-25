@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import type { Octokit } from '@octokit/rest';
 import type { PRItem, PRDetail } from '../types.js';
 import { getPRDetails } from '../github/details.js';
@@ -13,22 +13,26 @@ interface DetailPanelProps {
 
 function CheckRunRow({ name, conclusion, status }: { name: string; conclusion: string | null; status: string }) {
   let icon = '⏳';
+  let label = 'Pending';
   let cls = 'check-pending';
   if (status === 'completed') {
     if (conclusion === 'success' || conclusion === 'skipped' || conclusion === 'neutral') {
       icon = '✓';
+      label = conclusion === 'success' ? 'Passed' : conclusion === 'skipped' ? 'Skipped' : 'Neutral';
       cls = 'check-success';
     } else if (conclusion === 'failure' || conclusion === 'timed_out' || conclusion === 'cancelled' || conclusion === 'action_required') {
       icon = '✗';
+      label = conclusion === 'failure' ? 'Failed' : conclusion === 'timed_out' ? 'Timed out' : conclusion === 'cancelled' ? 'Cancelled' : 'Action required';
       cls = 'check-failure';
     } else {
       icon = '●';
+      label = 'Mixed';
       cls = 'check-mixed';
     }
   }
   return (
     <div className={`detail-check ${cls}`}>
-      <span className="detail-check-icon">{icon}</span>
+      <span className="detail-check-icon" role="img" aria-label={label}>{icon}</span>
       <span className="detail-check-name">{name}</span>
     </div>
   );
@@ -36,17 +40,20 @@ function CheckRunRow({ name, conclusion, status }: { name: string; conclusion: s
 
 function ReviewerRow({ login, state }: { login: string; state: string }) {
   let icon = '💬';
+  let label = 'Commented';
   let cls = 'reviewer-commented';
   if (state === 'APPROVED') {
     icon = '✓';
+    label = 'Approved';
     cls = 'reviewer-approved';
   } else if (state === 'CHANGES_REQUESTED') {
     icon = '✗';
+    label = 'Changes requested';
     cls = 'reviewer-changes';
   }
   return (
     <div className={`detail-reviewer ${cls}`}>
-      <span className="detail-reviewer-icon">{icon}</span>
+      <span className="detail-reviewer-icon" role="img" aria-label={label}>{icon}</span>
       <span>@{login}</span>
     </div>
   );
@@ -56,6 +63,8 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
   const [detail, setDetail] = useState<PRDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,6 +89,39 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
     };
   }, [octokit, item]);
 
+  // Focus trap: keep focus within the panel while it's open
+  useEffect(() => {
+    // Focus the close button when the panel opens
+    closeButtonRef.current?.focus();
+
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !panelRef.current) return;
+
+      const focusable = panelRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleTab);
+    return () => document.removeEventListener('keydown', handleTab);
+  }, []);
+
   const stateLabel =
     item.state === 'merged'
       ? 'merged'
@@ -90,15 +132,15 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
           : 'open';
 
   return (
-    <div className="detail-overlay" onClick={onClose}>
-      <div className="detail-panel" onClick={(e) => e.stopPropagation()}>
+    <div className="detail-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Details for: ${item.title}`}>
+      <div className="detail-panel" ref={panelRef} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="detail-header">
           <div className="detail-header-top">
             <span className="detail-repo">
               {item.repo.owner}/{item.repo.name}
             </span>
-            <button className="detail-close" onClick={onClose} aria-label="Close">
+            <button ref={closeButtonRef} className="detail-close" onClick={onClose} aria-label="Close detail panel">
               ✕
             </button>
           </div>
@@ -113,11 +155,11 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
 
         {loading && (
           <div className="detail-loading">
-            <span className="spinner" /> Loading details…
+            <span className="spinner" role="status" aria-label="Loading" /> Loading details…
           </div>
         )}
 
-        {error && <div className="detail-error">{error}</div>}
+        {error && <div className="detail-error" role="alert">{error}</div>}
 
         {detail && !loading && (
           <div className="detail-body">
@@ -126,7 +168,7 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
               <div className="detail-section">
                 <div className="detail-branch">
                   <code>{detail.headBranch}</code>
-                  <span className="detail-branch-arrow">→</span>
+                  <span className="detail-branch-arrow" aria-hidden="true">→</span>
                   <code>{detail.baseBranch}</code>
                 </div>
               </div>
@@ -159,7 +201,7 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
               </div>
             )}
 
-            {/* Description */}
+            {/* Description — rendered as plain text; GitHub markdown rendering is not yet supported */}
             {detail.body && (
               <div className="detail-section">
                 <h3 className="detail-section-title">Description</h3>
