@@ -18,6 +18,7 @@ export type SortMode = 'updated' | 'created' | 'repo' | 'status' | 'number' | 's
 export type SortDirection = 'asc' | 'desc';
 export type FilterMode = 'all' | 'failing' | 'needs-review';
 export type ViewMode = 'list' | 'repos' | 'help';
+export type ThemeMode = 'dark' | 'light' | 'system';
 
 export interface ReviewState {
   approvals: number;

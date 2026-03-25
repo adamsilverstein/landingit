@@ -5,6 +5,7 @@ import { getToken, setToken as saveToken, clearToken } from './config.js';
 import { useConfig } from './hooks/useConfig.js';
 import { useGithubData } from './hooks/useGithubData.js';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js';
+import { useTheme } from './hooks/useTheme.js';
 import { Header } from './components/Header.js';
 import { FilterBar } from './components/FilterBar.js';
 import { PRTable } from './components/PRTable.js';
@@ -26,6 +27,7 @@ export function App() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [mineOnly, setMineOnly] = useState(true);
   const [username, setUsername] = useState<string | null>(null);
+  const { cycleTheme } = useTheme();
 
   const octokit = useMemo(
     () => (token ? createClient(token) : null),
@@ -190,8 +192,9 @@ export function App() {
       cycleSort,
       refresh,
       toggleMineOnly,
+      cycleTheme,
     }),
-    [viewMode, setViewMode, moveCursor, openSelected, cycleFilter, cycleSort, refresh, toggleMineOnly]
+    [viewMode, setViewMode, moveCursor, openSelected, cycleFilter, cycleSort, refresh, toggleMineOnly, cycleTheme]
   );
 
   useKeyboardShortcuts(shortcutActions);

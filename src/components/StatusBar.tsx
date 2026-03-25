@@ -14,7 +14,7 @@ export function StatusBar({ error }: StatusBarProps) {
           <kbd>?</kbd> help &middot; <kbd>j</kbd>/<kbd>k</kbd> navigate &middot;{' '}
           <kbd>Enter</kbd> open &middot; <kbd>f</kbd> filter &middot;{' '}
           <kbd>s</kbd> sort &middot; <kbd>r</kbd> refresh &middot;{' '}
-          <kbd>c</kbd> repos
+          <kbd>c</kbd> repos &middot; <kbd>t</kbd> theme
         </span>
       )}
     </footer>

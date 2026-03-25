@@ -10,6 +10,7 @@ interface ShortcutActions {
   cycleSort: () => void;
   refresh: () => void;
   toggleMineOnly: () => void;
+  cycleTheme: () => void;
 }
 
 export function useKeyboardShortcuts(actions: ShortcutActions) {
@@ -72,6 +73,9 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
           break;
         case 'c':
           setViewMode('repos');
+          break;
+        case 't':
+          actions.cycleTheme();
           break;
       }
     };

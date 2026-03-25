@@ -9,6 +9,7 @@ const SHORTCUTS = [
   ['s', 'Cycle sort (updated / created / repo / status)'],
   ['r', 'Refresh data'],
   ['c', 'Configure repos'],
+  ['t', 'Cycle theme (dark / light / system)'],
   ['?', 'Toggle this help'],
 ];
 
