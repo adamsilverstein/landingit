@@ -449,6 +449,9 @@ a {
 .review-comments {
   color: var(--blue);
 }
+.review-requested {
+  color: var(--orange);
+}
 
 /* ── Empty State ────────────────────────────────────────────── */
 .empty-state {

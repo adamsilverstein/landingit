@@ -18,7 +18,7 @@ import { TokenSetup } from './components/TokenSetup.js';
 import { DetailPanel } from './components/DetailPanel.js';
 import { filterByPRState } from './utils/prStateFilter.js';
 
-const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'new-activity'];
+const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'review-requested', 'new-activity'];
 const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'reviews'];
 const ITEM_TYPE_CYCLE: ItemTypeFilter[] = ['both', 'prs', 'issues'];
 
@@ -76,7 +76,8 @@ export function App() {
     octokit,
     enabledRepos,
     config.defaults.maxPrsPerRepo,
-    mineOnly ? username : null
+    mineOnly ? username : null,
+    username
   );
 
   const isModalOpen = viewMode !== 'list';
@@ -147,6 +148,10 @@ export function App() {
         (item) =>
           item.kind === 'pr' &&
           (item.reviewState.changesRequested > 0 || item.reviewState.commentCount > 0)
+      );
+    } else if (filter === 'review-requested') {
+      result = result.filter(
+        (item) => item.kind === 'pr' && item.isRequestedReviewer
       );
     } else if (filter === 'new-activity') {
       result = result.filter((pr) => isUnseen(pr));
