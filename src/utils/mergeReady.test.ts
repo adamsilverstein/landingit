@@ -44,8 +44,10 @@ describe('isMergeReady', () => {
     expect(isMergeReady(makePR())).toBe(true);
   });
 
-  it('returns true for an approved open PR with no CI checks', () => {
-    expect(isMergeReady(makePR({ ciStatus: 'none' }))).toBe(true);
+  it('returns false for an approved open PR with no CI checks', () => {
+    // 'none' can indicate either "no checks configured" or "error fetching checks"
+    // To avoid false positives, we require explicit success
+    expect(isMergeReady(makePR({ ciStatus: 'none' }))).toBe(false);
   });
 
   it('returns false for a draft PR', () => {
