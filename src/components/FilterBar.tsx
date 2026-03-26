@@ -6,6 +6,7 @@ const FILTERS: { key: FilterMode; label: string }[] = [
   { key: 'failing', label: 'Failing CI' },
   { key: 'needs-review', label: 'Needs Review' },
   { key: 'new-activity', label: 'New Activity' },
+  { key: 'stale', label: 'Stale' },
 ];
 
 const ITEM_TYPES: { key: ItemTypeFilter; label: string }[] = [

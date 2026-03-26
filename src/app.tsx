@@ -17,8 +17,9 @@ import { RepoManager } from './components/RepoManager.js';
 import { TokenSetup } from './components/TokenSetup.js';
 import { DetailPanel } from './components/DetailPanel.js';
 import { filterByPRState } from './utils/prStateFilter.js';
+import { isStale } from './utils/staleness.js';
 
-const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'new-activity'];
+const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'new-activity', 'stale'];
 const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'reviews'];
 const ITEM_TYPE_CYCLE: ItemTypeFilter[] = ['both', 'prs', 'issues'];
 
@@ -150,6 +151,8 @@ export function App() {
       );
     } else if (filter === 'new-activity') {
       result = result.filter((pr) => isUnseen(pr));
+    } else if (filter === 'stale') {
+      result = result.filter((item) => isStale(item, config.defaults.staleDays));
     }
 
     if (searchQuery.trim()) {
@@ -380,6 +383,7 @@ export function App() {
         isUnseen={isUnseen}
         onOpen={markSeen}
         onHideRepo={toggleRepoByName}
+        staleDays={config.defaults.staleDays}
       />
       <StatusBar error={error} failedRepos={failedRepos} searchQuery={searchQuery} matchCount={filtered.length} totalCount={items.length} />
 

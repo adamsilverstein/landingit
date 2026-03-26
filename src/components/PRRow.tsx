@@ -9,12 +9,13 @@ interface PRRowProps {
   item: DashboardItem;
   selected: boolean;
   unseen: boolean;
+  stale: boolean;
   onPreview: (item: DashboardItem) => void;
   onOpen: (item: DashboardItem) => void;
   onHideRepo?: (owner: string, name: string) => void;
 }
 
-export function PRRow({ item, selected, unseen, onPreview, onOpen, onHideRepo }: PRRowProps) {
+export function PRRow({ item, selected, unseen, stale, onPreview, onOpen, onHideRepo }: PRRowProps) {
   const ref = useRef<HTMLTableRowElement>(null);
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export function PRRow({ item, selected, unseen, onPreview, onOpen, onHideRepo }:
   return (
     <tr
       ref={ref}
-      className={`pr-row ${selected ? 'pr-row-selected' : ''}`}
+      className={`pr-row ${selected ? 'pr-row-selected' : ''} ${stale ? 'pr-row-stale' : ''}`}
       onClick={handleClick}
     >
       <td className="col-type">
@@ -88,7 +89,10 @@ export function PRRow({ item, selected, unseen, onPreview, onOpen, onHideRepo }:
         )}
       </td>
       <td className="col-author">@{item.author}</td>
-      <td className="col-updated">{timeAgo(item.updatedAt)}</td>
+      <td className="col-updated">
+        {stale && <span className="stale-badge" role="img" aria-label="Stale">🕸️</span>}
+        {timeAgo(item.updatedAt)}
+      </td>
       <td className="col-reviews">
         {isPR ? (
           <ReviewBadge state={item.reviewState} />

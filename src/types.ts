@@ -11,13 +11,14 @@ export interface Config {
     filter: FilterMode;
     maxPrsPerRepo: number;
     autoRefreshInterval: number; // seconds, 0 = disabled
+    staleDays: number; // days of inactivity before an item is considered stale
   };
 }
 
 export type CIStatus = 'success' | 'failure' | 'pending' | 'none' | 'mixed';
 export type SortMode = 'updated' | 'created' | 'repo' | 'status' | 'number' | 'state' | 'title' | 'author' | 'reviews';
 export type SortDirection = 'asc' | 'desc';
-export type FilterMode = 'all' | 'failing' | 'needs-review' | 'new-activity';
+export type FilterMode = 'all' | 'failing' | 'needs-review' | 'new-activity' | 'stale';
 export type ItemTypeFilter = 'both' | 'prs' | 'issues';
 export type ViewMode = 'list' | 'repos' | 'help' | 'detail';
 export type ThemeMode = 'dark' | 'light' | 'system';

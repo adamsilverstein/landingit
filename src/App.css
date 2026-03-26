@@ -319,6 +319,19 @@ a {
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
+.pr-row-stale {
+  opacity: 0.55;
+}
+
+.pr-row-stale:hover {
+  opacity: 0.85;
+}
+
+.stale-badge {
+  margin-right: 4px;
+  font-size: 12px;
+}
+
 .col-ci {
   width: 48px;
   text-align: center;

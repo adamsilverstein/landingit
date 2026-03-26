@@ -10,6 +10,7 @@ const DEFAULT_CONFIG: Config = {
     filter: 'all',
     maxPrsPerRepo: 30,
     autoRefreshInterval: 300, // 5 minutes in seconds, 0 = disabled
+    staleDays: 14, // days of inactivity before an item is considered stale
   },
 };
 

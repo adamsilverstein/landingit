@@ -2,6 +2,7 @@ import React from 'react';
 import type { DashboardItem, SortMode, SortDirection } from '../types.js';
 import { PRRow } from './PRRow.js';
 import { SortableHeader } from './SortableHeader.js';
+import { isStale } from '../utils/staleness.js';
 
 interface PRTableProps {
   items: DashboardItem[];
@@ -13,9 +14,10 @@ interface PRTableProps {
   isUnseen: (item: DashboardItem) => boolean;
   onOpen: (item: DashboardItem) => void;
   onHideRepo?: (owner: string, name: string) => void;
+  staleDays: number;
 }
 
-export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPreview, isUnseen, onOpen, onHideRepo }: PRTableProps) {
+export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPreview, isUnseen, onOpen, onHideRepo, staleDays }: PRTableProps) {
   if (items.length === 0) {
     return (
       <div className="empty-state">
@@ -50,7 +52,7 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPre
         </thead>
         <tbody>
           {items.map((item, i) => (
-            <PRRow key={`${item.kind}-${item.id}`} item={item} selected={i === cursorIndex} unseen={isUnseen(item)} onPreview={onPreview} onOpen={onOpen} onHideRepo={onHideRepo} />
+            <PRRow key={`${item.kind}-${item.id}`} item={item} selected={i === cursorIndex} unseen={isUnseen(item)} stale={isStale(item, staleDays)} onPreview={onPreview} onOpen={onOpen} onHideRepo={onHideRepo} />
           ))}
         </tbody>
       </table>
