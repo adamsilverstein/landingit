@@ -1,5 +1,5 @@
 import React from 'react';
-import type { DashboardItem, SortMode, SortDirection, PRItem } from '../types.js';
+import type { DashboardItem, SortMode, SortDirection } from '../types.js';
 import { PRRow } from './PRRow.js';
 import { SortableHeader } from './SortableHeader.js';
 
@@ -9,9 +9,9 @@ interface PRTableProps {
   sort: SortMode;
   sortDirection: SortDirection;
   onSort: (key: SortMode) => void;
-  onPreview: (item: PRItem) => void;
-  isUnseen: (pr: PRItem) => boolean;
-  onOpen: (pr: PRItem) => void;
+  onPreview: (item: DashboardItem) => void;
+  isUnseen: (item: DashboardItem) => boolean;
+  onOpen: (item: DashboardItem) => void;
   onHideRepo?: (owner: string, name: string) => void;
 }
 

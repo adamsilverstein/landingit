@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import type { PRItem, PRStateFilterKey } from '../types.js';
+import type { PRItem } from '../types.js';
 import { filterByPRState } from './prStateFilter.js';
 
 function makePR(overrides: Partial<PRItem> = {}): PRItem {
   return {
+    kind: 'pr',
     id: 1,
     number: 1,
     title: 'Test PR',

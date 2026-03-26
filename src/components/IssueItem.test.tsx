@@ -42,11 +42,13 @@ function makeIssue(overrides: Partial<IssueItem> = {}): IssueItem {
   };
 }
 
+const noop = () => {};
+
 function renderRow(item: DashboardItem, selected = false) {
   return render(
     <table>
       <tbody>
-        <PRRow item={item} selected={selected} />
+        <PRRow item={item} selected={selected} unseen={false} onPreview={noop} onOpen={noop} />
       </tbody>
     </table>,
   );
@@ -94,22 +96,27 @@ describe('DashboardItem type discrimination', () => {
     const { container } = render(
       <table>
         <tbody>
-          <PRRow item={makePR()} selected={false} />
+          <PRRow item={makePR()} selected={false} unseen={false} onPreview={noop} onOpen={noop} />
         </tbody>
       </table>,
     );
     expect(container.querySelector('.label-badges')).toBeNull();
   });
 
-  it('opens issue URL when row is clicked', () => {
-    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
-    const { container } = renderRow(makeIssue());
-    container.querySelector('tr')!.click();
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://github.com/acme/web/issues/99',
-      '_blank',
+  it('calls onOpen and onPreview when row is clicked', () => {
+    const onOpen = vi.fn();
+    const onPreview = vi.fn();
+    const issue = makeIssue();
+    const { container } = render(
+      <table>
+        <tbody>
+          <PRRow item={issue} selected={false} unseen={false} onPreview={onPreview} onOpen={onOpen} />
+        </tbody>
+      </table>,
     );
-    openSpy.mockRestore();
+    container.querySelector('tr')!.click();
+    expect(onOpen).toHaveBeenCalledWith(issue);
+    expect(onPreview).toHaveBeenCalledWith(issue);
   });
 });
 

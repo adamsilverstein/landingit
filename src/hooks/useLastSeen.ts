@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
-import type { PRItem } from '../types.js';
+import type { DashboardItem } from '../types.js';
 
 const STORAGE_KEY = 'gh-dashboard-last-seen';
 
-/** PR key used for tracking: "owner/repo#number" */
-function prKey(pr: PRItem): string {
+/** Item key used for tracking: "owner/repo#number" */
+function prKey(pr: DashboardItem): string {
   return `${pr.repo.owner}/${pr.repo.name}#${pr.number}`;
 }
 
@@ -36,7 +36,7 @@ function saveLastSeen(data: Record<string, string>): void {
  * Returns true if the PR has been updated since the user last viewed it.
  */
 export function hasNewActivity(
-  pr: PRItem,
+  pr: DashboardItem,
   lastSeenMap: Record<string, string>
 ): boolean {
   const seen = lastSeenMap[prKey(pr)];
@@ -52,7 +52,7 @@ export function hasNewActivity(
 export function useLastSeen() {
   const [lastSeenMap, setLastSeenMap] = useState<Record<string, string>>(loadLastSeen);
 
-  const markSeen = useCallback((pr: PRItem) => {
+  const markSeen = useCallback((pr: DashboardItem) => {
     setLastSeenMap((prev) => {
       const next = { ...prev, [prKey(pr)]: new Date().toISOString() };
       saveLastSeen(next);
@@ -61,7 +61,7 @@ export function useLastSeen() {
   }, []);
 
   const isUnseen = useCallback(
-    (pr: PRItem) => hasNewActivity(pr, lastSeenMap),
+    (pr: DashboardItem) => hasNewActivity(pr, lastSeenMap),
     [lastSeenMap]
   );
 
