@@ -3,7 +3,6 @@
   "version": "0.2.0",
   "description": "GitHub PR dashboard web app",
   "type": "module",
-  "main": "electron/main.cjs",
   "bin": {
     "git-dashboard": "./bin/git-dashboard.mjs"
   },
@@ -17,8 +16,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "electron:dev": "npm run build && electron .",
-    "electron:build": "npm run build && electron-builder --mac",
+    "electron:dev": "ELECTRON=1 npm run build && electron .",
+    "electron:build": "ELECTRON=1 npm run build && electron-builder --mac",
     "prepublishOnly": "npm run build"
   },
   "build": {
@@ -31,6 +30,9 @@
       "dist/**/*",
       "electron/**/*"
     ],
+    "extraMetadata": {
+      "main": "electron/main.cjs"
+    },
     "mac": {
       "target": "dmg",
       "category": "public.app-category.developer-tools"
