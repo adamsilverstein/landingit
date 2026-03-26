@@ -6,7 +6,7 @@ import { LabelBadge } from './LabelBadge.js';
 import { timeAgo } from '../utils/timeAgo.js';
 import { isMergeReady } from '../utils/mergeReady.js';
 
-interface PRRowProps {
+export interface PRRowProps {
   item: DashboardItem;
   selected: boolean;
   unseen: boolean;

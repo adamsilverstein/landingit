@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { PRItem } from '../types.js';
+import type { PRItem, IssueItem } from '../types.js';
 import { filterByPRState } from './prStateFilter.js';
 
 function makePR(overrides: Partial<PRItem> = {}): PRItem {
@@ -61,5 +61,29 @@ describe('PR state filtering', () => {
   it('never includes closed PRs', () => {
     const result = filterByPRState(allPRs, new Set(['draft', 'open', 'merged']));
     expect(result).not.toContain(closedPR);
+  });
+
+  it('always passes through issues regardless of PR state filters', () => {
+    const issue: IssueItem = {
+      kind: 'issue',
+      id: 100,
+      number: 10,
+      title: 'Test Issue',
+      author: 'user',
+      repo: { owner: 'org', name: 'repo' },
+      url: 'https://github.com/org/repo/issues/10',
+      updatedAt: '2024-01-01T00:00:00Z',
+      createdAt: '2024-01-01T00:00:00Z',
+      state: 'open',
+      labels: [],
+      assignees: [],
+      milestone: null,
+    };
+    const mixed = [draftPR, openPR, issue];
+
+    expect(filterByPRState(mixed, new Set(['draft']))).toContain(issue);
+    expect(filterByPRState(mixed, new Set(['open']))).toContain(issue);
+    expect(filterByPRState(mixed, new Set(['merged']))).toContain(issue);
+    expect(filterByPRState(mixed, new Set())).toContain(issue);
   });
 });
