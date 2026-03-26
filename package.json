@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "description": "GitHub PR dashboard web app",
   "type": "module",
+  "main": "electron/main.cjs",
   "bin": {
     "git-dashboard": "./bin/git-dashboard.mjs"
   },
@@ -16,7 +17,24 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "electron:dev": "npm run build && electron .",
+    "electron:build": "npm run build && electron-builder --mac",
     "prepublishOnly": "npm run build"
+  },
+  "build": {
+    "appId": "com.github.adamsilverstein.git-dashboard",
+    "productName": "Git Dashboard",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.developer-tools"
+    }
   },
   "keywords": [
     "github",
@@ -42,6 +60,8 @@
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "electron": "^41.0.4",
+    "electron-builder": "^26.8.1",
     "jsdom": "^29.0.1",
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
