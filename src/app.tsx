@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import type { ViewMode, FilterMode, SortMode, SortDirection, ItemTypeFilter, DashboardItem, PRItem, PRStateFilterKey } from './types.js';
-import { createClient } from './github/client.js';
+import type { DashboardItem } from './types.js';
+import { createClient, type RateLimit } from './github/client.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
 import { useConfig } from './hooks/useConfig.js';
 import { useGithubData } from './hooks/useGithubData.js';
@@ -8,6 +8,8 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js';
 import { useTheme } from './hooks/useTheme.js';
 import { useAutoRefresh } from './hooks/useAutoRefresh.js';
 import { useLastSeen } from './hooks/useLastSeen.js';
+import { useFilteredItems } from './hooks/useFilteredItems.js';
+import { useModalState } from './hooks/useModalState.js';
 import { Header } from './components/Header.js';
 import { FilterBar } from './components/FilterBar.js';
 import { PRTable } from './components/PRTable.js';
@@ -16,50 +18,28 @@ import { HelpModal } from './components/HelpModal.js';
 import { RepoManager } from './components/RepoManager.js';
 import { TokenSetup } from './components/TokenSetup.js';
 import { DetailPanel } from './components/DetailPanel.js';
-import { filterByPRState } from './utils/prStateFilter.js';
-
-const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'new-activity'];
-const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'reviews'];
-const ITEM_TYPE_CYCLE: ItemTypeFilter[] = ['both', 'prs', 'issues'];
 
 export function App() {
   const [token, setTokenState] = useState<string | null>(() => getToken());
   const { config, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName } = useConfig();
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [cursorIndex, setCursorIndex] = useState(0);
-  const [filter, setFilter] = useState<FilterMode>(config.defaults.filter);
-  const [sort, setSort] = useState<SortMode>(config.defaults.sort);
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [mineOnly, setMineOnly] = useState(true);
   const [username, setUsername] = useState<string | null>(null);
   const { cycleTheme } = useTheme();
-  const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [itemTypeFilter, setItemTypeFilter] = useState<ItemTypeFilter>('both');
-  const [previewItem, setPreviewItem] = useState<DashboardItem | null>(null);
-  const [prStateFilters, setPRStateFilters] = useState<Set<PRStateFilterKey>>(
-    () => {
-      try {
-        const stored = localStorage.getItem('gh-dashboard-pr-state-filters');
-        if (stored) {
-          const parsed = JSON.parse(stored) as string[];
-          if (Array.isArray(parsed)) {
-            const valid = parsed.filter((k): k is PRStateFilterKey => k === 'draft' || k === 'open' || k === 'merged');
-            if (valid.length > 0) {
-              return new Set<PRStateFilterKey>(valid);
-            }
-          }
-        }
-      } catch { /* ignore invalid stored data */ }
-      return new Set<PRStateFilterKey>(['draft', 'open']);
-    }
-  );
+  const [rateLimit, setRateLimit] = useState<RateLimit | null>(null);
 
   const { markSeen, isUnseen } = useLastSeen();
 
+  const {
+    viewMode, setViewMode, previewItem, isModalOpen,
+    openDetail, closeDetail, openRepos, closeModal,
+  } = useModalState();
+
+  const handleRateLimit = useCallback((rl: RateLimit) => setRateLimit(rl), []);
+
   const octokit = useMemo(
-    () => (token ? createClient(token) : null),
-    [token]
+    () => (token ? createClient(token, handleRateLimit) : null),
+    [token, handleRateLimit]
   );
 
   // Fetch authenticated user's login
@@ -79,7 +59,17 @@ export function App() {
     mineOnly ? username : null
   );
 
-  const isModalOpen = viewMode !== 'list';
+  const {
+    filtered, filter, sort, sortDirection, searchQuery, setSearchQuery,
+    itemTypeFilter, setItemTypeFilter, cursorIndex, setCursorIndex,
+    prStateFilters, togglePRStateFilter, moveCursor, cycleFilter, cycleSort,
+    handleSetFilter, handleSetSort, cycleItemType,
+  } = useFilteredItems({
+    items,
+    defaultFilter: config.defaults.filter,
+    defaultSort: config.defaults.sort,
+    isUnseen,
+  });
 
   const { secondsLeft: autoRefreshSecondsLeft, reset: resetAutoRefresh } = useAutoRefresh({
     intervalSeconds: config.defaults.autoRefreshInterval,
@@ -87,7 +77,6 @@ export function App() {
     onRefresh: refresh,
   });
 
-  // Reset countdown on manual refresh
   const handleRefresh = useCallback(() => {
     refresh();
     resetAutoRefresh();
@@ -96,145 +85,7 @@ export function App() {
   const toggleMineOnly = useCallback(() => {
     setMineOnly((prev) => !prev);
     setCursorIndex(0);
-  }, []);
-
-  const cycleItemType = useCallback(() => {
-    setItemTypeFilter((prev) => {
-      const idx = ITEM_TYPE_CYCLE.indexOf(prev);
-      return ITEM_TYPE_CYCLE[(idx + 1) % ITEM_TYPE_CYCLE.length];
-    });
-    setCursorIndex(0);
-  }, []);
-
-  const togglePRStateFilter = useCallback((key: PRStateFilterKey) => {
-    setPRStateFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        // Prevent deselecting the last active pill
-        if (next.size <= 1) return prev;
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-    setCursorIndex(0);
-  }, []);
-
-  // Persist PR state filters to localStorage
-  useEffect(() => {
-    localStorage.setItem('gh-dashboard-pr-state-filters', JSON.stringify([...prStateFilters]));
-  }, [prStateFilters]);
-
-  // Filter and sort
-  const filtered = useMemo(() => {
-    let result = [...items];
-
-    // Filter by item type (PR vs Issue vs Both)
-    if (itemTypeFilter === 'prs') {
-      result = result.filter((item) => item.kind === 'pr');
-    } else if (itemTypeFilter === 'issues') {
-      result = result.filter((item) => item.kind === 'issue');
-    }
-
-    // PR state filter (draft / open / merged toggles)
-    result = filterByPRState(result, prStateFilters);
-
-    if (filter === 'failing') {
-      result = result.filter((item) => item.kind === 'pr' && item.ciStatus === 'failure');
-    } else if (filter === 'needs-review') {
-      result = result.filter(
-        (item) =>
-          item.kind === 'pr' &&
-          (item.reviewState.changesRequested > 0 || item.reviewState.commentCount > 0)
-      );
-    } else if (filter === 'new-activity') {
-      result = result.filter((pr) => isUnseen(pr));
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      result = result.filter((pr) => {
-        const repoFullName = `${pr.repo.owner}/${pr.repo.name}`.toLowerCase();
-        return (
-          pr.title.toLowerCase().includes(q) ||
-          pr.author.toLowerCase().includes(q) ||
-          repoFullName.includes(q) ||
-          `#${pr.number}`.includes(q)
-        );
-      });
-    }
-
-    const dir = sortDirection === 'desc' ? -1 : 1;
-    result.sort((a, b) => {
-      let cmp = 0;
-      switch (sort) {
-        case 'updated':
-          cmp = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-          break;
-        case 'created':
-          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          break;
-        case 'repo': {
-          const repoA = `${a.repo.owner}/${a.repo.name}`;
-          const repoB = `${b.repo.owner}/${b.repo.name}`;
-          cmp = repoA.localeCompare(repoB);
-          break;
-        }
-        case 'status': {
-          const priority: Record<string, number> = {
-            failure: 0, pending: 1, mixed: 2, none: 3, success: 4,
-          };
-          const aStatus = a.kind === 'pr' ? a.ciStatus : 'none';
-          const bStatus = b.kind === 'pr' ? b.ciStatus : 'none';
-          cmp = (priority[aStatus] ?? 3) - (priority[bStatus] ?? 3);
-          break;
-        }
-        case 'number':
-          cmp = a.number - b.number;
-          break;
-        case 'state':
-          cmp = a.state.localeCompare(b.state);
-          break;
-        case 'title':
-          cmp = a.title.localeCompare(b.title);
-          break;
-        case 'author':
-          cmp = a.author.localeCompare(b.author);
-          break;
-        case 'reviews': {
-          const rsA = a.kind === 'pr' ? a.reviewState : { approvals: 0, changesRequested: 0, commentCount: 0 };
-          const rsB = b.kind === 'pr' ? b.reviewState : { approvals: 0, changesRequested: 0, commentCount: 0 };
-          const scoreA = rsA.approvals * 10 - rsA.changesRequested * 10 + rsA.commentCount;
-          const scoreB = rsB.approvals * 10 - rsB.changesRequested * 10 + rsB.commentCount;
-          cmp = scoreA - scoreB;
-          break;
-        }
-        default:
-          cmp = 0;
-      }
-      return cmp * dir;
-    });
-
-    return result;
-  }, [items, filter, sort, sortDirection, searchQuery, itemTypeFilter, prStateFilters, isUnseen]);
-
-  // Clamp cursor when filtered list shrinks
-  useEffect(() => {
-    setCursorIndex((prev) => Math.min(prev, Math.max(0, filtered.length - 1)));
-  }, [filtered.length]);
-
-  const moveCursor = useCallback(
-    (delta: number) => {
-      setCursorIndex((prev) => {
-        const next = prev + delta;
-        if (next < 0) return 0;
-        if (next >= filtered.length) return Math.max(0, filtered.length - 1);
-        return next;
-      });
-    },
-    [filtered.length]
-  );
+  }, [setCursorIndex]);
 
   const openSelected = useCallback(() => {
     const item = filtered[cursorIndex];
@@ -244,37 +95,17 @@ export function App() {
     }
   }, [filtered, cursorIndex, markSeen]);
 
-  const cycleFilter = useCallback(() => {
-    setFilter((prev) => {
-      const idx = FILTER_CYCLE.indexOf(prev);
-      return FILTER_CYCLE[(idx + 1) % FILTER_CYCLE.length];
-    });
-    setCursorIndex(0);
-  }, []);
+  const previewPR = useCallback((item: DashboardItem) => {
+    if (item.kind !== 'pr') return;
+    openDetail(item);
+  }, [openDetail]);
 
-  const cycleSort = useCallback(() => {
-    setSort((prev) => {
-      const idx = SORT_CYCLE.indexOf(prev);
-      return SORT_CYCLE[(idx + 1) % SORT_CYCLE.length];
-    });
-  }, []);
-
-  const handleSetFilter = useCallback((mode: FilterMode) => {
-    setFilter(mode);
-    setCursorIndex(0);
-  }, []);
-
-  const sortRef = useRef(sort);
-  sortRef.current = sort;
-
-  const handleSetSort = useCallback((key: SortMode) => {
-    if (sortRef.current === key) {
-      setSortDirection((d) => (d === 'desc' ? 'asc' : 'desc'));
-    } else {
-      setSortDirection('desc');
+  const previewSelected = useCallback(() => {
+    const item = filtered[cursorIndex];
+    if (item?.kind === 'pr') {
+      openDetail(item);
     }
-    setSort(key);
-  }, []);
+  }, [filtered, cursorIndex, openDetail]);
 
   const focusSearch = useCallback(() => {
     searchInputRef.current?.focus();
@@ -288,24 +119,6 @@ export function App() {
   const handleSaveToken = useCallback((t: string) => {
     saveToken(t);
     setTokenState(t);
-  }, []);
-
-  const previewSelected = useCallback(() => {
-    const item = filtered[cursorIndex];
-    if (item) {
-      setPreviewItem(item);
-      setViewMode('detail');
-    }
-  }, [filtered, cursorIndex]);
-
-  const handlePreview = useCallback((item: DashboardItem) => {
-    setPreviewItem(item);
-    setViewMode('detail');
-  }, []);
-
-  const handleCloseDetail = useCallback(() => {
-    setViewMode('list');
-    setPreviewItem(null);
   }, []);
 
   const unseenCount = useMemo(
@@ -350,9 +163,10 @@ export function App() {
         repoCount={enabledRepos.length}
         itemCount={filtered.length}
         unseenCount={unseenCount}
-        onOpenRepos={() => setViewMode('repos')}
+        onOpenRepos={openRepos}
         onSignOut={handleSignOut}
         autoRefreshSecondsLeft={autoRefreshSecondsLeft}
+        rateLimit={rateLimit}
       />
       <FilterBar
         active={filter}
@@ -376,7 +190,7 @@ export function App() {
         sort={sort}
         sortDirection={sortDirection}
         onSort={handleSetSort}
-        onPreview={handlePreview}
+        onPreview={previewPR}
         isUnseen={isUnseen}
         onOpen={markSeen}
         onHideRepo={toggleRepoByName}
@@ -384,7 +198,7 @@ export function App() {
       <StatusBar error={error} failedRepos={failedRepos} searchQuery={searchQuery} matchCount={filtered.length} totalCount={items.length} />
 
       {viewMode === 'help' && (
-        <HelpModal onClose={() => setViewMode('list')} />
+        <HelpModal onClose={closeModal} />
       )}
       {viewMode === 'repos' && (
         <RepoManager
@@ -392,14 +206,14 @@ export function App() {
           onToggle={toggleRepo}
           onRemove={removeRepo}
           onAdd={addRepo}
-          onClose={() => setViewMode('list')}
+          onClose={closeModal}
         />
       )}
-      {viewMode === 'detail' && previewItem && octokit && (
+      {viewMode === 'detail' && previewItem && previewItem.kind === 'pr' && octokit && (
         <DetailPanel
           item={previewItem}
           octokit={octokit}
-          onClose={handleCloseDetail}
+          onClose={closeDetail}
         />
       )}
     </div>

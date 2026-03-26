@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { DashboardItem } from '../types.js';
-
-const STORAGE_KEY = 'gh-dashboard-last-seen';
+import { STORAGE_KEYS } from '../constants.js';
 
 /** Item key used for tracking: "owner/repo#number" */
 function itemKey(pr: DashboardItem): string {
@@ -10,7 +9,7 @@ function itemKey(pr: DashboardItem): string {
 
 function loadLastSeen(): Record<string, string> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEYS.LAST_SEEN);
     if (!raw) return {};
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
@@ -26,7 +25,7 @@ function loadLastSeen(): Record<string, string> {
 
 function saveLastSeen(data: Record<string, string>): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(STORAGE_KEYS.LAST_SEEN, JSON.stringify(data));
   } catch {
     // Silently ignore storage failures (e.g. quota exceeded, private browsing)
   }

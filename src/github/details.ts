@@ -1,11 +1,65 @@
 import type { Octokit } from '@octokit/rest';
 import type { PRDetail, PRItem } from '../types.js';
+import { STORAGE_KEYS } from '../constants.js';
 
-// Simple in-memory cache with TTL to avoid redundant API calls when
-// re-previewing the same PR. Keyed by PR URL, expires after 2 minutes.
+// Cache with TTL to avoid redundant API calls when re-previewing the same PR.
+// Keyed by PR URL, expires after 2 minutes. Backed by localStorage for persistence
+// across page reloads.
 const CACHE_TTL_MS = 2 * 60 * 1000;
 const MAX_CACHE_SIZE = 50;
-const detailCache = new Map<string, { data: PRDetail; timestamp: number }>();
+
+interface CacheEntry {
+  data: PRDetail;
+  timestamp: number;
+}
+
+const detailCache = new Map<string, CacheEntry>();
+
+// Hydrate in-memory cache from localStorage on module load
+function hydrateFromStorage(): void {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.DETAIL_CACHE);
+    if (!raw) return;
+    const entries = JSON.parse(raw) as Record<string, CacheEntry>;
+    const now = Date.now();
+    for (const [key, entry] of Object.entries(entries)) {
+      if (now - entry.timestamp < CACHE_TTL_MS) {
+        detailCache.set(key, entry);
+      }
+    }
+    evictExpired();
+    persistToStorage();
+  } catch {
+    // Ignore corrupt stored data
+  }
+}
+hydrateFromStorage();
+
+function persistToStorage(): void {
+  try {
+    const obj: Record<string, CacheEntry> = {};
+    for (const [key, entry] of detailCache) {
+      obj[key] = entry;
+    }
+    localStorage.setItem(STORAGE_KEYS.DETAIL_CACHE, JSON.stringify(obj));
+  } catch {
+    // Silently ignore storage failures (e.g. quota exceeded)
+  }
+}
+
+function evictExpired(): void {
+  const now = Date.now();
+  for (const [key, entry] of detailCache) {
+    if (now - entry.timestamp > CACHE_TTL_MS) {
+      detailCache.delete(key);
+    }
+  }
+  while (detailCache.size > MAX_CACHE_SIZE) {
+    const firstKey = detailCache.keys().next().value;
+    if (firstKey !== undefined) detailCache.delete(firstKey);
+    else break;
+  }
+}
 
 export async function getPRDetails(
   octokit: Octokit,
@@ -25,17 +79,13 @@ export async function getPRDetails(
       repo: name,
       pull_number: item.number,
     }),
-    // NOTE: per_page capped at 100. PRs with >100 check runs will show
-    // only the first page. Pagination can be added if needed.
-    octokit.checks.listForRef({
+    octokit.paginate(octokit.checks.listForRef, {
       owner,
       repo: name,
       ref: `pull/${item.number}/head`,
       per_page: 100,
     }),
-    // NOTE: per_page capped at 100. PRs with >100 reviews will show
-    // only the first page. Pagination can be added if needed.
-    octokit.pulls.listReviews({
+    octokit.paginate(octokit.pulls.listReviews, {
       owner,
       repo: name,
       pull_number: item.number,
@@ -46,10 +96,10 @@ export async function getPRDetails(
   const pr = prRes.status === 'fulfilled' ? prRes.value.data : null;
   const checks =
     checksRes.status === 'fulfilled'
-      ? checksRes.value.data.check_runs
+      ? checksRes.value
       : [];
   const reviews =
-    reviewsRes.status === 'fulfilled' ? reviewsRes.value.data : [];
+    reviewsRes.status === 'fulfilled' ? reviewsRes.value : [];
 
   // Deduplicate reviewers to their latest review state
   const reviewerMap = new Map<string, string>();
@@ -79,22 +129,8 @@ export async function getPRDetails(
   };
 
   detailCache.set(item.url, { data: detail, timestamp: Date.now() });
-
-  // Evict expired entries and enforce size limit
-  if (detailCache.size > MAX_CACHE_SIZE) {
-    const now = Date.now();
-    for (const [key, entry] of detailCache) {
-      if (now - entry.timestamp > CACHE_TTL_MS) {
-        detailCache.delete(key);
-      }
-    }
-    // If still over limit, remove oldest entries
-    while (detailCache.size > MAX_CACHE_SIZE) {
-      const firstKey = detailCache.keys().next().value;
-      if (firstKey !== undefined) detailCache.delete(firstKey);
-      else break;
-    }
-  }
+  evictExpired();
+  persistToStorage();
 
   return detail;
 }

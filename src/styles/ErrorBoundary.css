@@ -1,0 +1,38 @@
+/* ── Error Boundary ─────────────────────────────────────────── */
+.error-boundary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 12px;
+  color: var(--text);
+}
+
+.error-boundary h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.error-boundary-message {
+  color: var(--red);
+  font-size: 14px;
+  max-width: 500px;
+  text-align: center;
+}
+
+.error-boundary-retry {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.error-boundary-retry:hover {
+  opacity: 0.9;
+}

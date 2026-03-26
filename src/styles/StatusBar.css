@@ -1,0 +1,31 @@
+/* ── Status Bar ─────────────────────────────────────────────── */
+.status-bar {
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+.status-error {
+  color: var(--red);
+}
+
+.status-warning {
+  color: var(--yellow);
+}
+
+.status-match-count {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.status-shortcuts kbd {
+  display: inline-block;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--text-muted);
+}

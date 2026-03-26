@@ -10,7 +10,7 @@ import type { DashboardItem, PRStateFilterKey } from '../types.js';
  * are typically abandoned and not useful for day-to-day workflow tracking.
  */
 export function filterByPRState(items: DashboardItem[], filters: Set<PRStateFilterKey>): DashboardItem[] {
-  if (filters.size === 0) return [];
+  if (filters.size === 0) return items.filter((item) => item.kind === 'issue');
   return items.filter((item) => {
     if (item.kind === 'issue') return true;
     if (item.draft && filters.has('draft')) return true;

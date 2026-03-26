@@ -1,0 +1,311 @@
+/* ── Table ──────────────────────────────────────────────────── */
+.table-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.pr-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pr-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 1;
+}
+
+.pr-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.sortable-header-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  user-select: none;
+  padding: 0;
+  width: 100%;
+  text-align: left;
+}
+
+.sortable-header-btn:hover {
+  color: var(--text);
+}
+
+.sort-active .sortable-header-btn {
+  color: var(--accent);
+}
+
+.sort-arrow {
+  font-size: 10px;
+}
+
+.pr-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+/* ── PR Row ─────────────────────────────────────────────────── */
+.pr-row {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.pr-row:hover {
+  background: var(--bg-hover);
+}
+
+.pr-row-selected {
+  background: var(--bg-selected);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* ── Column Styles ─────────────────────────────────────────── */
+.col-ci {
+  width: 48px;
+  text-align: center;
+}
+
+.col-repo {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.col-number {
+  color: var(--purple);
+  font-weight: 500;
+}
+
+.col-title {
+  max-width: 500px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-author {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.col-updated {
+  color: var(--text-subtle);
+  font-size: 13px;
+}
+
+.col-reviews {
+  white-space: nowrap;
+}
+
+.col-link {
+  width: 40px;
+  text-align: center;
+}
+
+.col-link a {
+  text-decoration: none;
+}
+
+.col-state {
+  width: 72px;
+}
+
+.col-type {
+  width: 56px;
+  text-align: center;
+}
+
+/* ── State Badges ──────────────────────────────────────────── */
+.state-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.state-open {
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+}
+
+.state-merged {
+  background: rgba(188, 140, 255, 0.15);
+  color: var(--purple);
+  border: 1px solid rgba(188, 140, 255, 0.3);
+}
+
+.state-closed {
+  background: rgba(248, 81, 73, 0.15);
+  color: var(--red);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+.state-draft {
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* ── Type Badges ───────────────────────────────────────────── */
+.type-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.type-pr {
+  background: rgba(188, 140, 255, 0.15);
+  color: var(--purple);
+  border: 1px solid rgba(188, 140, 255, 0.3);
+}
+
+.type-issue {
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+}
+
+/* ── CI Badge ──────────────────────────────────────────────── */
+.ci-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ci-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.ci-success .ci-dot { background: var(--green); }
+.ci-failure .ci-dot { background: var(--red); }
+.ci-pending .ci-dot { background: var(--yellow); }
+.ci-mixed .ci-dot { background: var(--orange); }
+.ci-none .ci-dot { background: var(--text-subtle); }
+
+/* ── Review Badges ─────────────────────────────────────────── */
+.review-badges {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.review-badge {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.review-approved { color: var(--green); }
+.review-changes { color: var(--red); }
+.review-comments { color: var(--blue); }
+
+/* ── Empty State ───────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--text-muted);
+  font-size: 15px;
+  padding: 48px;
+}
+
+.empty-state kbd {
+  margin: 0 2px;
+}
+
+/* ── Unseen Dot ────────────────────────────────────────────── */
+.unseen-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 6px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* ── Label Badges ──────────────────────────────────────────── */
+.label-badges {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 8px;
+  flex-wrap: wrap;
+}
+
+.label-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Milestone Badge ──────────────────────────────────────── */
+.milestone-badge {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Repo Hide Button ─────────────────────────────────────── */
+.repo-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.repo-hide-btn {
+  display: none;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-subtle);
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  padding: 1px 4px;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+.pr-row:hover .repo-hide-btn,
+.pr-row:focus-within .repo-hide-btn {
+  display: inline-flex;
+}
+
+.repo-hide-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.repo-hide-btn:hover {
+  color: var(--red);
+  border-color: var(--red);
+  background: rgba(248, 81, 73, 0.1);
+}
