@@ -113,18 +113,19 @@ test.describe('Theme', () => {
     await page.reload();
   });
 
-  test('cycles theme with t key', async ({ page }) => {
-    // Default is dark (no data-theme attribute or data-theme="dark")
+  test('cycles theme with Shift+T key', async ({ page }) => {
+    // Default theme is "system" which resolves to "dark" in headless Chromium.
+    // Cycle is: dark -> light -> system. So from system(dark):
+    //   1st press -> dark (resolved: dark)
+    //   2nd press -> light (resolved: light)
     const root = page.locator(':root');
 
-    await page.keyboard.press('t');
-    // Should cycle to light
-    await expect(root).toHaveAttribute('data-theme', 'light');
+    // First press: system -> dark
+    await page.keyboard.press('Shift+T');
+    await expect(root).toHaveAttribute('data-theme', 'dark');
 
-    await page.keyboard.press('t');
-    // Should cycle to system (removes attribute)
-    // System theme depends on prefers-color-scheme, check the attribute is either removed or set
-    const theme = await root.getAttribute('data-theme');
-    expect(['system', 'dark', 'light', null]).toContain(theme);
+    // Second press: dark -> light
+    await page.keyboard.press('Shift+T');
+    await expect(root).toHaveAttribute('data-theme', 'light');
   });
 });

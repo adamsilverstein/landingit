@@ -285,8 +285,14 @@
   vertical-align: middle;
 }
 
-.pr-row:hover .repo-hide-btn {
+.pr-row:hover .repo-hide-btn,
+.pr-row:focus-within .repo-hide-btn {
   display: inline-flex;
+}
+
+.repo-hide-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .repo-hide-btn:hover {

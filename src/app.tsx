@@ -95,9 +95,14 @@ export function App() {
     }
   }, [filtered, cursorIndex, markSeen]);
 
+  const previewPR = useCallback((item: DashboardItem) => {
+    if (item.kind !== 'pr') return;
+    openDetail(item);
+  }, [openDetail]);
+
   const previewSelected = useCallback(() => {
     const item = filtered[cursorIndex];
-    if (item) {
+    if (item?.kind === 'pr') {
       openDetail(item);
     }
   }, [filtered, cursorIndex, openDetail]);
@@ -185,7 +190,7 @@ export function App() {
         sort={sort}
         sortDirection={sortDirection}
         onSort={handleSetSort}
-        onPreview={openDetail}
+        onPreview={previewPR}
         isUnseen={isUnseen}
         onOpen={markSeen}
         onHideRepo={toggleRepoByName}

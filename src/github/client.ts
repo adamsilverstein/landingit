@@ -17,10 +17,14 @@ export function createClient(token: string, onRateLimit?: RateLimitListener): Oc
       const limit = response.headers['x-ratelimit-limit'];
       const reset = response.headers['x-ratelimit-reset'];
       if (remaining != null && limit != null && reset != null) {
+        const remainingNum = Number(remaining);
+        const limitNum = Number(limit);
+        const resetNum = Number(reset);
+        if (!Number.isFinite(remainingNum) || !Number.isFinite(limitNum) || !Number.isFinite(resetNum)) return;
         onRateLimit({
-          remaining: Number(remaining),
-          limit: Number(limit),
-          resetAt: new Date(Number(reset) * 1000),
+          remaining: remainingNum,
+          limit: limitNum,
+          resetAt: new Date(resetNum * 1000),
         });
       }
     });

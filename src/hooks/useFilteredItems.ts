@@ -41,7 +41,11 @@ export function useFilteredItems({ items, defaultFilter, defaultSort, isUnseen }
 
   // Persist PR state filters to localStorage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PR_STATE_FILTERS, JSON.stringify([...prStateFilters]));
+    try {
+      localStorage.setItem(STORAGE_KEYS.PR_STATE_FILTERS, JSON.stringify([...prStateFilters]));
+    } catch {
+      // Ignore storage failures (e.g. quota exceeded, private browsing)
+    }
   }, [prStateFilters]);
 
   const togglePRStateFilter = useCallback((key: PRStateFilterKey) => {

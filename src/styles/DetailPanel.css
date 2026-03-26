@@ -62,7 +62,7 @@
   font-weight: 600;
   line-height: 1.4;
   margin-bottom: 10px;
-  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .detail-meta {
@@ -180,7 +180,7 @@
   max-height: 200px;
   overflow-y: auto;
   white-space: pre-wrap;
-  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .detail-checks {
