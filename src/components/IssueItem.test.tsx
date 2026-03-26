@@ -43,13 +43,13 @@ function makeIssue(overrides: Partial<IssueItem> = {}): IssueItem {
   };
 }
 
+const noop = () => {};
+
 function renderRow(item: DashboardItem, selected = false) {
-  const onPreview = vi.fn();
-  const onOpen = vi.fn();
   return render(
     <table>
       <tbody>
-        <PRRow item={item} selected={selected} unseen={false} onPreview={onPreview} onOpen={onOpen} />
+        <PRRow item={item} selected={selected} unseen={false} onPreview={noop} onOpen={noop} />
       </tbody>
     </table>,
   );
@@ -93,11 +93,10 @@ describe('DashboardItem type discrimination', () => {
   });
 
   it('does not show labels for PRs', () => {
-    // PRs don't have a label-badges container
     const { container } = render(
       <table>
         <tbody>
-          <PRRow item={makePR()} selected={false} unseen={false} onPreview={vi.fn()} onOpen={vi.fn()} />
+          <PRRow item={makePR()} selected={false} unseen={false} onPreview={noop} onOpen={noop} />
         </tbody>
       </table>,
     );
@@ -105,8 +104,8 @@ describe('DashboardItem type discrimination', () => {
   });
 
   it('calls onOpen and onPreview when row is clicked', () => {
-    const onPreview = vi.fn();
     const onOpen = vi.fn();
+    const onPreview = vi.fn();
     const issue = makeIssue();
     const { container } = render(
       <table>
@@ -131,7 +130,7 @@ describe('Item type filtering logic', () => {
   ];
 
   it('shows all items when filter is "both"', () => {
-    const result = items.filter(() => true); // 'both' filter passes all
+    const result = items.filter(() => true);
     expect(result).toHaveLength(5);
   });
 
@@ -148,13 +147,10 @@ describe('Item type filtering logic', () => {
   });
 
   it('PR-specific filters only affect PRs', () => {
-    // 'failing' filter: only PRs with ciStatus === 'failure'
     const failing = items.filter(
       (item) => item.kind === 'pr' && item.ciStatus === 'failure',
     );
-    expect(failing).toHaveLength(0); // none have failure status
-
-    // No issues should pass the failing filter
+    expect(failing).toHaveLength(0);
     const issuesInFailing = failing.filter((item) => item.kind === 'issue');
     expect(issuesInFailing).toHaveLength(0);
   });

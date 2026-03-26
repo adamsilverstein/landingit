@@ -33,10 +33,10 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPre
 
   return (
     <div className="table-container">
-      <table className="pr-table">
+      <table className="pr-table" aria-label="Pull requests and issues">
         <thead>
           <tr>
-            <th className="col-type">Type</th>
+            <th className="col-type" scope="col">Type</th>
             <SortableHeader label="CI" sortKey="status" className="col-ci" {...headerProps} />
             <SortableHeader label="Repo" sortKey="repo" className="col-repo" {...headerProps} />
             <SortableHeader label="#" sortKey="number" className="col-number" {...headerProps} />
@@ -45,7 +45,7 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPre
             <SortableHeader label="Author" sortKey="author" className="col-author" {...headerProps} />
             <SortableHeader label="Updated" sortKey="updated" className="col-updated" {...headerProps} />
             <SortableHeader label="Reviews" sortKey="reviews" className="col-reviews" {...headerProps} />
-            <th className="col-link">Link</th>
+            <th className="col-link" scope="col">Link</th>
           </tr>
         </thead>
         <tbody>
