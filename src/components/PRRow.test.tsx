@@ -116,4 +116,58 @@ describe('PRRow', () => {
     expect(onPreview).not.toHaveBeenCalled();
     expect(onOpen).not.toHaveBeenCalled();
   });
+
+  it('shows merge-ready badge and class for approved PR with passing CI', () => {
+    const { container } = renderRow(
+      makePR({
+        ciStatus: 'success',
+        reviewState: { approvals: 1, changesRequested: 0, commentCount: 0 },
+        draft: false,
+        state: 'open',
+      }),
+    );
+    const row = container.querySelector('tr');
+    expect(row).toHaveClass('pr-row-merge-ready');
+    expect(screen.getByRole('img', { name: 'Ready to merge' })).toBeInTheDocument();
+  });
+
+  it('does not show merge-ready badge for draft PR', () => {
+    const { container } = renderRow(
+      makePR({
+        ciStatus: 'success',
+        reviewState: { approvals: 1, changesRequested: 0, commentCount: 0 },
+        draft: true,
+        state: 'open',
+      }),
+    );
+    const row = container.querySelector('tr');
+    expect(row).not.toHaveClass('pr-row-merge-ready');
+    expect(screen.queryByRole('img', { name: 'Ready to merge' })).toBeNull();
+  });
+
+  it('does not show merge-ready badge for PR with failing CI', () => {
+    const { container } = renderRow(
+      makePR({
+        ciStatus: 'failure',
+        reviewState: { approvals: 1, changesRequested: 0, commentCount: 0 },
+        draft: false,
+        state: 'open',
+      }),
+    );
+    const row = container.querySelector('tr');
+    expect(row).not.toHaveClass('pr-row-merge-ready');
+  });
+
+  it('does not show merge-ready badge for PR with no approvals', () => {
+    const { container } = renderRow(
+      makePR({
+        ciStatus: 'success',
+        reviewState: { approvals: 0, changesRequested: 0, commentCount: 0 },
+        draft: false,
+        state: 'open',
+      }),
+    );
+    const row = container.querySelector('tr');
+    expect(row).not.toHaveClass('pr-row-merge-ready');
+  });
 });
