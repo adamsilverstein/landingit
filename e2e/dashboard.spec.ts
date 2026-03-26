@@ -41,6 +41,7 @@ test.describe('Dashboard (with token)', () => {
       }));
     }, STORAGE_KEYS);
     await page.reload();
+    await expect(page.locator('.header-title')).toBeVisible();
   });
 
   test('shows header with repo count', async ({ page }) => {

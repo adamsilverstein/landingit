@@ -27,6 +27,8 @@ function hydrateFromStorage(): void {
         detailCache.set(key, entry);
       }
     }
+    evictExpired();
+    persistToStorage();
   } catch {
     // Ignore corrupt stored data
   }

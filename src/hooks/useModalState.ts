@@ -19,7 +19,10 @@ export function useModalState() {
 
   const openRepos = useCallback(() => setViewMode('repos'), []);
   const openHelp = useCallback(() => setViewMode('help'), []);
-  const closeModal = useCallback(() => setViewMode('list'), []);
+  const closeModal = useCallback(() => {
+    setViewMode('list');
+    setPreviewItem(null);
+  }, []);
 
   return {
     viewMode,
