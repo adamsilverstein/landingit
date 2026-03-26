@@ -44,9 +44,10 @@ export function App() {
         if (stored) {
           const parsed = JSON.parse(stored) as string[];
           if (Array.isArray(parsed)) {
-            return new Set<PRStateFilterKey>(
-              parsed.filter((k): k is PRStateFilterKey => k === 'draft' || k === 'open' || k === 'merged')
-            );
+            const valid = parsed.filter((k): k is PRStateFilterKey => k === 'draft' || k === 'open' || k === 'merged');
+            if (valid.length > 0) {
+              return new Set<PRStateFilterKey>(valid);
+            }
           }
         }
       } catch { /* ignore invalid stored data */ }
@@ -109,6 +110,8 @@ export function App() {
     setPRStateFilters((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
+        // Prevent deselecting the last active pill
+        if (next.size <= 1) return prev;
         next.delete(key);
       } else {
         next.add(key);
@@ -261,15 +264,16 @@ export function App() {
     setCursorIndex(0);
   }, []);
 
+  const sortRef = useRef(sort);
+  sortRef.current = sort;
+
   const handleSetSort = useCallback((key: SortMode) => {
-    setSort((prev) => {
-      if (prev === key) {
-        setSortDirection((d) => (d === 'desc' ? 'asc' : 'desc'));
-      } else {
-        setSortDirection('desc');
-      }
-      return key;
-    });
+    if (sortRef.current === key) {
+      setSortDirection((d) => (d === 'desc' ? 'asc' : 'desc'));
+    } else {
+      setSortDirection('desc');
+    }
+    setSort(key);
   }, []);
 
   const focusSearch = useCallback(() => {
