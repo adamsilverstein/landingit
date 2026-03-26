@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import type { DashboardItem, PRItem } from '../types.js';
+import type { DashboardItem } from '../types.js';
 import { CIBadge } from './CIBadge.js';
 import { ReviewBadge } from './ReviewBadge.js';
 import { LabelBadge } from './LabelBadge.js';
@@ -9,8 +9,8 @@ interface PRRowProps {
   item: DashboardItem;
   selected: boolean;
   unseen: boolean;
-  onPreview: (item: PRItem) => void;
-  onOpen: (pr: PRItem) => void;
+  onPreview: (item: DashboardItem) => void;
+  onOpen: (item: DashboardItem) => void;
   onHideRepo?: (owner: string, name: string) => void;
 }
 

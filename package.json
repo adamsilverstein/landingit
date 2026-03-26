@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "description": "GitHub PR dashboard web app",
   "type": "module",
+  "main": "electron/main.cjs",
   "bin": {
     "git-dashboard": "./bin/git-dashboard.mjs"
   },

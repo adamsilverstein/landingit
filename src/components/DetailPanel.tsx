@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import type { Octokit } from '@octokit/rest';
-import type { PRItem, PRDetail } from '../types.js';
+import type { DashboardItem, PRItem, PRDetail } from '../types.js';
 import { getPRDetails } from '../github/details.js';
 import { CIBadge } from './CIBadge.js';
 import { timeAgo } from '../utils/timeAgo.js';
 
 interface DetailPanelProps {
-  item: PRItem;
+  item: DashboardItem;
   octokit: Octokit;
   onClose: () => void;
 }
@@ -66,11 +66,17 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
+  const isPR = item.kind === 'pr';
+
   useEffect(() => {
+    if (!isPR) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     setError(null);
-    getPRDetails(octokit, item).then(
+    getPRDetails(octokit, item as PRItem).then(
       (d) => {
         if (!cancelled) {
           setDetail(d);
@@ -87,7 +93,7 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [octokit, item]);
+  }, [octokit, item, isPR]);
 
   // Focus trap: keep focus within the panel while it's open
   useEffect(() => {
@@ -123,13 +129,15 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
   }, []);
 
   const stateLabel =
-    item.state === 'merged'
-      ? 'merged'
-      : item.state === 'closed'
-        ? 'closed'
-        : item.draft
-          ? 'draft'
-          : 'open';
+    isPR
+      ? (item as PRItem).state === 'merged'
+        ? 'merged'
+        : (item as PRItem).state === 'closed'
+          ? 'closed'
+          : (item as PRItem).draft
+            ? 'draft'
+            : 'open'
+      : item.state;
 
   return (
     <div className="detail-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Details for: ${item.title}`}>
@@ -149,7 +157,7 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
             <span className={`state-badge state-${stateLabel}`}>{stateLabel}</span>
             <span className="detail-number">#{item.number}</span>
             <span className="detail-author">by @{item.author}</span>
-            <CIBadge status={item.ciStatus} />
+            {isPR && <CIBadge status={(item as PRItem).ciStatus} />}
           </div>
         </div>
 

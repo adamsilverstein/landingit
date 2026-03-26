@@ -25,15 +25,17 @@ function makePR(overrides: Partial<PRItem> = {}): PRItem {
 
 function renderRow(item: PRItem, selected = false) {
   const onPreview = vi.fn();
+  const onOpen = vi.fn();
   return {
     ...render(
       <table>
         <tbody>
-          <PRRow item={item} selected={selected} onPreview={onPreview} />
+          <PRRow item={item} selected={selected} unseen={false} onPreview={onPreview} onOpen={onOpen} />
         </tbody>
       </table>,
     ),
     onPreview,
+    onOpen,
   };
 }
 

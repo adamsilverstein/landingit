@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import type { ViewMode, FilterMode, SortMode, SortDirection, ItemTypeFilter, PRItem, PRStateFilterKey } from './types.js';
+import type { ViewMode, FilterMode, SortMode, SortDirection, ItemTypeFilter, DashboardItem, PRItem, PRStateFilterKey } from './types.js';
 import { createClient } from './github/client.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
 import { useConfig } from './hooks/useConfig.js';
@@ -36,7 +36,7 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [itemTypeFilter, setItemTypeFilter] = useState<ItemTypeFilter>('both');
-  const [previewItem, setPreviewItem] = useState<PRItem | null>(null);
+  const [previewItem, setPreviewItem] = useState<DashboardItem | null>(null);
   const [prStateFilters, setPRStateFilters] = useState<Set<PRStateFilterKey>>(
     () => {
       try {
@@ -298,10 +298,7 @@ export function App() {
     }
   }, [filtered, cursorIndex]);
 
-  // NOTE: If a DashboardItem union type (PRItem | IssueItem) is introduced
-  // (e.g. via PR #14), add a type guard here to skip issue items, since the
-  // detail panel currently only supports PRs.
-  const handlePreview = useCallback((item: PRItem) => {
+  const handlePreview = useCallback((item: DashboardItem) => {
     setPreviewItem(item);
     setViewMode('detail');
   }, []);
