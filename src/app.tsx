@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { DashboardItem } from './types.js';
-import { createClient } from './github/client.js';
+import { createClient, type RateLimit } from './github/client.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
 import { useConfig } from './hooks/useConfig.js';
 import { useGithubData } from './hooks/useGithubData.js';
@@ -26,6 +26,7 @@ export function App() {
   const [username, setUsername] = useState<string | null>(null);
   const { cycleTheme } = useTheme();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [rateLimit, setRateLimit] = useState<RateLimit | null>(null);
 
   const { markSeen, isUnseen } = useLastSeen();
 
@@ -34,9 +35,11 @@ export function App() {
     openDetail, closeDetail, openRepos, closeModal,
   } = useModalState();
 
+  const handleRateLimit = useCallback((rl: RateLimit) => setRateLimit(rl), []);
+
   const octokit = useMemo(
-    () => (token ? createClient(token) : null),
-    [token]
+    () => (token ? createClient(token, handleRateLimit) : null),
+    [token, handleRateLimit]
   );
 
   // Fetch authenticated user's login
@@ -158,6 +161,7 @@ export function App() {
         onOpenRepos={openRepos}
         onSignOut={handleSignOut}
         autoRefreshSecondsLeft={autoRefreshSecondsLeft}
+        rateLimit={rateLimit}
       />
       <FilterBar
         active={filter}

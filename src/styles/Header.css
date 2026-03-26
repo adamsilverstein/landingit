@@ -65,6 +65,23 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Rate Limit ─────────────────────────────────────────────── */
+.rate-limit {
+  font-size: 12px;
+  color: var(--text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.rate-limit-warning {
+  color: var(--yellow);
+  font-weight: 500;
+}
+
+.rate-limit-critical {
+  color: var(--red);
+  font-weight: 600;
+}
+
 /* ── Spinner ────────────────────────────────────────────────── */
 .spinner {
   display: inline-block;
