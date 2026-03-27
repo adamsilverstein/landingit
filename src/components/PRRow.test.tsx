@@ -31,7 +31,7 @@ function renderRow(item: PRItem, selected = false) {
     ...render(
       <table>
         <tbody>
-          <PRRow item={item} selected={selected} unseen={false} onPreview={onPreview} onOpen={onOpen} />
+          <PRRow item={item} selected={selected} unseen={false} stale={false} onPreview={onPreview} onOpen={onOpen} />
         </tbody>
       </table>,
     ),

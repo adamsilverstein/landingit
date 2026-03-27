@@ -70,6 +70,7 @@ export function App() {
     defaultFilter: config.defaults.filter,
     defaultSort: config.defaults.sort,
     isUnseen,
+    staleDays: config.defaults.staleDays,
   });
 
   const { secondsLeft: autoRefreshSecondsLeft, reset: resetAutoRefresh } = useAutoRefresh({
@@ -195,6 +196,7 @@ export function App() {
         isUnseen={isUnseen}
         onOpen={markSeen}
         onHideRepo={toggleRepoByName}
+        staleDays={config.defaults.staleDays}
       />
       <StatusBar error={error} failedRepos={failedRepos} searchQuery={searchQuery} matchCount={filtered.length} totalCount={items.length} />
 
