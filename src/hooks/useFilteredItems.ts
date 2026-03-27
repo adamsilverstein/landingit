@@ -2,9 +2,10 @@ import { useMemo, useEffect, useState, useCallback } from 'react';
 import type { DashboardItem, FilterMode, SortMode, SortDirection, ItemTypeFilter, PRStateFilterKey } from '../types.js';
 import { filterByPRState } from '../utils/prStateFilter.js';
 import { isStale } from '../utils/staleness.js';
+import { isMergeReady } from '../utils/mergeReady.js';
 import { STORAGE_KEYS } from '../constants.js';
 
-const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'review-requested', 'new-activity', 'stale'];
+const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'review-requested', 'new-activity', 'merge-ready', 'stale'];
 const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'reviews'];
 const ITEM_TYPE_CYCLE: ItemTypeFilter[] = ['both', 'prs', 'issues'];
 
@@ -89,6 +90,8 @@ export function useFilteredItems({ items, defaultFilter, defaultSort, isUnseen, 
       );
     } else if (filter === 'new-activity') {
       result = result.filter((pr) => isUnseen(pr));
+    } else if (filter === 'merge-ready') {
+      result = result.filter((item) => isMergeReady(item));
     } else if (filter === 'stale') {
       result = result.filter((item) => isStale(item, staleDays));
     }

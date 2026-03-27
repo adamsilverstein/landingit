@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import type { Octokit } from '@octokit/rest';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { DashboardItem, PRItem, PRDetail } from '../types.js';
 import { getPRDetails } from '../github/details.js';
 import { CIBadge } from './CIBadge.js';
@@ -209,11 +211,13 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
               </div>
             )}
 
-            {/* Description — rendered as plain text; GitHub markdown rendering is not yet supported */}
+            {/* Description — rendered as GitHub-flavored markdown */}
             {detail.body && (
               <div className="detail-section">
                 <h3 className="detail-section-title">Description</h3>
-                <div className="detail-description">{detail.body}</div>
+                <div className="detail-description markdown-body">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{detail.body}</ReactMarkdown>
+                </div>
               </div>
             )}
 

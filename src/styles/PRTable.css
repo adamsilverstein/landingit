@@ -75,6 +75,20 @@
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
+.pr-row-merge-ready {
+  box-shadow: inset 3px 0 0 var(--green);
+}
+
+.pr-row-merge-ready.pr-row-selected {
+  box-shadow: inset 3px 0 0 var(--green);
+}
+
+.merge-ready-badge {
+  margin-left: 6px;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
 .pr-row-stale {
   opacity: 0.55;
 }

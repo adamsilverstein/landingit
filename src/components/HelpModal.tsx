@@ -9,7 +9,7 @@ const SHORTCUTS = [
   ['p / Space', 'Preview PR details'],
   ['m', 'Toggle mine only / everyone'],
   ['t', 'Cycle type (both / PRs / issues)'],
-  ['f', 'Cycle filter (all / failing / needs-review / review-requested / new-activity / stale)'],
+  ['f', 'Cycle filter (all / failing / needs-review / review-requested / new-activity / merge-ready / stale)'],
   ['s', 'Cycle sort (updated / created / repo / status)'],
   ['r', 'Refresh data (resets auto-refresh timer)'],
   ['c', 'Configure repos'],

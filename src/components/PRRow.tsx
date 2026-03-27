@@ -4,6 +4,7 @@ import { CIBadge } from './CIBadge.js';
 import { ReviewBadge } from './ReviewBadge.js';
 import { LabelBadge } from './LabelBadge.js';
 import { timeAgo } from '../utils/timeAgo.js';
+import { isMergeReady } from '../utils/mergeReady.js';
 
 export interface PRRowProps {
   item: DashboardItem;
@@ -30,6 +31,7 @@ export function PRRow({ item, selected, unseen, stale, onPreview, onOpen, onHide
   };
 
   const isPR = item.kind === 'pr';
+  const mergeReady = isMergeReady(item);
 
   const handleHideRepo = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -39,7 +41,7 @@ export function PRRow({ item, selected, unseen, stale, onPreview, onOpen, onHide
   return (
     <tr
       ref={ref}
-      className={`pr-row ${selected ? 'pr-row-selected' : ''} ${stale ? 'pr-row-stale' : ''}`}
+      className={`pr-row ${selected ? 'pr-row-selected' : ''} ${mergeReady ? 'pr-row-merge-ready' : ''} ${stale ? 'pr-row-stale' : ''}`}
       onClick={handleClick}
     >
       <td className="col-type">
@@ -80,6 +82,9 @@ export function PRRow({ item, selected, unseen, stale, onPreview, onOpen, onHide
       </td>
       <td className="col-title">
         <span className="title-text">{item.title}</span>
+        {mergeReady && (
+          <span className="merge-ready-badge" role="img" aria-label="Ready to merge" title="Approved & CI passing — ready to merge">🚀</span>
+        )}
         {!isPR && item.labels.length > 0 && (
           <span className="label-badges">
             {item.labels.map((label) => (
