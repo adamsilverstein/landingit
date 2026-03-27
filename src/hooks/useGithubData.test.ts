@@ -76,6 +76,7 @@ describe('useGithubData', () => {
       draft: false,
       state: 'open' as const,
       isRequestedReviewer: false,
+      assignees: [],
     };
 
     mockedFetchUserPRs.mockResolvedValue([pr]);
@@ -119,6 +120,7 @@ describe('useGithubData', () => {
       draft: false,
       state: 'open' as const,
       isRequestedReviewer: false,
+      assignees: [],
     };
 
     mockedFetchAllPRsForRepo.mockResolvedValue([pr]);
@@ -160,6 +162,7 @@ describe('useGithubData', () => {
       draft: false,
       state: 'merged' as const,
       isRequestedReviewer: false,
+      assignees: [],
     };
 
     mockedFetchUserPRs.mockResolvedValue([mergedPR]);
@@ -201,6 +204,7 @@ describe('useGithubData', () => {
       draft: false,
       state: 'open' as const,
       isRequestedReviewer: false,
+      assignees: [],
     };
     mockedFetchUserPRs.mockResolvedValue([pr]);
     mockedFetchUserIssues.mockResolvedValue([]);

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Octokit } from '@octokit/rest';
-import type { PRItem, DashboardItem, RepoConfig, RepoFetchError } from '../types.js';
+import type { PRItem, DashboardItem, RepoConfig, RepoFetchError, OwnershipFilter } from '../types.js';
 import { fetchUserPRs, fetchAllPRsForRepo } from '../github/pulls.js';
 import { fetchUserIssues, fetchAllIssuesForRepo } from '../github/issues.js';
 import { getCheckStatus, getReviewState, isRequestedReviewer } from '../github/checks.js';
@@ -30,7 +30,8 @@ export function useGithubData(
   repos: RepoConfig[],
   maxPerRepo: number,
   username: string | null,
-  authenticatedUser?: string | null
+  authenticatedUser?: string | null,
+  ownershipFilter: OwnershipFilter = 'created'
 ): UseGithubDataResult {
   const [items, setItems] = useState<DashboardItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,6 +50,8 @@ export function useGithubData(
   usernameRef.current = username;
   const authUserRef = useRef(authenticatedUser);
   authUserRef.current = authenticatedUser;
+  const ownershipRef = useRef(ownershipFilter);
+  ownershipRef.current = ownershipFilter;
 
   const repoKey = repos.map((r) => `${r.owner}/${r.name}`).join(',');
 
@@ -81,8 +84,9 @@ export function useGithubData(
 
         if (user) {
           // Fetch PRs and issues in parallel, streaming each into the table as it arrives
-          const prPromise = fetchUserPRs(client, currentRepos, user);
-          const issuePromise = fetchUserIssues(client, currentRepos, user);
+          const ownership = ownershipRef.current as Exclude<OwnershipFilter, 'everyone'>;
+          const prPromise = fetchUserPRs(client, currentRepos, user, ownership);
+          const issuePromise = fetchUserIssues(client, currentRepos, user, ownership);
 
           // Stream whichever resolves first
           const [prResult, issueResult] = await Promise.allSettled([
@@ -212,7 +216,7 @@ export function useGithubData(
     return () => {
       cancelled = true;
     };
-  }, [repoKey, refreshCounter, username]);
+  }, [repoKey, refreshCounter, username, ownershipFilter]);
 
   return { items, loading, error, failedRepos, lastRefresh, refresh };
 }

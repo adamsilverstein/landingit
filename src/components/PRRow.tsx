@@ -86,6 +86,11 @@ export function PRRow({ item, selected, unseen, stale, onPreview, onOpen, onHide
         )}
       </td>
       <td className="col-author">@{item.author}</td>
+      <td className="col-assignees">
+        {item.assignees.length > 0
+          ? item.assignees.map((a) => `@${a}`).join(', ')
+          : <span className="text-muted">&mdash;</span>}
+      </td>
       <td className="col-updated">
         {stale && <span className="stale-badge" role="img" aria-label="Stale">🕸️</span>}
         {timeAgo(item.updatedAt)}

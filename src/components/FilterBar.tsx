@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, type RefObject } from 'react';
-import type { FilterMode, ItemTypeFilter, RepoConfig, PRStateFilterKey } from '../types.js';
+import type { FilterMode, ItemTypeFilter, RepoConfig, PRStateFilterKey, OwnershipFilter } from '../types.js';
 
 const FILTERS: { key: FilterMode; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -23,11 +23,18 @@ const PR_STATE_FILTERS: { key: PRStateFilterKey; label: string }[] = [
   { key: 'merged', label: 'Merged' },
 ];
 
+const OWNERSHIP_FILTERS: { key: OwnershipFilter; label: string; shortLabel: string }[] = [
+  { key: 'created', label: 'Created by me', shortLabel: 'Created' },
+  { key: 'assigned', label: 'Assigned to me', shortLabel: 'Assigned' },
+  { key: 'involved', label: 'Involved', shortLabel: 'Involved' },
+  { key: 'everyone', label: 'Everyone', shortLabel: 'Everyone' },
+];
+
 interface FilterBarProps {
   active: FilterMode;
   onFilter: (mode: FilterMode) => void;
-  mineOnly: boolean;
-  onToggleMine: () => void;
+  ownershipFilter: OwnershipFilter;
+  onSetOwnership: (filter: OwnershipFilter) => void;
   username: string | null;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -40,7 +47,7 @@ interface FilterBarProps {
   onTogglePRState: (key: PRStateFilterKey) => void;
 }
 
-export function FilterBar({ active, onFilter, mineOnly, onToggleMine, username, searchQuery, onSearchChange, searchInputRef, itemTypeFilter, onSetItemType, hiddenRepos, onRestoreRepo, prStateFilters, onTogglePRState }: FilterBarProps) {
+export function FilterBar({ active, onFilter, ownershipFilter, onSetOwnership, username, searchQuery, onSearchChange, searchInputRef, itemTypeFilter, onSetItemType, hiddenRepos, onRestoreRepo, prStateFilters, onTogglePRState }: FilterBarProps) {
   const [showHiddenDropdown, setShowHiddenDropdown] = useState(false);
   const hiddenCount = hiddenRepos?.length ?? 0;
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -64,13 +71,18 @@ export function FilterBar({ active, onFilter, mineOnly, onToggleMine, username, 
 
   return (
     <div className="filter-bar">
-      <button
-        className={`filter-pill ${mineOnly ? 'filter-active' : ''}`}
-        onClick={onToggleMine}
-        title={`Show ${mineOnly ? 'all' : 'only mine'} (m)`}
-      >
-        {mineOnly ? `@${username ?? '...'}` : 'Everyone'}
-      </button>
+      {OWNERSHIP_FILTERS.map(({ key, label, shortLabel }) => (
+        <button
+          key={key}
+          className={`filter-pill ${ownershipFilter === key ? 'filter-active' : ''}`}
+          onClick={() => onSetOwnership(key)}
+          title={`${label} (m)`}
+        >
+          {key !== 'everyone' && ownershipFilter === key && username
+            ? `@${username}`
+            : shortLabel}
+        </button>
+      ))}
       <span className="filter-divider" />
       {ITEM_TYPES.map(({ key, label }) => (
         <button

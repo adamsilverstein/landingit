@@ -16,10 +16,11 @@ export interface Config {
 }
 
 export type CIStatus = 'success' | 'failure' | 'pending' | 'none' | 'mixed';
-export type SortMode = 'updated' | 'created' | 'repo' | 'status' | 'number' | 'state' | 'title' | 'author' | 'reviews';
+export type SortMode = 'updated' | 'created' | 'repo' | 'status' | 'number' | 'state' | 'title' | 'author' | 'assignees' | 'reviews';
 export type SortDirection = 'asc' | 'desc';
 export type FilterMode = 'all' | 'failing' | 'needs-review' | 'review-requested' | 'new-activity' | 'merge-ready' | 'stale';
 export type ItemTypeFilter = 'both' | 'prs' | 'issues';
+export type OwnershipFilter = 'everyone' | 'created' | 'assigned' | 'involved';
 export type ViewMode = 'list' | 'repos' | 'help' | 'detail';
 export type ThemeMode = 'dark' | 'light' | 'system';
 
@@ -58,6 +59,7 @@ export interface PRItem {
   draft: boolean;
   state: PRState;
   isRequestedReviewer: boolean;
+  assignees: string[];
 }
 
 export interface IssueItem {

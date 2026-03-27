@@ -3,7 +3,7 @@ import React, { createRef } from 'react';
 import { render, screen, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FilterBar } from './FilterBar.js';
-import type { PRStateFilterKey } from '../types.js';
+import type { PRStateFilterKey, OwnershipFilter } from '../types.js';
 
 afterEach(cleanup);
 
@@ -11,8 +11,8 @@ function renderFilterBar(overrides: Partial<React.ComponentProps<typeof FilterBa
   const defaults: React.ComponentProps<typeof FilterBar> = {
     active: 'all',
     onFilter: vi.fn(),
-    mineOnly: true,
-    onToggleMine: vi.fn(),
+    ownershipFilter: 'created' as OwnershipFilter,
+    onSetOwnership: vi.fn(),
     username: 'testuser',
     searchQuery: '',
     onSearchChange: vi.fn(),
@@ -48,26 +48,34 @@ describe('FilterBar', () => {
     expect(onFilter).toHaveBeenCalledWith('needs-review');
   });
 
-  it('shows username when mineOnly is true', () => {
-    renderFilterBar({ mineOnly: true, username: 'octocat' });
+  it('shows username when a user-specific ownership filter is active', () => {
+    renderFilterBar({ ownershipFilter: 'created', username: 'octocat' });
     expect(screen.getByText('@octocat')).toBeInTheDocument();
   });
 
-  it('shows "Everyone" when mineOnly is false', () => {
-    renderFilterBar({ mineOnly: false, username: 'octocat' });
+  it('shows "Everyone" button for the everyone filter', () => {
+    renderFilterBar({ ownershipFilter: 'everyone', username: 'octocat' });
     expect(screen.getByText('Everyone')).toBeInTheDocument();
   });
 
-  it('highlights the mine pill when mineOnly is true', () => {
-    renderFilterBar({ mineOnly: true, username: 'octocat' });
+  it('highlights the active ownership filter', () => {
+    renderFilterBar({ ownershipFilter: 'created', username: 'octocat' });
     expect(screen.getByText('@octocat')).toHaveClass('filter-active');
   });
 
-  it('calls onToggleMine when the mine pill is clicked', async () => {
-    const onToggleMine = vi.fn();
-    renderFilterBar({ mineOnly: false, onToggleMine });
+  it('calls onSetOwnership when an ownership pill is clicked', async () => {
+    const onSetOwnership = vi.fn();
+    renderFilterBar({ ownershipFilter: 'created', onSetOwnership });
     await userEvent.click(screen.getByText('Everyone'));
-    expect(onToggleMine).toHaveBeenCalled();
+    expect(onSetOwnership).toHaveBeenCalledWith('everyone');
+  });
+
+  it('renders all ownership filter options', () => {
+    renderFilterBar({ ownershipFilter: 'everyone' });
+    expect(screen.getByText('Created')).toBeInTheDocument();
+    expect(screen.getByText('Assigned')).toBeInTheDocument();
+    expect(screen.getByText('Involved')).toBeInTheDocument();
+    expect(screen.getByText('Everyone')).toBeInTheDocument();
   });
 });
 

@@ -6,7 +6,7 @@ import { isMergeReady } from '../utils/mergeReady.js';
 import { STORAGE_KEYS } from '../constants.js';
 
 const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'review-requested', 'new-activity', 'merge-ready', 'stale'];
-const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'reviews'];
+const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'assignees', 'reviews'];
 const ITEM_TYPE_CYCLE: ItemTypeFilter[] = ['both', 'prs', 'issues'];
 
 function loadPRStateFilters(): Set<PRStateFilterKey> {
@@ -146,6 +146,12 @@ export function useFilteredItems({ items, defaultFilter, defaultSort, isUnseen, 
         case 'author':
           cmp = a.author.localeCompare(b.author);
           break;
+        case 'assignees': {
+          const assigneesA = 'assignees' in a ? a.assignees.join(',') : '';
+          const assigneesB = 'assignees' in b ? b.assignees.join(',') : '';
+          cmp = assigneesA.localeCompare(assigneesB);
+          break;
+        }
         case 'reviews': {
           const rsA = a.kind === 'pr' ? a.reviewState : { approvals: 0, changesRequested: 0, commentCount: 0 };
           const rsB = b.kind === 'pr' ? b.reviewState : { approvals: 0, changesRequested: 0, commentCount: 0 };

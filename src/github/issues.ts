@@ -1,20 +1,33 @@
 import type { Octokit } from '@octokit/rest';
-import type { IssueItem, RepoConfig } from '../types.js';
+import type { IssueItem, RepoConfig, OwnershipFilter } from '../types.js';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
- * Fetch the authenticated user's issues across all given repos using the search API.
+ * Build the user-qualifier portion of a GitHub search query based on ownership filter.
+ */
+function userQualifier(username: string, ownership: OwnershipFilter): string {
+  switch (ownership) {
+    case 'created': return `author:${username}`;
+    case 'assigned': return `assignee:${username}`;
+    case 'involved': return `involves:${username}`;
+    default: return `involves:${username}`;
+  }
+}
+
+/**
+ * Fetch the user's issues across all given repos using the search API.
  */
 export async function fetchUserIssues(
   octokit: Octokit,
   repos: RepoConfig[],
-  username: string
+  username: string,
+  ownership: OwnershipFilter = 'involved'
 ): Promise<IssueItem[]> {
   const since = new Date(Date.now() - THIRTY_DAYS_MS).toISOString().split('T')[0];
 
   const repoFilters = repos.map((r) => `repo:${r.owner}/${r.name}`).join(' ');
-  const query = `is:issue is:open involves:${username} updated:>=${since} ${repoFilters}`;
+  const query = `is:issue is:open ${userQualifier(username, ownership)} updated:>=${since} ${repoFilters}`;
 
   const allItems: IssueItem[] = [];
   let page = 1;
@@ -88,7 +101,7 @@ export async function fetchUserIssues(
 }
 
 /**
- * Fetch all open issues (any author) for a single repo — used when "mine only" is off.
+ * Fetch all open issues (any author) for a single repo — used when "everyone" is selected.
  */
 export async function fetchAllIssuesForRepo(
   octokit: Octokit,
