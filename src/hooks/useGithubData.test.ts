@@ -17,11 +17,12 @@ vi.mock('../github/issues.js', () => ({
 vi.mock('../github/checks.js', () => ({
   getCheckStatus: vi.fn(),
   getReviewState: vi.fn(),
+  isRequestedReviewer: vi.fn(),
 }));
 
 import { fetchUserPRs, fetchAllPRsForRepo } from '../github/pulls.js';
 import { fetchUserIssues, fetchAllIssuesForRepo } from '../github/issues.js';
-import { getCheckStatus, getReviewState } from '../github/checks.js';
+import { getCheckStatus, getReviewState, isRequestedReviewer } from '../github/checks.js';
 
 const mockedFetchUserPRs = vi.mocked(fetchUserPRs);
 const mockedFetchAllPRsForRepo = vi.mocked(fetchAllPRsForRepo);
@@ -29,6 +30,7 @@ const mockedFetchUserIssues = vi.mocked(fetchUserIssues);
 const mockedFetchAllIssuesForRepo = vi.mocked(fetchAllIssuesForRepo);
 const mockedGetCheckStatus = vi.mocked(getCheckStatus);
 const mockedGetReviewState = vi.mocked(getReviewState);
+const mockedIsRequestedReviewer = vi.mocked(isRequestedReviewer);
 
 function mockOctokit(): Octokit {
   return {} as unknown as Octokit;
@@ -73,6 +75,7 @@ describe('useGithubData', () => {
       reviewState: { approvals: 0, changesRequested: 0, commentCount: 0 },
       draft: false,
       state: 'open' as const,
+      isRequestedReviewer: false,
     };
 
     mockedFetchUserPRs.mockResolvedValue([pr]);
@@ -83,6 +86,7 @@ describe('useGithubData', () => {
       changesRequested: 0,
       commentCount: 0,
     });
+    mockedIsRequestedReviewer.mockResolvedValue(false);
 
     const { result } = renderHook(() =>
       useGithubData(mockOctokit(), repos, 30, 'user'),
@@ -114,6 +118,7 @@ describe('useGithubData', () => {
       reviewState: { approvals: 0, changesRequested: 0, commentCount: 0 },
       draft: false,
       state: 'open' as const,
+      isRequestedReviewer: false,
     };
 
     mockedFetchAllPRsForRepo.mockResolvedValue([pr]);
@@ -124,6 +129,7 @@ describe('useGithubData', () => {
       changesRequested: 0,
       commentCount: 0,
     });
+    mockedIsRequestedReviewer.mockResolvedValue(false);
 
     const { result } = renderHook(() =>
       useGithubData(mockOctokit(), repos, 30, null),
@@ -153,6 +159,7 @@ describe('useGithubData', () => {
       reviewState: { approvals: 0, changesRequested: 0, commentCount: 0 },
       draft: false,
       state: 'merged' as const,
+      isRequestedReviewer: false,
     };
 
     mockedFetchUserPRs.mockResolvedValue([mergedPR]);
@@ -193,6 +200,7 @@ describe('useGithubData', () => {
       reviewState: { approvals: 0, changesRequested: 0, commentCount: 0 },
       draft: false,
       state: 'open' as const,
+      isRequestedReviewer: false,
     };
     mockedFetchUserPRs.mockResolvedValue([pr]);
     mockedFetchUserIssues.mockResolvedValue([]);
@@ -200,6 +208,7 @@ describe('useGithubData', () => {
     mockedGetReviewState.mockResolvedValue({
       approvals: 1, changesRequested: 0, commentCount: 0,
     });
+    mockedIsRequestedReviewer.mockResolvedValue(false);
 
     const octokit = mockOctokit();
     // Start with username=null (triggers per-repo fetch)

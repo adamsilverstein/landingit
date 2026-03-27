@@ -17,6 +17,7 @@ function makePR(overrides: Partial<PRItem> = {}): PRItem {
     reviewState: { approvals: 1, changesRequested: 0, commentCount: 0 },
     draft: false,
     state: 'open',
+    isRequestedReviewer: false,
     ...overrides,
   };
 }

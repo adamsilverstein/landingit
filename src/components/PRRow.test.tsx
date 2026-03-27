@@ -19,6 +19,7 @@ function makePR(overrides: Partial<PRItem> = {}): PRItem {
     reviewState: { approvals: 0, changesRequested: 0, commentCount: 0 },
     draft: false,
     state: 'open',
+    isRequestedReviewer: false,
     ...overrides,
   };
 }
@@ -169,5 +170,15 @@ describe('PRRow', () => {
     );
     const row = container.querySelector('tr');
     expect(row).not.toHaveClass('pr-row-merge-ready');
+  });
+
+  it('renders requested reviewer badge when isRequestedReviewer is true', () => {
+    renderRow(makePR({ isRequestedReviewer: true }));
+    expect(screen.getByTitle('Your review is requested')).toBeInTheDocument();
+  });
+
+  it('does not render requested reviewer badge when isRequestedReviewer is false', () => {
+    renderRow(makePR({ isRequestedReviewer: false }));
+    expect(screen.queryByTitle('Your review is requested')).not.toBeInTheDocument();
   });
 });

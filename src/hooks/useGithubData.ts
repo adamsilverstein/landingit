@@ -3,7 +3,7 @@ import type { Octokit } from '@octokit/rest';
 import type { PRItem, DashboardItem, RepoConfig, RepoFetchError } from '../types.js';
 import { fetchUserPRs, fetchAllPRsForRepo } from '../github/pulls.js';
 import { fetchUserIssues, fetchAllIssuesForRepo } from '../github/issues.js';
-import { getCheckStatus, getReviewState } from '../github/checks.js';
+import { getCheckStatus, getReviewState, isRequestedReviewer } from '../github/checks.js';
 
 interface UseGithubDataResult {
   items: DashboardItem[];
@@ -18,7 +18,8 @@ export function useGithubData(
   octokit: Octokit | null,
   repos: RepoConfig[],
   maxPerRepo: number,
-  username: string | null
+  username: string | null,
+  authenticatedUser?: string | null
 ): UseGithubDataResult {
   const [items, setItems] = useState<DashboardItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,6 +36,8 @@ export function useGithubData(
   maxRef.current = maxPerRepo;
   const usernameRef = useRef(username);
   usernameRef.current = username;
+  const authUserRef = useRef(authenticatedUser);
+  authUserRef.current = authenticatedUser;
 
   const repoKey = repos.map((r) => `${r.owner}/${r.name}`).join(',');
 
@@ -129,12 +132,13 @@ export function useGithubData(
         if (cancelled) return;
 
         // Enrich PRs with CI status and reviews in parallel
+        const authUser = authUserRef.current;
         const enriched = await Promise.allSettled(
           allPRs.map(async (pr) => {
             // Only fetch CI/reviews for open PRs (closed/merged don't need it)
             if (pr.state !== 'open') return pr;
 
-            const [ciResult, reviewResult] = await Promise.allSettled([
+            const [ciResult, reviewResult, requestedResult] = await Promise.allSettled([
               getCheckStatus(
                 client,
                 pr.repo.owner,
@@ -142,6 +146,9 @@ export function useGithubData(
                 `refs/pull/${pr.number}/head`
               ),
               getReviewState(client, pr.repo.owner, pr.repo.name, pr.number),
+              authUser
+                ? isRequestedReviewer(client, pr.repo.owner, pr.repo.name, pr.number, authUser)
+                : Promise.resolve(false),
             ]);
 
             return {
@@ -154,6 +161,10 @@ export function useGithubData(
                 reviewResult.status === 'fulfilled'
                   ? reviewResult.value
                   : pr.reviewState,
+              isRequestedReviewer:
+                requestedResult.status === 'fulfilled'
+                  ? requestedResult.value
+                  : false,
             };
           })
         );

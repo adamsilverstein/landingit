@@ -56,7 +56,8 @@ export function App() {
     octokit,
     enabledRepos,
     config.defaults.maxPrsPerRepo,
-    mineOnly ? username : null
+    mineOnly ? username : null,
+    username
   );
 
   const {

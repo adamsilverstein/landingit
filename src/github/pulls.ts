@@ -60,6 +60,7 @@ export async function fetchUserPRs(
         reviewState: { approvals: 0, changesRequested: 0, commentCount: 0 },
         draft: item.draft ?? false,
         state,
+        isRequestedReviewer: false,
       });
     }
 
@@ -119,6 +120,7 @@ export async function fetchAllPRsForRepo(
       reviewState: { approvals: 0, changesRequested: 0, commentCount: 0 },
       draft: pr.draft ?? false,
       state,
+      isRequestedReviewer: false,
     };
   });
 }
