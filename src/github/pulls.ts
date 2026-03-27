@@ -1,23 +1,34 @@
 import type { Octokit } from '@octokit/rest';
-import type { PRItem, PRState, RepoConfig } from '../types.js';
+import type { PRItem, PRState, RepoConfig, OwnershipFilter } from '../types.js';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
+type UserScopedOwnership = Exclude<OwnershipFilter, 'everyone'>;
+
 /**
- * Fetch the authenticated user's PRs across all given repos using the search API.
- * This is far more efficient than listing all PRs per repo and filtering client-side,
- * especially in busy repos like WordPress/Gutenberg.
+ * Build the user-qualifier portion of a GitHub search query based on ownership filter.
+ */
+function userQualifier(username: string, ownership: UserScopedOwnership): string {
+  switch (ownership) {
+    case 'created': return `author:${username}`;
+    case 'assigned': return `assignee:${username}`;
+    case 'involved': return `involves:${username}`;
+  }
+}
+
+/**
+ * Fetch the user's PRs across all given repos using the search API.
  */
 export async function fetchUserPRs(
   octokit: Octokit,
   repos: RepoConfig[],
-  username: string
+  username: string,
+  ownership: UserScopedOwnership = 'created'
 ): Promise<PRItem[]> {
   const since = new Date(Date.now() - THIRTY_DAYS_MS).toISOString().split('T')[0];
 
-  // Build search query: author's PRs in the given repos, updated in last 30 days
   const repoFilters = repos.map((r) => `repo:${r.owner}/${r.name}`).join(' ');
-  const query = `is:pr author:${username} updated:>=${since} ${repoFilters}`;
+  const query = `is:pr ${userQualifier(username, ownership)} updated:>=${since} ${repoFilters}`;
 
   const allItems: PRItem[] = [];
   let page = 1;
@@ -61,6 +72,7 @@ export async function fetchUserPRs(
         draft: item.draft ?? false,
         state,
         isRequestedReviewer: false,
+        assignees: (item.assignees ?? []).map((a) => a.login),
       });
     }
 
@@ -77,7 +89,7 @@ export async function fetchUserPRs(
 }
 
 /**
- * Fetch all PRs (any author) for a single repo — used when "mine only" is off.
+ * Fetch all PRs (any author) for a single repo — used when "everyone" is selected.
  */
 export async function fetchAllPRsForRepo(
   octokit: Octokit,
@@ -121,6 +133,7 @@ export async function fetchAllPRsForRepo(
       draft: pr.draft ?? false,
       state,
       isRequestedReviewer: false,
+      assignees: (pr.assignees ?? []).map((a) => a.login),
     };
   });
 }

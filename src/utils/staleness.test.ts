@@ -18,6 +18,7 @@ function makePR(updatedAt: string): PRItem {
     draft: false,
     state: 'open',
     isRequestedReviewer: false,
+    assignees: [],
   };
 }
 

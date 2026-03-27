@@ -71,6 +71,7 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPre
             <SortableHeader label="State" sortKey="state" className="col-state" {...headerProps} />
             <SortableHeader label="Title" sortKey="title" className="col-title" {...headerProps} />
             <SortableHeader label="Author" sortKey="author" className="col-author" {...headerProps} />
+            <SortableHeader label="Assignees" sortKey="assignees" className="col-assignees" {...headerProps} />
             <SortableHeader label="Updated" sortKey="updated" className="col-updated" {...headerProps} />
             <SortableHeader label="Reviews" sortKey="reviews" className="col-reviews" {...headerProps} />
             <th className="col-link" scope="col">Link</th>

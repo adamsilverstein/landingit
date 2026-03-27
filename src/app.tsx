@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import type { DashboardItem } from './types.js';
+import type { DashboardItem, OwnershipFilter } from './types.js';
 import { createClient, type RateLimit } from './github/client.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
 import { useConfig } from './hooks/useConfig.js';
@@ -19,10 +19,12 @@ import { RepoManager } from './components/RepoManager.js';
 import { TokenSetup } from './components/TokenSetup.js';
 import { DetailPanel } from './components/DetailPanel.js';
 
+const OWNERSHIP_CYCLE: OwnershipFilter[] = ['created', 'assigned', 'involved', 'everyone'];
+
 export function App() {
   const [token, setTokenState] = useState<string | null>(() => getToken());
   const { config, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName } = useConfig();
-  const [mineOnly, setMineOnly] = useState(true);
+  const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('created');
   const [username, setUsername] = useState<string | null>(null);
   const { cycleTheme } = useTheme();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -51,13 +53,14 @@ export function App() {
     );
   }, [octokit]);
 
-  // Pass username when mineOnly is true so the hook uses the search API
+  // Pass username for user-specific filters, null for "everyone"
   const { items, loading, error, failedRepos, lastRefresh, refresh } = useGithubData(
     octokit,
     enabledRepos,
     config.defaults.maxPrsPerRepo,
-    mineOnly ? username : null,
-    username
+    ownershipFilter !== 'everyone' ? username : null,
+    username,
+    ownershipFilter
   );
 
   const {
@@ -84,8 +87,11 @@ export function App() {
     resetAutoRefresh();
   }, [refresh, resetAutoRefresh]);
 
-  const toggleMineOnly = useCallback(() => {
-    setMineOnly((prev) => !prev);
+  const cycleOwnership = useCallback(() => {
+    setOwnershipFilter((prev) => {
+      const idx = OWNERSHIP_CYCLE.indexOf(prev);
+      return OWNERSHIP_CYCLE[(idx + 1) % OWNERSHIP_CYCLE.length];
+    });
     setCursorIndex(0);
   }, [setCursorIndex]);
 
@@ -143,12 +149,12 @@ export function App() {
       cycleFilter,
       cycleSort,
       refresh: handleRefresh,
-      toggleMineOnly,
+      toggleMineOnly: cycleOwnership,
       cycleTheme,
       focusSearch,
       cycleItemType,
     }),
-    [viewMode, setViewMode, moveCursor, openSelected, previewSelected, cycleFilter, cycleSort, handleRefresh, toggleMineOnly, cycleTheme, focusSearch, cycleItemType]
+    [viewMode, setViewMode, moveCursor, openSelected, previewSelected, cycleFilter, cycleSort, handleRefresh, cycleOwnership, cycleTheme, focusSearch, cycleItemType]
   );
 
   useKeyboardShortcuts(shortcutActions);
@@ -173,8 +179,8 @@ export function App() {
       <FilterBar
         active={filter}
         onFilter={handleSetFilter}
-        mineOnly={mineOnly}
-        onToggleMine={toggleMineOnly}
+        ownershipFilter={ownershipFilter}
+        onSetOwnership={setOwnershipFilter}
         username={username}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}

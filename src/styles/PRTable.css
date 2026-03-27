@@ -129,6 +129,14 @@
   font-size: 13px;
 }
 
+.col-assignees {
+  color: var(--text-muted);
+  font-size: 13px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .col-updated {
   color: var(--text-subtle);
   font-size: 13px;
