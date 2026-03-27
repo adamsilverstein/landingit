@@ -3,15 +3,16 @@ import type { IssueItem, RepoConfig, OwnershipFilter } from '../types.js';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
+type UserScopedOwnership = Exclude<OwnershipFilter, 'everyone'>;
+
 /**
  * Build the user-qualifier portion of a GitHub search query based on ownership filter.
  */
-function userQualifier(username: string, ownership: OwnershipFilter): string {
+function userQualifier(username: string, ownership: UserScopedOwnership): string {
   switch (ownership) {
     case 'created': return `author:${username}`;
     case 'assigned': return `assignee:${username}`;
     case 'involved': return `involves:${username}`;
-    default: return `involves:${username}`;
   }
 }
 
@@ -22,7 +23,7 @@ export async function fetchUserIssues(
   octokit: Octokit,
   repos: RepoConfig[],
   username: string,
-  ownership: OwnershipFilter = 'involved'
+  ownership: UserScopedOwnership = 'involved'
 ): Promise<IssueItem[]> {
   const since = new Date(Date.now() - THIRTY_DAYS_MS).toISOString().split('T')[0];
 
