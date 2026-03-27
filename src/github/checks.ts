@@ -30,6 +30,28 @@ export async function getCheckStatus(
   }
 }
 
+export async function isRequestedReviewer(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  prNumber: number,
+  username: string
+): Promise<boolean> {
+  try {
+    const { data } = await octokit.pulls.listRequestedReviewers({
+      owner,
+      repo,
+      pull_number: prNumber,
+    });
+    return data.users.some(
+      (u) => u.login.toLowerCase() === username.toLowerCase()
+    );
+  } catch (e) {
+    console.warn('Failed to fetch requested reviewers:', e);
+    return false;
+  }
+}
+
 export async function getReviewState(
   octokit: Octokit,
   owner: string,

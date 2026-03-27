@@ -17,7 +17,7 @@ export interface Config {
 export type CIStatus = 'success' | 'failure' | 'pending' | 'none' | 'mixed';
 export type SortMode = 'updated' | 'created' | 'repo' | 'status' | 'number' | 'state' | 'title' | 'author' | 'reviews';
 export type SortDirection = 'asc' | 'desc';
-export type FilterMode = 'all' | 'failing' | 'needs-review' | 'new-activity';
+export type FilterMode = 'all' | 'failing' | 'needs-review' | 'review-requested' | 'new-activity';
 export type ItemTypeFilter = 'both' | 'prs' | 'issues';
 export type ViewMode = 'list' | 'repos' | 'help' | 'detail';
 export type ThemeMode = 'dark' | 'light' | 'system';
@@ -56,6 +56,7 @@ export interface PRItem {
   reviewState: ReviewState;
   draft: boolean;
   state: PRState;
+  isRequestedReviewer: boolean;
 }
 
 export interface IssueItem {

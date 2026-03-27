@@ -5,6 +5,7 @@ const FILTERS: { key: FilterMode; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'failing', label: 'Failing CI' },
   { key: 'needs-review', label: 'Needs Review' },
+  { key: 'review-requested', label: 'Review Requested' },
   { key: 'new-activity', label: 'New Activity' },
 ];
 

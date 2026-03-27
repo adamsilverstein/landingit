@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ThemeMode } from '../types.js';
-
-const STORAGE_KEY = 'gh-dashboard-theme';
+import { STORAGE_KEYS } from '../constants.js';
 const THEME_CYCLE: ThemeMode[] = ['dark', 'light', 'system'];
 
 function loadTheme(): ThemeMode {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(STORAGE_KEYS.THEME);
     if (stored === 'dark' || stored === 'light' || stored === 'system') {
       return stored;
     }
@@ -31,7 +30,7 @@ export function useTheme() {
       const idx = THEME_CYCLE.indexOf(prev);
       const next = THEME_CYCLE[(idx + 1) % THEME_CYCLE.length];
       try {
-        localStorage.setItem(STORAGE_KEY, next);
+        localStorage.setItem(STORAGE_KEYS.THEME, next);
       } catch {
         // ignore
       }
