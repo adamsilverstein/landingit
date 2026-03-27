@@ -5,7 +5,7 @@ import { ReviewBadge } from './ReviewBadge.js';
 import { LabelBadge } from './LabelBadge.js';
 import { timeAgo } from '../utils/timeAgo.js';
 
-interface PRRowProps {
+export interface PRRowProps {
   item: DashboardItem;
   selected: boolean;
   unseen: boolean;
@@ -95,7 +95,7 @@ export function PRRow({ item, selected, unseen, stale, onPreview, onOpen, onHide
       </td>
       <td className="col-reviews">
         {isPR ? (
-          <ReviewBadge state={item.reviewState} />
+          <ReviewBadge state={item.reviewState} isRequestedReviewer={item.isRequestedReviewer} />
         ) : (
           item.milestone && <span className="milestone-badge">🏁 {item.milestone}</span>
         )}

@@ -1,0 +1,160 @@
+/* ── Filter Bar ─────────────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.filter-pill {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 4px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.filter-pill:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.filter-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.filter-active:hover {
+  border-color: var(--accent);
+}
+
+.filter-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  align-self: center;
+}
+
+/* ── PR State Pills ─────────────────────────────────────────── */
+.pr-state-pill {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.pr-state-pill:hover {
+  opacity: 0.8;
+}
+
+.pr-state-pill.pr-state-active {
+  opacity: 1;
+  border-style: solid;
+}
+
+.pr-state-pill.pr-state-draft.pr-state-active {
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  border-color: var(--text-muted);
+}
+
+.pr-state-pill.pr-state-open.pr-state-active {
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--green);
+  border-color: rgba(63, 185, 80, 0.4);
+}
+
+.pr-state-pill.pr-state-merged.pr-state-active {
+  background: rgba(188, 140, 255, 0.15);
+  color: var(--purple);
+  border-color: rgba(188, 140, 255, 0.4);
+}
+
+/* ── Search Input ──────────────────────────────────────────── */
+.search-input {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  width: 200px;
+  outline: none;
+  transition: border-color 0.15s, width 0.2s;
+}
+
+.search-input::placeholder {
+  color: var(--text-subtle);
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  width: 280px;
+}
+
+/* ── Hidden Repos Indicator ────────────────────────────────── */
+.hidden-repos-wrapper {
+  position: relative;
+}
+
+.filter-pill.hidden-repos-pill {
+  color: var(--yellow);
+  border-color: var(--yellow);
+}
+
+.hidden-repos-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 240px;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.hidden-repos-header {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hidden-repo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+}
+
+.hidden-repo-item:last-child {
+  border-bottom: none;
+}
+
+.hidden-repo-item:hover {
+  background: var(--bg-hover);
+}
+
+.hidden-repo-name {
+  color: var(--text-muted);
+}
+
+.hidden-repo-restore {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+}

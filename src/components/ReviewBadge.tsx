@@ -1,8 +1,21 @@
 import React from 'react';
 import type { ReviewState } from '../types.js';
 
-export function ReviewBadge({ state }: { state: ReviewState }) {
+interface ReviewBadgeProps {
+  state: ReviewState;
+  isRequestedReviewer?: boolean;
+}
+
+export function ReviewBadge({ state, isRequestedReviewer }: ReviewBadgeProps) {
   const parts: React.ReactNode[] = [];
+
+  if (isRequestedReviewer) {
+    parts.push(
+      <span key="requested" className="review-badge review-requested" title="Your review is requested">
+        👁
+      </span>
+    );
+  }
 
   if (state.approvals > 0) {
     parts.push(

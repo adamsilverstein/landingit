@@ -17,6 +17,7 @@ function makePR(updatedAt: string): PRItem {
     reviewState: { approvals: 0, changesRequested: 0, commentCount: 0 },
     draft: false,
     state: 'open',
+    isRequestedReviewer: false,
   };
 }
 

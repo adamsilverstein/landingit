@@ -1,0 +1,113 @@
+/* ── Header ─────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.header-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.header-stats {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.header-btn:hover {
+  background: var(--bg-hover);
+}
+
+.header-btn-subtle {
+  color: var(--text-muted);
+  border-color: transparent;
+  background: none;
+}
+
+.header-btn-subtle:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.last-refresh {
+  color: var(--text-subtle);
+  font-size: 12px;
+}
+
+.auto-refresh-countdown {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Rate Limit ─────────────────────────────────────────────── */
+.rate-limit {
+  font-size: 12px;
+  color: var(--text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.rate-limit-warning {
+  color: var(--yellow);
+  font-weight: 500;
+}
+
+.rate-limit-critical {
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* ── Spinner ────────────────────────────────────────────────── */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Unseen / New Activity ─────────────────────────────────── */
+.unseen-badge {
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  line-height: 1.4;
+}

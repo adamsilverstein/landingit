@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getCheckStatus, getReviewState } from '../github/checks.js';
+import { getCheckStatus, getReviewState, isRequestedReviewer } from '../github/checks.js';
 import type { Octokit } from '@octokit/rest';
 
 function mockOctokit(overrides: Record<string, unknown> = {}): Octokit {
@@ -313,5 +313,66 @@ describe('getReviewState', () => {
     });
     const result = await getReviewState(octokit, 'o', 'r', 1);
     expect(result).toEqual({ approvals: 0, changesRequested: 0, commentCount: 0 });
+  });
+});
+
+describe('isRequestedReviewer', () => {
+  it('returns true when the user is a requested reviewer', async () => {
+    const octokit = mockOctokit({
+      pulls: {
+        listRequestedReviewers: vi.fn().mockResolvedValue({
+          data: {
+            users: [{ login: 'alice' }, { login: 'bob' }],
+          },
+        }),
+      },
+    });
+    expect(await isRequestedReviewer(octokit, 'o', 'r', 1, 'alice')).toBe(true);
+  });
+
+  it('returns false when the user is not a requested reviewer', async () => {
+    const octokit = mockOctokit({
+      pulls: {
+        listRequestedReviewers: vi.fn().mockResolvedValue({
+          data: {
+            users: [{ login: 'alice' }],
+          },
+        }),
+      },
+    });
+    expect(await isRequestedReviewer(octokit, 'o', 'r', 1, 'bob')).toBe(false);
+  });
+
+  it('returns false when there are no requested reviewers', async () => {
+    const octokit = mockOctokit({
+      pulls: {
+        listRequestedReviewers: vi.fn().mockResolvedValue({
+          data: { users: [] },
+        }),
+      },
+    });
+    expect(await isRequestedReviewer(octokit, 'o', 'r', 1, 'alice')).toBe(false);
+  });
+
+  it('performs case-insensitive comparison', async () => {
+    const octokit = mockOctokit({
+      pulls: {
+        listRequestedReviewers: vi.fn().mockResolvedValue({
+          data: {
+            users: [{ login: 'Alice' }],
+          },
+        }),
+      },
+    });
+    expect(await isRequestedReviewer(octokit, 'o', 'r', 1, 'alice')).toBe(true);
+  });
+
+  it('returns false when the API call throws', async () => {
+    const octokit = mockOctokit({
+      pulls: {
+        listRequestedReviewers: vi.fn().mockRejectedValue(new Error('API error')),
+      },
+    });
+    expect(await isRequestedReviewer(octokit, 'o', 'r', 1, 'alice')).toBe(false);
   });
 });

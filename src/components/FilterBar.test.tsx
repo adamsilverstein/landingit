@@ -32,6 +32,7 @@ describe('FilterBar', () => {
     expect(screen.getByText('All')).toBeInTheDocument();
     expect(screen.getByText('Failing CI')).toBeInTheDocument();
     expect(screen.getByText('Needs Review')).toBeInTheDocument();
+    expect(screen.getByText('Review Requested')).toBeInTheDocument();
   });
 
   it('highlights the active filter', () => {
