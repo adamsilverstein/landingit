@@ -7,6 +7,7 @@ const FILTERS: { key: FilterMode; label: string }[] = [
   { key: 'needs-review', label: 'Needs Review' },
   { key: 'review-requested', label: 'Review Requested' },
   { key: 'new-activity', label: 'New Activity' },
+  { key: 'merge-ready', label: '🚀 Ready to Merge' },
 ];
 
 const ITEM_TYPES: { key: ItemTypeFilter; label: string }[] = [
