@@ -17,7 +17,7 @@ export async function fetchUserPRs(
 
   // Build search query: author's PRs in the given repos, updated in last 30 days
   const repoFilters = repos.map((r) => `repo:${r.owner}/${r.name}`).join(' ');
-  const query = `is:pr -is:closed author:${username} updated:>=${since} ${repoFilters}`;
+  const query = `is:pr author:${username} updated:>=${since} ${repoFilters}`;
 
   const allItems: PRItem[] = [];
   let page = 1;
