@@ -18,7 +18,7 @@ interface UseGithubDataResult {
  * Merge an enriched PR into the items array, replacing the existing entry by id.
  */
 function replaceItem(prev: DashboardItem[], updated: DashboardItem): DashboardItem[] {
-  const idx = prev.findIndex((item) => item.id === updated.id);
+  const idx = prev.findIndex((item) => item.id === updated.id && item.kind === updated.kind);
   if (idx === -1) return prev;
   const next = [...prev];
   next[idx] = updated;
