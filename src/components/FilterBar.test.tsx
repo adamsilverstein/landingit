@@ -26,102 +26,86 @@ function renderFilterBar(overrides: Partial<React.ComponentProps<typeof FilterBa
   return { ...render(<FilterBar {...defaults} />), props: defaults };
 }
 
-describe('FilterBar', () => {
-  it('renders all filter pills', () => {
+describe('FilterBar dropdowns', () => {
+  it('renders all dropdown triggers', () => {
     renderFilterBar();
-    expect(screen.getByText('All')).toBeInTheDocument();
+    expect(screen.getByText('Owner:')).toBeInTheDocument();
+    expect(screen.getByText('Type:')).toBeInTheDocument();
+    expect(screen.getByText('Filter:')).toBeInTheDocument();
+    expect(screen.getByText('State:')).toBeInTheDocument();
+  });
+
+  it('shows username in ownership trigger when user-specific filter is active', () => {
+    renderFilterBar({ ownershipFilter: 'created', username: 'octocat' });
+    expect(screen.getByText('@octocat')).toBeInTheDocument();
+  });
+
+  it('shows "Everyone" in ownership trigger when everyone filter is active', () => {
+    renderFilterBar({ ownershipFilter: 'everyone', username: 'octocat' });
+    expect(screen.getByText('Everyone')).toBeInTheDocument();
+  });
+
+  it('shows filter options when trigger is clicked', async () => {
+    renderFilterBar();
+    await userEvent.click(screen.getByText('Filter:'));
     expect(screen.getByText('Failing CI')).toBeInTheDocument();
     expect(screen.getByText('Needs Review')).toBeInTheDocument();
     expect(screen.getByText('Review Requested')).toBeInTheDocument();
   });
 
-  it('highlights the active filter', () => {
-    renderFilterBar({ active: 'failing' });
-    expect(screen.getByText('Failing CI')).toHaveClass('filter-active');
-    expect(screen.getByText('All')).not.toHaveClass('filter-active');
-  });
-
-  it('calls onFilter when a filter pill is clicked', async () => {
+  it('calls onFilter when a filter option is selected', async () => {
     const onFilter = vi.fn();
     renderFilterBar({ onFilter });
+    await userEvent.click(screen.getByText('Filter:'));
     await userEvent.click(screen.getByText('Needs Review'));
     expect(onFilter).toHaveBeenCalledWith('needs-review');
   });
 
-  it('shows username when a user-specific ownership filter is active', () => {
-    renderFilterBar({ ownershipFilter: 'created', username: 'octocat' });
-    expect(screen.getByText('@octocat')).toBeInTheDocument();
-  });
-
-  it('shows "Everyone" button for the everyone filter', () => {
-    renderFilterBar({ ownershipFilter: 'everyone', username: 'octocat' });
-    expect(screen.getByText('Everyone')).toBeInTheDocument();
-  });
-
-  it('highlights the active ownership filter', () => {
-    renderFilterBar({ ownershipFilter: 'created', username: 'octocat' });
-    expect(screen.getByText('@octocat')).toHaveClass('filter-active');
-  });
-
-  it('calls onSetOwnership when an ownership pill is clicked', async () => {
+  it('calls onSetOwnership when an ownership option is selected', async () => {
     const onSetOwnership = vi.fn();
-    renderFilterBar({ ownershipFilter: 'created', onSetOwnership });
+    renderFilterBar({ onSetOwnership });
+    await userEvent.click(screen.getByText('Owner:'));
     await userEvent.click(screen.getByText('Everyone'));
     expect(onSetOwnership).toHaveBeenCalledWith('everyone');
   });
 
-  it('renders all ownership filter options', () => {
+  it('shows all ownership options in dropdown', async () => {
     renderFilterBar({ ownershipFilter: 'everyone' });
-    expect(screen.getByText('Created')).toBeInTheDocument();
-    expect(screen.getByText('Assigned')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Owner:'));
+    expect(screen.getByText('Created by me')).toBeInTheDocument();
+    expect(screen.getByText('Assigned to me')).toBeInTheDocument();
     expect(screen.getByText('Involved')).toBeInTheDocument();
-    expect(screen.getByText('Everyone')).toBeInTheDocument();
   });
 });
 
-describe('FilterBar PR state pills', () => {
-  it('renders Draft, Open, and Merged pills', () => {
-    renderFilterBar();
-    expect(screen.getByText('Draft')).toBeInTheDocument();
-    expect(screen.getByText('Open')).toBeInTheDocument();
-    expect(screen.getByText('Merged')).toBeInTheDocument();
+describe('FilterBar PR state dropdown', () => {
+  it('shows active states in trigger label', () => {
+    renderFilterBar({ prStateFilters: new Set<PRStateFilterKey>(['draft', 'open']) });
+    expect(screen.getByText('Draft, Open')).toBeInTheDocument();
   });
 
-  it('marks Draft and Open as active by default', () => {
-    renderFilterBar();
-    const draft = screen.getByText('Draft');
-    const open = screen.getByText('Open');
-    const merged = screen.getByText('Merged');
-
-    expect(draft.className).toContain('pr-state-active');
-    expect(open.className).toContain('pr-state-active');
-    expect(merged.className).not.toContain('pr-state-active');
-  });
-
-  it('marks Merged as active when included in prStateFilters', () => {
-    renderFilterBar({ prStateFilters: new Set<PRStateFilterKey>(['draft', 'open', 'merged']) });
-    expect(screen.getByText('Merged').className).toContain('pr-state-active');
-  });
-
-  it('calls onTogglePRState when a state pill is clicked', async () => {
+  it('calls onTogglePRState when a state option is toggled', async () => {
     const user = userEvent.setup();
     const { props } = renderFilterBar();
-
+    await user.click(screen.getByText('State:'));
     await user.click(screen.getByText('Merged'));
     expect(props.onTogglePRState).toHaveBeenCalledWith('merged');
-
-    await user.click(screen.getByText('Draft'));
-    expect(props.onTogglePRState).toHaveBeenCalledWith('draft');
   });
 
-  it('shows no active state pills when prStateFilters is empty', () => {
-    renderFilterBar({ prStateFilters: new Set<PRStateFilterKey>() });
-    const draft = screen.getByText('Draft');
-    const open = screen.getByText('Open');
-    const merged = screen.getByText('Merged');
+  it('keeps dropdown open after toggling (multi-select)', async () => {
+    const user = userEvent.setup();
+    renderFilterBar();
+    await user.click(screen.getByText('State:'));
+    await user.click(screen.getByText('Merged'));
+    // Dropdown should still be open — Draft and Open should still be visible
+    expect(screen.getByText('Draft')).toBeInTheDocument();
+    expect(screen.getByText('Open')).toBeInTheDocument();
+  });
+});
 
-    expect(draft.className).not.toContain('pr-state-active');
-    expect(open.className).not.toContain('pr-state-active');
-    expect(merged.className).not.toContain('pr-state-active');
+describe('FilterBar search', () => {
+  it('renders search input', () => {
+    renderFilterBar();
+    expect(screen.getByPlaceholderText('Search… ( / )')).toBeInTheDocument();
   });
 });
