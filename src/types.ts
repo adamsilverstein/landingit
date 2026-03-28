@@ -60,6 +60,7 @@ export interface PRItem {
   state: PRState;
   isRequestedReviewer: boolean;
   assignees: string[];
+  labels: LabelInfo[];
 }
 
 export interface IssueItem {

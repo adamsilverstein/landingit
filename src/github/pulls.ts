@@ -1,5 +1,5 @@
 import type { Octokit } from '@octokit/rest';
-import type { PRItem, PRState, RepoConfig, OwnershipFilter } from '../types.js';
+import type { PRItem, PRState, RepoConfig, OwnershipFilter, LabelInfo } from '../types.js';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -73,6 +73,16 @@ export async function fetchUserPRs(
         state,
         isRequestedReviewer: false,
         assignees: (item.assignees ?? []).map((a) => a.login),
+        labels: (item.labels ?? []).map((l): LabelInfo => {
+          if (typeof l === 'string') {
+            return { name: l, color: '888888' };
+          }
+          return {
+            name: l.name ?? '',
+            color: l.color ?? '888888',
+            description: l.description ?? undefined,
+          };
+        }),
       });
     }
 
@@ -134,6 +144,11 @@ export async function fetchAllPRsForRepo(
       state,
       isRequestedReviewer: false,
       assignees: (pr.assignees ?? []).map((a) => a.login),
+      labels: (pr.labels ?? []).map((l): LabelInfo => ({
+        name: l.name ?? '',
+        color: l.color ?? '888888',
+        description: l.description ?? undefined,
+      })),
     };
   });
 }

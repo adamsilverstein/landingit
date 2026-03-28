@@ -9,6 +9,19 @@ const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'review-re
 const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'assignees', 'reviews'];
 const ITEM_TYPE_CYCLE: ItemTypeFilter[] = ['both', 'prs', 'issues'];
 
+function loadLabelFilters(): Set<string> {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.LABEL_FILTERS);
+    if (stored) {
+      const parsed = JSON.parse(stored) as string[];
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return new Set(parsed.filter((s) => typeof s === 'string'));
+      }
+    }
+  } catch { /* ignore invalid stored data */ }
+  return new Set<string>();
+}
+
 function loadPRStateFilters(): Set<PRStateFilterKey> {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.PR_STATE_FILTERS);
@@ -41,6 +54,7 @@ export function useFilteredItems({ items, defaultFilter, defaultSort, isUnseen, 
   const [itemTypeFilter, setItemTypeFilter] = useState<ItemTypeFilter>('both');
   const [cursorIndex, setCursorIndex] = useState(0);
   const [prStateFilters, setPRStateFilters] = useState<Set<PRStateFilterKey>>(loadPRStateFilters);
+  const [labelFilters, setLabelFilters] = useState<Set<string>>(loadLabelFilters);
 
   // Persist PR state filters to localStorage
   useEffect(() => {
@@ -50,6 +64,31 @@ export function useFilteredItems({ items, defaultFilter, defaultSort, isUnseen, 
       // Ignore storage failures (e.g. quota exceeded, private browsing)
     }
   }, [prStateFilters]);
+
+  // Persist label filters to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.LABEL_FILTERS, JSON.stringify([...labelFilters]));
+    } catch { /* ignore */ }
+  }, [labelFilters]);
+
+  const toggleLabelFilter = useCallback((label: string) => {
+    setLabelFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) {
+        next.delete(label);
+      } else {
+        next.add(label);
+      }
+      return next;
+    });
+    setCursorIndex(0);
+  }, []);
+
+  const clearLabelFilters = useCallback(() => {
+    setLabelFilters(new Set());
+    setCursorIndex(0);
+  }, []);
 
   const togglePRStateFilter = useCallback((key: PRStateFilterKey) => {
     setPRStateFilters((prev) => {
@@ -75,6 +114,13 @@ export function useFilteredItems({ items, defaultFilter, defaultSort, isUnseen, 
     }
 
     result = filterByPRState(result, prStateFilters);
+
+    // Label filter: show items matching any selected label
+    if (labelFilters.size > 0) {
+      result = result.filter((item) =>
+        item.labels.some((l) => labelFilters.has(l.name))
+      );
+    }
 
     if (filter === 'failing') {
       result = result.filter((item) => item.kind === 'pr' && item.ciStatus === 'failure');
@@ -167,7 +213,7 @@ export function useFilteredItems({ items, defaultFilter, defaultSort, isUnseen, 
     });
 
     return result;
-  }, [items, filter, sort, sortDirection, searchQuery, itemTypeFilter, prStateFilters, isUnseen, staleDays]);
+  }, [items, filter, sort, sortDirection, searchQuery, itemTypeFilter, prStateFilters, labelFilters, isUnseen, staleDays]);
 
   // Clamp cursor when filtered list shrinks
   useEffect(() => {
@@ -225,6 +271,19 @@ export function useFilteredItems({ items, defaultFilter, defaultSort, isUnseen, 
     setCursorIndex(0);
   }, []);
 
+  // Collect all unique labels from items for the filter UI
+  const availableLabels = useMemo(() => {
+    const labelMap = new Map<string, { name: string; color: string }>();
+    for (const item of items) {
+      for (const label of item.labels) {
+        if (!labelMap.has(label.name)) {
+          labelMap.set(label.name, { name: label.name, color: label.color });
+        }
+      }
+    }
+    return Array.from(labelMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [items]);
+
   return {
     filtered,
     filter,
@@ -238,6 +297,10 @@ export function useFilteredItems({ items, defaultFilter, defaultSort, isUnseen, 
     setCursorIndex,
     prStateFilters,
     togglePRStateFilter,
+    labelFilters,
+    toggleLabelFilter,
+    clearLabelFilters,
+    availableLabels,
     moveCursor,
     cycleFilter,
     cycleSort,

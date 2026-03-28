@@ -197,3 +197,80 @@
   border-color: var(--accent);
   width: 280px;
 }
+
+/* ── Label Filter ──────────────────────────────────────────── */
+.label-filter-wrapper {
+  position: relative;
+}
+
+.label-filter-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 260px;
+  max-height: 320px;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.label-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.label-filter-clear {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.label-filter-clear:hover {
+  background: var(--bg-hover);
+}
+
+.label-filter-list {
+  overflow-y: auto;
+  max-height: 270px;
+  padding: 4px 0;
+}
+
+.label-filter-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  opacity: 0.6;
+  transition: opacity 0.1s, background 0.1s;
+}
+
+.label-filter-item:hover {
+  background: var(--bg-hover);
+  opacity: 0.9;
+}
+
+.label-filter-item.label-filter-selected {
+  opacity: 1;
+  background: rgba(88, 166, 255, 0.08);
+}

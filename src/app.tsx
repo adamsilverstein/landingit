@@ -68,7 +68,9 @@ export function App() {
   const {
     filtered, filter, sort, sortDirection, searchQuery, setSearchQuery,
     itemTypeFilter, setItemTypeFilter, cursorIndex, setCursorIndex,
-    prStateFilters, togglePRStateFilter, moveCursor, cycleFilter, cycleSort,
+    prStateFilters, togglePRStateFilter,
+    labelFilters, toggleLabelFilter, clearLabelFilters, availableLabels,
+    moveCursor, cycleFilter, cycleSort,
     handleSetFilter, handleSetSort, cycleItemType,
   } = useFilteredItems({
     items,
@@ -193,6 +195,10 @@ export function App() {
         onRestoreRepo={toggleRepoByName}
         prStateFilters={prStateFilters}
         onTogglePRState={togglePRStateFilter}
+        labelFilters={labelFilters}
+        onToggleLabel={toggleLabelFilter}
+        onClearLabels={clearLabelFilters}
+        availableLabels={availableLabels}
       />
       <PRTable
         items={filtered}

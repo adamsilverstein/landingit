@@ -22,6 +22,7 @@ function makePR(overrides: Partial<PRItem> = {}): PRItem {
     state: 'open',
     isRequestedReviewer: false,
     assignees: [],
+    labels: [],
     ...overrides,
   };
 }

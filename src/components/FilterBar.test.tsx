@@ -21,6 +21,10 @@ function renderFilterBar(overrides: Partial<React.ComponentProps<typeof FilterBa
     onSetItemType: vi.fn(),
     prStateFilters: new Set<PRStateFilterKey>(['draft', 'open']),
     onTogglePRState: vi.fn(),
+    labelFilters: new Set<string>(),
+    onToggleLabel: vi.fn(),
+    onClearLabels: vi.fn(),
+    availableLabels: [],
     ...overrides,
   };
   return { ...render(<FilterBar {...defaults} />), props: defaults };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, type RefObject } from 'react';
 import type { FilterMode, ItemTypeFilter, RepoConfig, PRStateFilterKey, OwnershipFilter } from '../types.js';
 import { FilterDropdown, type FilterDropdownOption } from './FilterDropdown.js';
+import { LabelBadge } from './LabelBadge.js';
 
 const OWNERSHIP_OPTIONS: FilterDropdownOption<OwnershipFilter>[] = [
   { key: 'created', label: 'Created by me' },
@@ -46,12 +47,18 @@ interface FilterBarProps {
   onRestoreRepo?: (owner: string, name: string) => void;
   prStateFilters: Set<PRStateFilterKey>;
   onTogglePRState: (key: PRStateFilterKey) => void;
+  labelFilters: Set<string>;
+  onToggleLabel: (label: string) => void;
+  onClearLabels: () => void;
+  availableLabels: { name: string; color: string }[];
 }
 
-export function FilterBar({ active, onFilter, ownershipFilter, onSetOwnership, username, searchQuery, onSearchChange, searchInputRef, itemTypeFilter, onSetItemType, hiddenRepos, onRestoreRepo, prStateFilters, onTogglePRState }: FilterBarProps) {
+export function FilterBar({ active, onFilter, ownershipFilter, onSetOwnership, username, searchQuery, onSearchChange, searchInputRef, itemTypeFilter, onSetItemType, hiddenRepos, onRestoreRepo, prStateFilters, onTogglePRState, labelFilters, onToggleLabel, onClearLabels, availableLabels }: FilterBarProps) {
   const [showHiddenDropdown, setShowHiddenDropdown] = useState(false);
+  const [showLabelDropdown, setShowLabelDropdown] = useState(false);
   const hiddenCount = hiddenRepos?.length ?? 0;
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const labelDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!showHiddenDropdown) return;
@@ -63,6 +70,19 @@ export function FilterBar({ active, onFilter, ownershipFilter, onSetOwnership, u
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showHiddenDropdown]);
+
+  // Close label dropdown when clicking outside
+  useEffect(() => {
+    if (!showLabelDropdown) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (labelDropdownRef.current && !labelDropdownRef.current.contains(e.target as Node)) {
+        setShowLabelDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showLabelDropdown]);
+
 
   useEffect(() => {
     if (hiddenCount === 0) setShowHiddenDropdown(false);
@@ -128,6 +148,43 @@ export function FilterBar({ active, onFilter, ownershipFilter, onSetOwnership, u
         values={prStateFilters}
         onToggle={onTogglePRState}
       />
+      {availableLabels.length > 0 && (
+        <div className="label-filter-wrapper" ref={labelDropdownRef}>
+          <button
+            className={`filter-dropdown-trigger ${labelFilters.size > 0 ? 'filter-active' : ''}`}
+            onClick={() => setShowLabelDropdown((prev) => !prev)}
+            title="Filter by labels"
+          >
+            <span className="filter-dropdown-category">Labels</span>
+            <span className="filter-dropdown-value">
+              {labelFilters.size > 0 ? `${labelFilters.size} selected` : 'All'}
+            </span>
+          </button>
+          {showLabelDropdown && (
+            <div className="label-filter-dropdown">
+              <div className="label-filter-header">
+                <span>Filter by Label</span>
+                {labelFilters.size > 0 && (
+                  <button className="label-filter-clear" onClick={onClearLabels}>
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="label-filter-list">
+                {availableLabels.map(({ name, color }) => (
+                  <button
+                    key={name}
+                    className={`label-filter-item ${labelFilters.has(name) ? 'label-filter-selected' : ''}`}
+                    onClick={() => onToggleLabel(name)}
+                  >
+                    <LabelBadge label={{ name, color }} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       <input
         ref={searchInputRef}
         type="text"

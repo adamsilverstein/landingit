@@ -28,6 +28,7 @@ const makePRItem = (overrides: Partial<PRItem> = {}): PRItem => ({
   state: 'open',
   isRequestedReviewer: false,
   assignees: [],
+  labels: [],
   ...overrides,
 });
 
