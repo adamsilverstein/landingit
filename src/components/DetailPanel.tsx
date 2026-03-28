@@ -176,10 +176,13 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
 
   useEffect(() => {
     if (!isPR) {
+      setDetail(null);
+      setError(null);
       setLoading(false);
       return;
     }
     let cancelled = false;
+    setDetail(null);
     setLoading(true);
     setError(null);
     setTimelineVisible(INITIAL_TIMELINE_COUNT);

@@ -67,7 +67,7 @@ function mapEventType(event: string): TimelineEventType {
     commented: 'commented',
     reviewed: 'reviewed',
     committed: 'committed',
-    force_pushed: 'force-pushed',
+    head_ref_force_pushed: 'force-pushed',
     merged: 'merged',
     closed: 'closed',
     reopened: 'reopened',
@@ -107,14 +107,14 @@ function parseTimelineEvents(events: any[]): TimelineEvent[] {
         break;
       case 'reviewed':
         base.body = ev.body ?? '';
-        base.reviewState = ev.state ?? '';
+        base.reviewState = typeof ev.state === 'string' ? ev.state.toUpperCase() : '';
         break;
       case 'committed':
         base.commitSha = (ev.sha ?? '').slice(0, 7);
         base.commitMessage = ev.message ?? '';
         break;
       case 'force-pushed':
-        base.commitSha = (ev.after ?? '').slice(0, 7);
+        base.commitSha = (ev.commit_id ?? '').slice(0, 7);
         break;
       case 'labeled':
       case 'unlabeled':
