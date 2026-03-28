@@ -382,3 +382,122 @@
   font-size: 11px;
   font-family: inherit;
 }
+
+/* ── Timeline / Activity Feed ──────────────────────────────── */
+.detail-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-event {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.timeline-event:last-child {
+  border-bottom: none;
+}
+
+.timeline-icon {
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+  font-size: 12px;
+  padding-top: 2px;
+}
+
+.timeline-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.timeline-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  line-height: 1.4;
+}
+
+.timeline-summary strong {
+  font-weight: 600;
+}
+
+.timeline-summary code {
+  background: var(--bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.timeline-time {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-subtle);
+  white-space: nowrap;
+}
+
+.timeline-commit-msg {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.timeline-body {
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: var(--bg);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.timeline-body p {
+  margin: 0.3em 0;
+}
+
+.timeline-body p:first-child {
+  margin-top: 0;
+}
+
+.timeline-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Timeline event type colors */
+.timeline-approved .timeline-icon { color: var(--green); }
+.timeline-changes .timeline-icon { color: var(--red); }
+.timeline-commit .timeline-icon { color: var(--accent); }
+.timeline-force-push .timeline-icon { color: var(--orange); }
+.timeline-merged .timeline-icon { color: var(--purple); }
+.timeline-closed .timeline-icon { color: var(--red); }
+.timeline-reopened .timeline-icon { color: var(--green); }
+.timeline-ready .timeline-icon { color: var(--green); }
+.timeline-draft .timeline-icon { color: var(--text-muted); }
+.timeline-branch-delete .timeline-icon { color: var(--red); }
+
+.timeline-load-more {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.timeline-load-more:hover {
+  background: var(--bg-hover);
+}

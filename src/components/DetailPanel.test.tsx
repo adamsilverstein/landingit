@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { DetailPanel } from './DetailPanel.js';
-import type { PRItem, PRDetail } from '../types.js';
+import type { PRItem, PRDetail, TimelineEvent } from '../types.js';
 
 // Mock getPRDetails to avoid real API calls
 vi.mock('../github/details.js', () => ({
@@ -41,6 +41,7 @@ const makeDetail = (overrides: Partial<PRDetail> = {}): PRDetail => ({
   changedFiles: 3,
   headBranch: 'feature',
   baseBranch: 'main',
+  timeline: [],
   ...overrides,
 });
 
@@ -123,5 +124,67 @@ describe('DetailPanel markdown rendering', () => {
     });
 
     expect(screen.queryByText('Description')).not.toBeInTheDocument();
+  });
+});
+
+function makeTimelineEvents(count: number): TimelineEvent[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `evt-${i}`,
+    type: 'commented' as const,
+    actor: `user${i}`,
+    createdAt: new Date(Date.now() - (count - i) * 60000).toISOString(),
+    body: `Comment ${i}`,
+  }));
+}
+
+describe('DetailPanel timeline / activity feed', () => {
+  it('renders timeline events', async () => {
+    const timeline = makeTimelineEvents(3);
+    mockedGetPRDetails.mockResolvedValue(makeDetail({ timeline }));
+
+    const { container } = render(
+      <DetailPanel item={makePRItem()} octokit={fakeOctokit} onClose={() => {}} />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Activity (3)')).toBeInTheDocument();
+    });
+
+    const events = container.querySelectorAll('.timeline-event');
+    expect(events.length).toBe(3);
+  });
+
+  it('shows only 10 events initially with a load-more button', async () => {
+    const timeline = makeTimelineEvents(15);
+    mockedGetPRDetails.mockResolvedValue(makeDetail({ timeline }));
+
+    const { container } = render(
+      <DetailPanel item={makePRItem()} octokit={fakeOctokit} onClose={() => {}} />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Activity (15)')).toBeInTheDocument();
+    });
+
+    const events = container.querySelectorAll('.timeline-event');
+    expect(events.length).toBe(10);
+
+    const loadMore = screen.getByText(/Show more/);
+    expect(loadMore).toBeInTheDocument();
+    expect(loadMore.textContent).toContain('5 remaining');
+  });
+
+  it('does not show activity section when timeline is empty', async () => {
+    mockedGetPRDetails.mockResolvedValue(makeDetail({ timeline: [] }));
+
+    render(
+      <DetailPanel item={makePRItem()} octokit={fakeOctokit} onClose={() => {}} />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/files/)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText(/Activity/)).not.toBeInTheDocument();
   });
 });

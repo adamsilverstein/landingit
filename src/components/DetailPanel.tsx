@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import type { Octokit } from '@octokit/rest';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { DashboardItem, PRItem, PRDetail } from '../types.js';
+import type { DashboardItem, PRItem, PRDetail, TimelineEvent } from '../types.js';
 import { getPRDetails } from '../github/details.js';
 import { CIBadge } from './CIBadge.js';
 import { timeAgo } from '../utils/timeAgo.js';
@@ -61,10 +61,114 @@ function ReviewerRow({ login, state }: { login: string; state: string }) {
   );
 }
 
+const INITIAL_TIMELINE_COUNT = 10;
+
+function eventIcon(type: TimelineEvent['type'], reviewState?: string): { icon: string; label: string; cls: string } {
+  switch (type) {
+    case 'commented':
+      return { icon: '💬', label: 'Comment', cls: 'timeline-comment' };
+    case 'reviewed':
+      if (reviewState === 'APPROVED') return { icon: '✓', label: 'Approved', cls: 'timeline-approved' };
+      if (reviewState === 'CHANGES_REQUESTED') return { icon: '✗', label: 'Changes requested', cls: 'timeline-changes' };
+      return { icon: '👁', label: 'Reviewed', cls: 'timeline-review' };
+    case 'committed':
+      return { icon: '●', label: 'Commit', cls: 'timeline-commit' };
+    case 'force-pushed':
+      return { icon: '⇡', label: 'Force pushed', cls: 'timeline-force-push' };
+    case 'merged':
+      return { icon: '⇣', label: 'Merged', cls: 'timeline-merged' };
+    case 'closed':
+      return { icon: '○', label: 'Closed', cls: 'timeline-closed' };
+    case 'reopened':
+      return { icon: '●', label: 'Reopened', cls: 'timeline-reopened' };
+    case 'labeled':
+      return { icon: '🏷', label: 'Labeled', cls: 'timeline-label' };
+    case 'unlabeled':
+      return { icon: '🏷', label: 'Unlabeled', cls: 'timeline-label' };
+    case 'assigned':
+    case 'unassigned':
+      return { icon: '👤', label: type === 'assigned' ? 'Assigned' : 'Unassigned', cls: 'timeline-assign' };
+    case 'review_requested':
+      return { icon: '👁', label: 'Review requested', cls: 'timeline-review-request' };
+    case 'renamed':
+      return { icon: '✎', label: 'Renamed', cls: 'timeline-rename' };
+    case 'ready_for_review':
+      return { icon: '●', label: 'Ready for review', cls: 'timeline-ready' };
+    case 'convert_to_draft':
+      return { icon: '○', label: 'Converted to draft', cls: 'timeline-draft' };
+    case 'head_ref_deleted':
+      return { icon: '✗', label: 'Branch deleted', cls: 'timeline-branch-delete' };
+    default:
+      return { icon: '·', label: type, cls: 'timeline-other' };
+  }
+}
+
+function eventDescription(ev: TimelineEvent): React.ReactNode {
+  switch (ev.type) {
+    case 'commented':
+      return <span><strong>@{ev.actor}</strong> commented</span>;
+    case 'reviewed':
+      return <span><strong>@{ev.actor}</strong> {ev.reviewState === 'APPROVED' ? 'approved' : ev.reviewState === 'CHANGES_REQUESTED' ? 'requested changes' : 'reviewed'}</span>;
+    case 'committed':
+      return <span><strong>@{ev.actor}</strong> pushed <code>{ev.commitSha}</code> {ev.commitMessage && <span className="timeline-commit-msg">{ev.commitMessage.split('\n')[0]}</span>}</span>;
+    case 'force-pushed':
+      return <span><strong>@{ev.actor}</strong> force-pushed{ev.commitSha && <> to <code>{ev.commitSha}</code></>}</span>;
+    case 'merged':
+      return <span><strong>@{ev.actor}</strong> merged this PR</span>;
+    case 'closed':
+      return <span><strong>@{ev.actor}</strong> closed this</span>;
+    case 'reopened':
+      return <span><strong>@{ev.actor}</strong> reopened this</span>;
+    case 'labeled':
+      return <span><strong>@{ev.actor}</strong> added <span className="detail-label">{ev.label}</span></span>;
+    case 'unlabeled':
+      return <span><strong>@{ev.actor}</strong> removed <span className="detail-label">{ev.label}</span></span>;
+    case 'assigned':
+      return <span><strong>@{ev.actor}</strong> assigned <strong>@{ev.assignee}</strong></span>;
+    case 'unassigned':
+      return <span><strong>@{ev.actor}</strong> unassigned <strong>@{ev.assignee}</strong></span>;
+    case 'review_requested':
+      return <span><strong>@{ev.actor}</strong> requested review from <strong>@{ev.requestedReviewer}</strong></span>;
+    case 'renamed':
+      return <span><strong>@{ev.actor}</strong> renamed from &ldquo;{ev.rename?.from}&rdquo; to &ldquo;{ev.rename?.to}&rdquo;</span>;
+    case 'ready_for_review':
+      return <span><strong>@{ev.actor}</strong> marked as ready for review</span>;
+    case 'convert_to_draft':
+      return <span><strong>@{ev.actor}</strong> converted to draft</span>;
+    case 'head_ref_deleted':
+      return <span><strong>@{ev.actor}</strong> deleted the branch</span>;
+    default:
+      return <span><strong>@{ev.actor}</strong> {ev.type}</span>;
+  }
+}
+
+function TimelineEventRow({ event }: { event: TimelineEvent }) {
+  const { icon, label, cls } = eventIcon(event.type, event.reviewState);
+  const hasBody = event.body && event.body.trim().length > 0;
+
+  return (
+    <div className={`timeline-event ${cls}`}>
+      <span className="timeline-icon" role="img" aria-label={label}>{icon}</span>
+      <div className="timeline-content">
+        <div className="timeline-summary">
+          {eventDescription(event)}
+          <span className="timeline-time">{timeAgo(event.createdAt)}</span>
+        </div>
+        {hasBody && (
+          <div className="timeline-body markdown-body">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{event.body!}</ReactMarkdown>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
   const [detail, setDetail] = useState<PRDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [timelineVisible, setTimelineVisible] = useState(INITIAL_TIMELINE_COUNT);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -72,12 +176,16 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
 
   useEffect(() => {
     if (!isPR) {
+      setDetail(null);
+      setError(null);
       setLoading(false);
       return;
     }
     let cancelled = false;
+    setDetail(null);
     setLoading(true);
     setError(null);
+    setTimelineVisible(INITIAL_TIMELINE_COUNT);
     getPRDetails(octokit, item as PRItem).then(
       (d) => {
         if (!cancelled) {
@@ -249,6 +357,28 @@ export function DetailPanel({ item, octokit, onClose }: DetailPanelProps) {
                     <ReviewerRow key={r.login} login={r.login} state={r.state} />
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Timeline / Activity Feed */}
+            {detail.timeline.length > 0 && (
+              <div className="detail-section">
+                <h3 className="detail-section-title">
+                  Activity ({detail.timeline.length})
+                </h3>
+                <div className="detail-timeline">
+                  {detail.timeline.slice(-timelineVisible).map((ev) => (
+                    <TimelineEventRow key={ev.id} event={ev} />
+                  ))}
+                </div>
+                {detail.timeline.length > timelineVisible && (
+                  <button
+                    className="timeline-load-more"
+                    onClick={() => setTimelineVisible((v) => v + INITIAL_TIMELINE_COUNT)}
+                  >
+                    Show more ({detail.timeline.length - timelineVisible} remaining)
+                  </button>
+                )}
               </div>
             )}
           </div>

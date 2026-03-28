@@ -91,6 +91,48 @@ export interface Reviewer {
   state: string;
 }
 
+export type TimelineEventType =
+  | 'commented'
+  | 'reviewed'
+  | 'committed'
+  | 'force-pushed'
+  | 'merged'
+  | 'closed'
+  | 'reopened'
+  | 'renamed'
+  | 'labeled'
+  | 'unlabeled'
+  | 'assigned'
+  | 'unassigned'
+  | 'review_requested'
+  | 'ready_for_review'
+  | 'convert_to_draft'
+  | 'head_ref_deleted'
+  | 'unknown';
+
+export interface TimelineEvent {
+  id: string;
+  type: TimelineEventType;
+  actor: string;
+  createdAt: string;
+  /** Comment or review body (markdown) */
+  body?: string;
+  /** Review state: APPROVED, CHANGES_REQUESTED, COMMENTED */
+  reviewState?: string;
+  /** Commit SHA (short) */
+  commitSha?: string;
+  /** Commit message */
+  commitMessage?: string;
+  /** Label name for labeled/unlabeled events */
+  label?: string;
+  /** Old/new title for renamed events */
+  rename?: { from: string; to: string };
+  /** Assignee login for assigned/unassigned events */
+  assignee?: string;
+  /** Reviewer login for review_requested events */
+  requestedReviewer?: string;
+}
+
 export interface PRDetail {
   body: string;
   labels: string[];
@@ -101,4 +143,5 @@ export interface PRDetail {
   changedFiles: number;
   headBranch: string;
   baseBranch: string;
+  timeline: TimelineEvent[];
 }

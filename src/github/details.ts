@@ -1,5 +1,5 @@
 import type { Octokit } from '@octokit/rest';
-import type { PRDetail, PRItem } from '../types.js';
+import type { PRDetail, PRItem, TimelineEvent, TimelineEventType } from '../types.js';
 import { STORAGE_KEYS } from '../constants.js';
 
 // Cache with TTL to avoid redundant API calls when re-previewing the same PR.
@@ -61,6 +61,87 @@ function evictExpired(): void {
   }
 }
 
+// Map GitHub timeline event types to our simplified types
+function mapEventType(event: string): TimelineEventType {
+  const mapping: Record<string, TimelineEventType> = {
+    commented: 'commented',
+    reviewed: 'reviewed',
+    committed: 'committed',
+    head_ref_force_pushed: 'force-pushed',
+    merged: 'merged',
+    closed: 'closed',
+    reopened: 'reopened',
+    renamed: 'renamed',
+    labeled: 'labeled',
+    unlabeled: 'unlabeled',
+    assigned: 'assigned',
+    unassigned: 'unassigned',
+    review_requested: 'review_requested',
+    ready_for_review: 'ready_for_review',
+    convert_to_draft: 'convert_to_draft',
+    head_ref_deleted: 'head_ref_deleted',
+  };
+  return mapping[event] ?? 'unknown';
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function parseTimelineEvents(events: any[]): TimelineEvent[] {
+  const parsed: TimelineEvent[] = [];
+
+  for (const ev of events) {
+    const type = mapEventType(ev.event ?? ev.type ?? '');
+
+    // Skip unknown or noisy events
+    if (type === 'unknown') continue;
+
+    const base: TimelineEvent = {
+      id: String(ev.id ?? ev.node_id ?? `${type}-${ev.created_at ?? ev.committer?.date ?? ''}`),
+      type,
+      actor: ev.actor?.login ?? ev.user?.login ?? ev.author?.login ?? ev.committer?.login ?? '',
+      createdAt: ev.created_at ?? ev.submitted_at ?? ev.committer?.date ?? '',
+    };
+
+    switch (type) {
+      case 'commented':
+        base.body = ev.body ?? '';
+        break;
+      case 'reviewed':
+        base.body = ev.body ?? '';
+        base.reviewState = typeof ev.state === 'string' ? ev.state.toUpperCase() : '';
+        break;
+      case 'committed':
+        base.commitSha = (ev.sha ?? '').slice(0, 7);
+        base.commitMessage = ev.message ?? '';
+        break;
+      case 'force-pushed':
+        base.commitSha = (ev.commit_id ?? '').slice(0, 7);
+        break;
+      case 'labeled':
+      case 'unlabeled':
+        base.label = ev.label?.name ?? '';
+        break;
+      case 'renamed':
+        base.rename = { from: ev.rename?.from ?? '', to: ev.rename?.to ?? '' };
+        break;
+      case 'assigned':
+      case 'unassigned':
+        base.assignee = ev.assignee?.login ?? '';
+        break;
+      case 'review_requested':
+        base.requestedReviewer = ev.requested_reviewer?.login ?? '';
+        break;
+    }
+
+    parsed.push(base);
+  }
+
+  // Sort chronologically (newest last)
+  parsed.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+  return parsed;
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 export async function getPRDetails(
   octokit: Octokit,
   item: PRItem
@@ -73,7 +154,7 @@ export async function getPRDetails(
 
   const { owner, name } = item.repo;
 
-  const [prRes, checksRes, reviewsRes] = await Promise.allSettled([
+  const [prRes, checksRes, reviewsRes, timelineRes] = await Promise.allSettled([
     octokit.pulls.get({
       owner,
       repo: name,
@@ -91,6 +172,13 @@ export async function getPRDetails(
       pull_number: item.number,
       per_page: 100,
     }),
+    octokit.paginate(octokit.issues.listEventsForTimeline as any, {
+      owner,
+      repo: name,
+      issue_number: item.number,
+      per_page: 100,
+      headers: { accept: 'application/vnd.github.mockingbird-preview+json' },
+    }),
   ]);
 
   const pr = prRes.status === 'fulfilled' ? prRes.value.data : null;
@@ -100,6 +188,8 @@ export async function getPRDetails(
       : [];
   const reviews =
     reviewsRes.status === 'fulfilled' ? reviewsRes.value : [];
+  const timelineRaw =
+    timelineRes.status === 'fulfilled' ? (timelineRes.value as any[]) : [];
 
   // Deduplicate reviewers to their latest review state
   const reviewerMap = new Map<string, string>();
@@ -126,6 +216,7 @@ export async function getPRDetails(
     changedFiles: pr?.changed_files ?? 0,
     headBranch: pr?.head?.ref ?? '',
     baseBranch: pr?.base?.ref ?? '',
+    timeline: parseTimelineEvents(timelineRaw),
   };
 
   detailCache.set(item.url, { data: detail, timestamp: Date.now() });
