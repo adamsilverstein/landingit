@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState, useCallback } from 'react';
-import type { DashboardItem, FilterMode, SortMode, SortDirection, ItemTypeFilter, PRStateFilterKey } from '../types.js';
+import type { DashboardItem, FilterMode, LabelInfo, SortMode, SortDirection, ItemTypeFilter, PRStateFilterKey } from '../types.js';
 import { filterByPRState } from '../utils/prStateFilter.js';
 import { isStale } from '../utils/staleness.js';
 import { isMergeReady } from '../utils/mergeReady.js';
@@ -272,12 +272,12 @@ export function useFilteredItems({ items, defaultFilter, defaultSort, isUnseen, 
   }, []);
 
   // Collect all unique labels from items for the filter UI
-  const availableLabels = useMemo(() => {
-    const labelMap = new Map<string, { name: string; color: string }>();
+  const availableLabels = useMemo((): LabelInfo[] => {
+    const labelMap = new Map<string, LabelInfo>();
     for (const item of items) {
       for (const label of item.labels) {
         if (!labelMap.has(label.name)) {
-          labelMap.set(label.name, { name: label.name, color: label.color });
+          labelMap.set(label.name, label);
         }
       }
     }

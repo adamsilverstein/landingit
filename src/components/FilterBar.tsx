@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, type RefObject } from 'react';
-import type { FilterMode, ItemTypeFilter, RepoConfig, PRStateFilterKey, OwnershipFilter } from '../types.js';
+import React, { useState, useCallback, useEffect, useRef, type RefObject } from 'react';
+import type { FilterMode, ItemTypeFilter, LabelInfo, RepoConfig, PRStateFilterKey, OwnershipFilter } from '../types.js';
 import { FilterDropdown, type FilterDropdownOption } from './FilterDropdown.js';
+import { useClickOutside } from '../hooks/useClickOutside.js';
 import { LabelBadge } from './LabelBadge.js';
 
 const OWNERSHIP_OPTIONS: FilterDropdownOption<OwnershipFilter>[] = [
@@ -50,7 +51,7 @@ interface FilterBarProps {
   labelFilters: Set<string>;
   onToggleLabel: (label: string) => void;
   onClearLabels: () => void;
-  availableLabels: { name: string; color: string }[];
+  availableLabels: LabelInfo[];
 }
 
 export function FilterBar({ active, onFilter, ownershipFilter, onSetOwnership, username, searchQuery, onSearchChange, searchInputRef, itemTypeFilter, onSetItemType, hiddenRepos, onRestoreRepo, prStateFilters, onTogglePRState, labelFilters, onToggleLabel, onClearLabels, availableLabels }: FilterBarProps) {
@@ -60,28 +61,11 @@ export function FilterBar({ active, onFilter, ownershipFilter, onSetOwnership, u
   const dropdownRef = useRef<HTMLDivElement>(null);
   const labelDropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!showHiddenDropdown) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowHiddenDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showHiddenDropdown]);
+  const closeHiddenDropdown = useCallback(() => setShowHiddenDropdown(false), []);
+  const closeLabelDropdown = useCallback(() => setShowLabelDropdown(false), []);
 
-  // Close label dropdown when clicking outside
-  useEffect(() => {
-    if (!showLabelDropdown) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (labelDropdownRef.current && !labelDropdownRef.current.contains(e.target as Node)) {
-        setShowLabelDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showLabelDropdown]);
+  useClickOutside(dropdownRef, showHiddenDropdown, closeHiddenDropdown);
+  useClickOutside(labelDropdownRef, showLabelDropdown, closeLabelDropdown);
 
 
   useEffect(() => {

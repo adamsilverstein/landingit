@@ -95,7 +95,7 @@ describe('DashboardItem type discrimination', () => {
     expect(screen.getByText(/v2\.0/)).toBeInTheDocument();
   });
 
-  it('does not show labels for PRs', () => {
+  it('does not render label badges when a PR has no labels', () => {
     const { container } = render(
       <table>
         <tbody>

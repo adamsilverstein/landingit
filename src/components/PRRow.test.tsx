@@ -44,6 +44,19 @@ function renderRow(item: PRItem, selected = false) {
 }
 
 describe('PRRow', () => {
+  it('renders labels for PRs when present', () => {
+    renderRow(
+      makePR({
+        labels: [
+          { name: 'bug', color: 'ff0000' },
+          { name: 'priority', color: '0000ff' },
+        ],
+      }),
+    );
+    expect(screen.getByText('bug')).toBeInTheDocument();
+    expect(screen.getByText('priority')).toBeInTheDocument();
+  });
+
   it('renders PR title, number, author, and repo', () => {
     renderRow(makePR());
     expect(screen.getByText('Fix the thing')).toBeInTheDocument();
