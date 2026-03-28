@@ -6,6 +6,7 @@ interface MilestoneGroupHeaderProps {
   itemCount: number;
   collapsed: boolean;
   onToggle: () => void;
+  colSpan?: number;
 }
 
 function formatDueDate(dueOn: string): string {
@@ -26,14 +27,15 @@ function formatDueDate(dueOn: string): string {
   return formatted;
 }
 
-export function MilestoneGroupHeader({ milestone, itemCount, collapsed, onToggle }: MilestoneGroupHeaderProps) {
+export function MilestoneGroupHeader({ milestone, itemCount, collapsed, onToggle, colSpan = 11 }: MilestoneGroupHeaderProps) {
   const title = milestone ? milestone.title : 'No Milestone';
   const total = milestone ? milestone.openIssues + milestone.closedIssues : 0;
-  const progressPct = total > 0 ? Math.round((milestone!.closedIssues / total) * 100) : 0;
+  const closed = milestone ? milestone.closedIssues : 0;
+  const progressPct = total > 0 ? Math.round((closed / total) * 100) : 0;
 
   return (
     <tr className="milestone-group-header" onClick={onToggle}>
-      <td colSpan={11}>
+      <td colSpan={colSpan}>
         <div className="milestone-group-header-content">
           <span className={`milestone-group-chevron ${collapsed ? 'collapsed' : ''}`}>▸</span>
           <span className="milestone-group-icon" role="img" aria-label="Milestone">🏁</span>

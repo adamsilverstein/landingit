@@ -149,6 +149,7 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPre
                     itemCount={entry.group.items.length}
                     collapsed={isCollapsed(entry.key)}
                     onToggle={() => toggle(entry.key)}
+                    colSpan={colSpan}
                   />
                 );
               }
