@@ -30,6 +30,7 @@ export function App() {
   const { cycleTheme } = useTheme();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [rateLimit, setRateLimit] = useState<RateLimit | null>(null);
+  const [milestoneGrouping, setMilestoneGrouping] = useState(false);
 
   const { markSeen, isUnseen } = useLastSeen();
   const { visibleColumns, columnOrder, toggleColumn, reorderColumns, resetColumns } = useColumnSettings();
@@ -143,6 +144,10 @@ export function App() {
     [config.repos]
   );
 
+  const toggleMilestoneGrouping = useCallback(() => {
+    setMilestoneGrouping((prev) => !prev);
+  }, []);
+
   const shortcutActions = useMemo(
     () => ({
       viewMode,
@@ -157,8 +162,9 @@ export function App() {
       cycleTheme,
       focusSearch,
       cycleItemType,
+      toggleMilestoneGrouping,
     }),
-    [viewMode, setViewMode, moveCursor, openSelected, previewSelected, cycleFilter, cycleSort, handleRefresh, cycleOwnership, cycleTheme, focusSearch, cycleItemType]
+    [viewMode, setViewMode, moveCursor, openSelected, previewSelected, cycleFilter, cycleSort, handleRefresh, cycleOwnership, cycleTheme, focusSearch, cycleItemType, toggleMilestoneGrouping]
   );
 
   useKeyboardShortcuts(shortcutActions);
@@ -199,6 +205,8 @@ export function App() {
         onToggleLabel={toggleLabelFilter}
         onClearLabels={clearLabelFilters}
         availableLabels={availableLabels}
+        milestoneGrouping={milestoneGrouping}
+        onToggleMilestoneGrouping={toggleMilestoneGrouping}
       />
       <PRTable
         items={filtered}
@@ -216,6 +224,7 @@ export function App() {
         onToggleColumn={toggleColumn}
         onReorderColumns={reorderColumns}
         onResetColumns={resetColumns}
+        milestoneGrouping={milestoneGrouping}
       />
       <StatusBar error={error} failedRepos={failedRepos} searchQuery={searchQuery} matchCount={filtered.length} totalCount={items.length} />
 

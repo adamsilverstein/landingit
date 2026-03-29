@@ -63,6 +63,13 @@ export interface PRItem {
   labels: LabelInfo[];
 }
 
+export interface MilestoneInfo {
+  title: string;
+  openIssues: number;
+  closedIssues: number;
+  dueOn: string | null;
+}
+
 export interface IssueItem {
   kind: 'issue';
   id: number;
@@ -76,7 +83,7 @@ export interface IssueItem {
   state: 'open' | 'closed';
   labels: LabelInfo[];
   assignees: string[];
-  milestone: string | null;
+  milestone: MilestoneInfo | null;
 }
 
 export type DashboardItem = PRItem | IssueItem;

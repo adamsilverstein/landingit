@@ -17,6 +17,7 @@ function makeActions() {
     cycleTheme: vi.fn(),
     focusSearch: vi.fn(),
     cycleItemType: vi.fn(),
+    toggleMilestoneGrouping: vi.fn(),
   };
 }
 
@@ -118,6 +119,11 @@ describe('useKeyboardShortcuts', () => {
     it('/ focuses search', () => {
       pressKey('/');
       expect(actions.focusSearch).toHaveBeenCalled();
+    });
+
+    it('g toggles milestone grouping', () => {
+      pressKey('g');
+      expect(actions.toggleMilestoneGrouping).toHaveBeenCalled();
     });
   });
 

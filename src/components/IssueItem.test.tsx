@@ -91,7 +91,7 @@ describe('DashboardItem type discrimination', () => {
   });
 
   it('renders issue milestone', () => {
-    renderRow(makeIssue({ milestone: 'v2.0' }));
+    renderRow(makeIssue({ milestone: { title: 'v2.0', openIssues: 5, closedIssues: 3, dueOn: null } }));
     expect(screen.getByText(/v2\.0/)).toBeInTheDocument();
   });
 

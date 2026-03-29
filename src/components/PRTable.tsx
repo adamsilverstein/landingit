@@ -5,9 +5,15 @@ import { DEFAULT_COLUMNS } from '../columns.js';
 import { PRRow } from './PRRow.js';
 import { SortableHeader } from './SortableHeader.js';
 import { ColumnSettingsDropdown } from './ColumnSettingsDropdown.js';
+import { MilestoneGroupHeader, useMilestoneCollapse } from './MilestoneGroup.js';
 import { isStale } from '../utils/staleness.js';
+import { groupByMilestone, type MilestoneGroup } from '../utils/milestoneGrouping.js';
 
 const ROW_HEIGHT_ESTIMATE = 37;
+
+type RowEntry =
+  | { type: 'item'; item: DashboardItem; flatIndex: number }
+  | { type: 'milestone-header'; group: MilestoneGroup; key: string };
 
 interface PRTableProps {
   items: DashboardItem[];
@@ -25,13 +31,47 @@ interface PRTableProps {
   onToggleColumn: (id: string) => void;
   onReorderColumns: (fromIndex: number, toIndex: number) => void;
   onResetColumns: () => void;
+  milestoneGrouping?: boolean;
 }
 
-export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPreview, isUnseen, onOpen, onHideRepo, staleDays, visibleColumns, columnOrder, onToggleColumn, onReorderColumns, onResetColumns }: PRTableProps) {
+export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPreview, isUnseen, onOpen, onHideRepo, staleDays, visibleColumns, columnOrder, onToggleColumn, onReorderColumns, onResetColumns, milestoneGrouping }: PRTableProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { isCollapsed, toggle } = useMilestoneCollapse();
+
+  const milestoneGroups = useMemo(
+    () => (milestoneGrouping ? groupByMilestone(items) : []),
+    [items, milestoneGrouping]
+  );
+
+  // Build a flat list of rows when milestone grouping is on, plus a mapping
+  // from the parent's cursorIndex to the visible row index in grouped mode.
+  const { groupedRows, flatToVisibleIndex } = useMemo(() => {
+    if (!milestoneGrouping) return { groupedRows: [] as RowEntry[], flatToVisibleIndex: new Map<number, number>() };
+    const rows: RowEntry[] = [];
+    const mapping = new Map<number, number>();
+    let flatIdx = 0;
+    let visibleIdx = 0;
+    for (const group of milestoneGroups) {
+      const key = group.milestone?.title ?? '__none__';
+      rows.push({ type: 'milestone-header', group, key });
+      if (!isCollapsed(key)) {
+        for (const item of group.items) {
+          rows.push({ type: 'item', item, flatIndex: flatIdx });
+          mapping.set(flatIdx, visibleIdx);
+          flatIdx++;
+          visibleIdx++;
+        }
+      } else {
+        flatIdx += group.items.length;
+      }
+    }
+    return { groupedRows: rows, flatToVisibleIndex: mapping };
+  }, [milestoneGrouping, milestoneGroups, isCollapsed]);
+
+  const rowCount = milestoneGrouping ? groupedRows.length : items.length;
 
   const virtualizer = useVirtualizer({
-    count: items.length,
+    count: rowCount,
     getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => ROW_HEIGHT_ESTIMATE,
     overscan: 10,
@@ -39,10 +79,28 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPre
 
   // Scroll to keep the selected row visible when cursor moves
   useEffect(() => {
+    if (milestoneGrouping) {
+      // In grouped mode, map cursorIndex to the visible row index
+      const visibleIdx = flatToVisibleIndex.get(cursorIndex);
+      if (visibleIdx !== undefined) {
+        // Account for milestone header rows preceding this visible item
+        let rowIdx = 0;
+        let itemsSeen = 0;
+        for (const entry of groupedRows) {
+          if (entry.type === 'item') {
+            if (itemsSeen === visibleIdx) break;
+            itemsSeen++;
+          }
+          rowIdx++;
+        }
+        virtualizer.scrollToIndex(rowIdx, { align: 'auto' });
+      }
+      return;
+    }
     if (items.length > 0) {
       virtualizer.scrollToIndex(cursorIndex, { align: 'auto' });
     }
-  }, [cursorIndex, virtualizer, items.length]);
+  }, [cursorIndex, virtualizer, items.length, milestoneGrouping, flatToVisibleIndex, groupedRows]);
 
   const colMap = useMemo(() => new Map(DEFAULT_COLUMNS.map((c) => [c.id, c])), []);
 
@@ -103,6 +161,35 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPre
             <tr><td style={{ height: paddingTop, padding: 0, border: 'none' }} colSpan={colSpan} /></tr>
           )}
           {virtualRows.map((virtualRow) => {
+            if (milestoneGrouping) {
+              const entry = groupedRows[virtualRow.index];
+              if (entry.type === 'milestone-header') {
+                return (
+                  <MilestoneGroupHeader
+                    key={`ms-${entry.key}`}
+                    milestone={entry.group.milestone}
+                    itemCount={entry.group.items.length}
+                    collapsed={isCollapsed(entry.key)}
+                    onToggle={() => toggle(entry.key)}
+                    colSpan={colSpan}
+                  />
+                );
+              }
+              return (
+                <PRRow
+                  key={`${entry.item.kind}-${entry.item.id}`}
+                  item={entry.item}
+                  selected={entry.flatIndex === cursorIndex}
+                  unseen={isUnseen(entry.item)}
+                  stale={isStale(entry.item, staleDays)}
+                  onPreview={onPreview}
+                  onOpen={onOpen}
+                  onHideRepo={onHideRepo}
+                  visibleColumns={orderedVisibleColumns.map((c) => c.id)}
+                />
+              );
+            }
+
             const item = items[virtualRow.index];
             return (
               <PRRow

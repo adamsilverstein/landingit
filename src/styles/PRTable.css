@@ -316,6 +316,105 @@
   color: var(--text-muted);
 }
 
+/* ── Milestone Group Header ──────────────────────────────── */
+.milestone-group-header {
+  cursor: pointer;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.milestone-group-header:hover {
+  background: var(--bg-hover);
+}
+
+.milestone-group-header td {
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.milestone-group-header-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.milestone-group-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.milestone-group-chevron {
+  display: inline-block;
+  transition: transform 0.15s;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.milestone-group-chevron:not(.collapsed) {
+  transform: rotate(90deg);
+}
+
+.milestone-group-icon {
+  font-size: 14px;
+}
+
+.milestone-group-title {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.milestone-group-count {
+  color: var(--text-subtle);
+  font-size: 12px;
+}
+
+.milestone-group-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+}
+
+.milestone-progress-bar {
+  display: inline-block;
+  width: 80px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.milestone-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--green);
+  transition: width 0.2s;
+}
+
+.milestone-progress-text {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.milestone-group-due {
+  color: var(--text-subtle);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.milestone-group-due.overdue {
+  color: var(--red);
+  font-weight: 500;
+}
+
 /* ── Repo Hide Button ─────────────────────────────────────── */
 .repo-name-cell {
   display: inline-flex;

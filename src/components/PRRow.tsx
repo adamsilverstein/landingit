@@ -115,7 +115,7 @@ export function PRRow({ item, selected, unseen, stale, onPreview, onOpen, onHide
         {isPR ? (
           <ReviewBadge state={item.reviewState} isRequestedReviewer={item.isRequestedReviewer} />
         ) : (
-          item.milestone && <span className="milestone-badge">🏁 {item.milestone}</span>
+          item.milestone && <span className="milestone-badge">🏁 {item.milestone.title}</span>
         )}
       </td>
     ),

@@ -82,7 +82,14 @@ export async function fetchUserIssues(
           };
         }),
         assignees: (item.assignees ?? []).map((a) => a.login),
-        milestone: item.milestone?.title ?? null,
+        milestone: item.milestone
+          ? {
+              title: item.milestone.title,
+              openIssues: item.milestone.open_issues ?? 0,
+              closedIssues: item.milestone.closed_issues ?? 0,
+              dueOn: item.milestone.due_on ?? null,
+            }
+          : null,
       });
     }
 
@@ -147,6 +154,13 @@ export async function fetchAllIssuesForRepo(
       };
     }),
     assignees: (item.assignees ?? []).map((a) => a.login),
-    milestone: item.milestone?.title ?? null,
+    milestone: item.milestone
+      ? {
+          title: item.milestone.title,
+          openIssues: item.milestone.open_issues ?? 0,
+          closedIssues: item.milestone.closed_issues ?? 0,
+          dueOn: item.milestone.due_on ?? null,
+        }
+      : null,
   }));
 }

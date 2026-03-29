@@ -14,6 +14,7 @@ interface ShortcutActions {
   cycleTheme: () => void;
   focusSearch: () => void;
   cycleItemType: () => void;
+  toggleMilestoneGrouping: () => void;
 }
 
 export function useKeyboardShortcuts(actions: ShortcutActions) {
@@ -102,6 +103,9 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
         case '/':
           e.preventDefault();
           actions.focusSearch();
+          break;
+        case 'g':
+          actions.toggleMilestoneGrouping();
           break;
       }
     };

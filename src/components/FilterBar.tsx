@@ -52,9 +52,11 @@ interface FilterBarProps {
   onToggleLabel: (label: string) => void;
   onClearLabels: () => void;
   availableLabels: LabelInfo[];
+  milestoneGrouping?: boolean;
+  onToggleMilestoneGrouping?: () => void;
 }
 
-export function FilterBar({ active, onFilter, ownershipFilter, onSetOwnership, username, searchQuery, onSearchChange, searchInputRef, itemTypeFilter, onSetItemType, hiddenRepos, onRestoreRepo, prStateFilters, onTogglePRState, labelFilters, onToggleLabel, onClearLabels, availableLabels }: FilterBarProps) {
+export function FilterBar({ active, onFilter, ownershipFilter, onSetOwnership, username, searchQuery, onSearchChange, searchInputRef, itemTypeFilter, onSetItemType, hiddenRepos, onRestoreRepo, prStateFilters, onTogglePRState, labelFilters, onToggleLabel, onClearLabels, availableLabels, milestoneGrouping, onToggleMilestoneGrouping }: FilterBarProps) {
   const [showHiddenDropdown, setShowHiddenDropdown] = useState(false);
   const [showLabelDropdown, setShowLabelDropdown] = useState(false);
   const hiddenCount = hiddenRepos?.length ?? 0;
@@ -168,6 +170,16 @@ export function FilterBar({ active, onFilter, ownershipFilter, onSetOwnership, u
             </div>
           )}
         </div>
+      )}
+      {onToggleMilestoneGrouping && (
+        <button
+          className={`filter-dropdown-trigger ${milestoneGrouping ? 'filter-active' : ''}`}
+          onClick={onToggleMilestoneGrouping}
+          title="Group issues by milestone (g)"
+        >
+          <span className="filter-dropdown-category">Milestones</span>
+          <span className="filter-dropdown-value">{milestoneGrouping ? 'On' : 'Off'}</span>
+        </button>
       )}
       <input
         ref={searchInputRef}
