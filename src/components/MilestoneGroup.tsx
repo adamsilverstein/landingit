@@ -9,22 +9,29 @@ interface MilestoneGroupHeaderProps {
   colSpan?: number;
 }
 
-function formatDueDate(dueOn: string): string {
-  const date = new Date(dueOn);
+/** Compute calendar-day difference (negative = overdue, 0 = today, positive = days left). */
+function getDayStatus(dueOn: string): number {
+  const due = new Date(dueOn);
   const now = new Date();
-  const diffMs = date.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  // Normalize both to local midnight for calendar-day comparison
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((dueDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
 
+function formatDueDate(dueOn: string): { label: string; isOverdue: boolean } {
+  const diffDays = getDayStatus(dueOn);
+  const date = new Date(dueOn);
   const formatted = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
   if (diffDays < 0) {
-    return `${formatted} (overdue)`;
+    return { label: `${formatted} (overdue)`, isOverdue: true };
   } else if (diffDays === 0) {
-    return `${formatted} (due today)`;
+    return { label: `${formatted} (due today)`, isOverdue: false };
   } else if (diffDays <= 7) {
-    return `${formatted} (${diffDays}d left)`;
+    return { label: `${formatted} (${diffDays}d left)`, isOverdue: false };
   }
-  return formatted;
+  return { label: formatted, isOverdue: false };
 }
 
 export function MilestoneGroupHeader({ milestone, itemCount, collapsed, onToggle, colSpan = 11 }: MilestoneGroupHeaderProps) {
@@ -33,10 +40,17 @@ export function MilestoneGroupHeader({ milestone, itemCount, collapsed, onToggle
   const closed = milestone ? milestone.closedIssues : 0;
   const progressPct = total > 0 ? Math.round((closed / total) * 100) : 0;
 
+  const dueInfo = milestone?.dueOn ? formatDueDate(milestone.dueOn) : null;
+
   return (
-    <tr className="milestone-group-header" onClick={onToggle}>
+    <tr className="milestone-group-header">
       <td colSpan={colSpan}>
-        <div className="milestone-group-header-content">
+        <button
+          type="button"
+          className="milestone-group-header-content milestone-group-toggle"
+          onClick={onToggle}
+          aria-expanded={!collapsed}
+        >
           <span className={`milestone-group-chevron ${collapsed ? 'collapsed' : ''}`}>▸</span>
           <span className="milestone-group-icon" role="img" aria-label="Milestone">🏁</span>
           <span className="milestone-group-title">{title}</span>
@@ -54,14 +68,14 @@ export function MilestoneGroupHeader({ milestone, itemCount, collapsed, onToggle
                   {milestone.closedIssues}/{total} ({progressPct}%)
                 </span>
               </span>
-              {milestone.dueOn && (
-                <span className={`milestone-group-due ${new Date(milestone.dueOn) < new Date() ? 'overdue' : ''}`}>
-                  📅 {formatDueDate(milestone.dueOn)}
+              {dueInfo && (
+                <span className={`milestone-group-due ${dueInfo.isOverdue ? 'overdue' : ''}`}>
+                  📅 {dueInfo.label}
                 </span>
               )}
             </>
           )}
-        </div>
+        </button>
       </td>
     </tr>
   );

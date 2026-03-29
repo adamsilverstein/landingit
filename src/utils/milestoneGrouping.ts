@@ -12,21 +12,30 @@ export interface MilestoneGroup {
  * fall into a "No Milestone" group placed at the end.
  */
 export function groupByMilestone(items: DashboardItem[]): MilestoneGroup[] {
-  const milestoneMap = new Map<string, { info: MilestoneInfo; items: DashboardItem[] }>();
+  const milestoneMap = new Map<string, { info: MilestoneInfo; items: DashboardItem[]; seenRepos: Set<string> }>();
   const noMilestone: DashboardItem[] = [];
 
   for (const item of items) {
     const ms = item.kind === 'issue' ? item.milestone : null;
     if (ms) {
+      const repoKey = `${item.repo.owner}/${item.repo.name}`;
       const existing = milestoneMap.get(ms.title);
       if (existing) {
         existing.items.push(item);
-        // Keep the most recent milestone info (highest counts)
-        if (ms.openIssues + ms.closedIssues > existing.info.openIssues + existing.info.closedIssues) {
-          existing.info = ms;
+        // Aggregate stats from repos we haven't seen yet for this milestone
+        if (!existing.seenRepos.has(repoKey)) {
+          existing.info = {
+            ...existing.info,
+            openIssues: existing.info.openIssues + ms.openIssues,
+            closedIssues: existing.info.closedIssues + ms.closedIssues,
+            dueOn: existing.info.dueOn && ms.dueOn
+              ? (new Date(ms.dueOn) < new Date(existing.info.dueOn) ? ms.dueOn : existing.info.dueOn)
+              : existing.info.dueOn || ms.dueOn,
+          };
+          existing.seenRepos.add(repoKey);
         }
       } else {
-        milestoneMap.set(ms.title, { info: ms, items: [item] });
+        milestoneMap.set(ms.title, { info: { ...ms }, items: [item], seenRepos: new Set([repoKey]) });
       }
     } else {
       noMilestone.push(item);
@@ -38,7 +47,10 @@ export function groupByMilestone(items: DashboardItem[]): MilestoneGroup[] {
     .sort((a, b) => {
       const aDue = a.info.dueOn;
       const bDue = b.info.dueOn;
-      if (aDue && bDue) return new Date(aDue).getTime() - new Date(bDue).getTime();
+      if (aDue && bDue) {
+        const diff = new Date(aDue).getTime() - new Date(bDue).getTime();
+        return diff !== 0 ? diff : a.info.title.localeCompare(b.info.title);
+      }
       if (aDue) return -1;
       if (bDue) return 1;
       return a.info.title.localeCompare(b.info.title);

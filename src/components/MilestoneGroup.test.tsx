@@ -54,11 +54,21 @@ describe('MilestoneGroupHeader', () => {
     expect(screen.queryByText(/%/)).toBeNull();
   });
 
-  it('calls onToggle when clicked', () => {
+  it('calls onToggle when button is clicked', () => {
     const onToggle = vi.fn();
     renderHeader({ onToggle });
-    fireEvent.click(screen.getByText('v1.0'));
+    fireEvent.click(screen.getByRole('button'));
     expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('button has aria-expanded matching collapsed state', () => {
+    renderHeader({ collapsed: false });
+    expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('button has aria-expanded=false when collapsed', () => {
+    renderHeader({ collapsed: true });
+    expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('renders collapsed chevron class when collapsed', () => {

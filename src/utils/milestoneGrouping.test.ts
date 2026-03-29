@@ -135,6 +135,39 @@ describe('groupByMilestone', () => {
     expect(groups[1].milestone?.title).toBe('Beta');
   });
 
+  it('sorts milestones with same due date alphabetically by title', () => {
+    const msB = makeMilestone({ title: 'Beta', dueOn: '2025-06-01T00:00:00Z' });
+    const msA = makeMilestone({ title: 'Alpha', dueOn: '2025-06-01T00:00:00Z' });
+
+    const items = [
+      makeIssue({ id: 1, milestone: msB }),
+      makeIssue({ id: 2, milestone: msA }),
+    ];
+
+    const groups = groupByMilestone(items);
+    expect(groups[0].milestone?.title).toBe('Alpha');
+    expect(groups[1].milestone?.title).toBe('Beta');
+  });
+
+  it('aggregates milestone stats across repos', () => {
+    const ms1 = makeMilestone({ title: 'v1.0', openIssues: 3, closedIssues: 2, dueOn: '2025-06-01T00:00:00Z' });
+    const ms2 = makeMilestone({ title: 'v1.0', openIssues: 5, closedIssues: 1, dueOn: '2025-05-01T00:00:00Z' });
+
+    const items = [
+      makeIssue({ id: 1, milestone: ms1, repo: { owner: 'acme', name: 'web' } }),
+      makeIssue({ id: 2, milestone: ms2, repo: { owner: 'acme', name: 'api' } }),
+    ];
+
+    const groups = groupByMilestone(items);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].items).toHaveLength(2);
+    // Stats should be aggregated
+    expect(groups[0].milestone?.openIssues).toBe(8);
+    expect(groups[0].milestone?.closedIssues).toBe(3);
+    // Should use earliest due date
+    expect(groups[0].milestone?.dueOn).toBe('2025-05-01T00:00:00Z');
+  });
+
   it('handles all items having no milestone', () => {
     const items = [
       makeIssue({ id: 1, milestone: null }),

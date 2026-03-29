@@ -340,6 +340,16 @@
   font-size: 13px;
 }
 
+.milestone-group-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
 .milestone-group-chevron {
   display: inline-block;
   transition: transform 0.15s;

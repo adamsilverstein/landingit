@@ -43,24 +43,29 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPre
     [items, milestoneGrouping]
   );
 
-  // Build a flat list of rows when milestone grouping is on
-  const groupedRows: RowEntry[] = useMemo(() => {
-    if (!milestoneGrouping) return [];
+  // Build a flat list of rows when milestone grouping is on, plus a mapping
+  // from the parent's cursorIndex to the visible row index in grouped mode.
+  const { groupedRows, flatToVisibleIndex } = useMemo(() => {
+    if (!milestoneGrouping) return { groupedRows: [] as RowEntry[], flatToVisibleIndex: new Map<number, number>() };
     const rows: RowEntry[] = [];
+    const mapping = new Map<number, number>();
     let flatIdx = 0;
+    let visibleIdx = 0;
     for (const group of milestoneGroups) {
       const key = group.milestone?.title ?? '__none__';
       rows.push({ type: 'milestone-header', group, key });
       if (!isCollapsed(key)) {
         for (const item of group.items) {
           rows.push({ type: 'item', item, flatIndex: flatIdx });
+          mapping.set(flatIdx, visibleIdx);
           flatIdx++;
+          visibleIdx++;
         }
       } else {
         flatIdx += group.items.length;
       }
     }
-    return rows;
+    return { groupedRows: rows, flatToVisibleIndex: mapping };
   }, [milestoneGrouping, milestoneGroups, isCollapsed]);
 
   const rowCount = milestoneGrouping ? groupedRows.length : items.length;
@@ -74,11 +79,28 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPre
 
   // Scroll to keep the selected row visible when cursor moves
   useEffect(() => {
-    if (milestoneGrouping) return; // skip auto-scroll in grouped mode
+    if (milestoneGrouping) {
+      // In grouped mode, map cursorIndex to the visible row index
+      const visibleIdx = flatToVisibleIndex.get(cursorIndex);
+      if (visibleIdx !== undefined) {
+        // Account for milestone header rows preceding this visible item
+        let rowIdx = 0;
+        let itemsSeen = 0;
+        for (const entry of groupedRows) {
+          if (entry.type === 'item') {
+            if (itemsSeen === visibleIdx) break;
+            itemsSeen++;
+          }
+          rowIdx++;
+        }
+        virtualizer.scrollToIndex(rowIdx, { align: 'auto' });
+      }
+      return;
+    }
     if (items.length > 0) {
       virtualizer.scrollToIndex(cursorIndex, { align: 'auto' });
     }
-  }, [cursorIndex, virtualizer, items.length, milestoneGrouping]);
+  }, [cursorIndex, virtualizer, items.length, milestoneGrouping, flatToVisibleIndex, groupedRows]);
 
   const colMap = useMemo(() => new Map(DEFAULT_COLUMNS.map((c) => [c.id, c])), []);
 
