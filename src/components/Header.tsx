@@ -9,6 +9,7 @@ interface HeaderProps {
   unseenCount: number;
   onOpenRepos: () => void;
   onSignOut: () => void;
+  onRefresh: () => void;
   autoRefreshSecondsLeft: number | null;
   rateLimit: RateLimit | null;
 }
@@ -27,6 +28,7 @@ export function Header({
   unseenCount,
   onOpenRepos,
   onSignOut,
+  onRefresh,
   autoRefreshSecondsLeft,
   rateLimit,
 }: HeaderProps) {
@@ -58,6 +60,15 @@ export function Header({
             ↻ {formatCountdown(autoRefreshSecondsLeft)}
           </span>
         )}
+        <button
+          className="refresh-btn"
+          onClick={onRefresh}
+          disabled={loading}
+          title="Refresh now (r)"
+          aria-label="Refresh data"
+        >
+          {loading ? <span className="spinner" /> : '↻'}
+        </button>
         {rateLimit && (
           <span
             className={`rate-limit ${rateLimitCritical ? 'rate-limit-critical' : rateLimitWarning ? 'rate-limit-warning' : ''}`}

@@ -183,6 +183,7 @@ export function App() {
         unseenCount={unseenCount}
         onOpenRepos={openRepos}
         onSignOut={handleSignOut}
+        onRefresh={handleRefresh}
         autoRefreshSecondsLeft={autoRefreshSecondsLeft}
         rateLimit={rateLimit}
       />
