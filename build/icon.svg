@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Rounded square background -->
+  <rect x="32" y="32" width="960" height="960" rx="200" ry="200" fill="#1c1c2e"/>
+
+  <!-- Git graph - main vertical line (green) -->
+  <rect x="248" y="220" width="44" height="580" rx="22" fill="#3fb950"/>
+
+  <!-- Git graph - branch vertical line (orange) -->
+  <rect x="428" y="280" width="44" height="240" rx="22" fill="#f0883e"/>
+
+  <!-- Git graph - fork connector (orange horizontal) -->
+  <rect x="270" y="298" width="180" height="44" rx="22" fill="#f0883e"/>
+
+  <!-- Git graph - merge connector (orange horizontal) -->
+  <rect x="270" y="478" width="180" height="44" rx="22" fill="#f0883e"/>
+
+  <!-- Commit dots on main line (solid green with dark center) -->
+  <circle cx="270" cy="270" r="38" fill="#3fb950"/>
+  <circle cx="270" cy="270" r="16" fill="#1c1c2e"/>
+
+  <circle cx="270" cy="420" r="38" fill="#3fb950"/>
+  <circle cx="270" cy="420" r="16" fill="#1c1c2e"/>
+
+  <circle cx="270" cy="600" r="38" fill="#3fb950"/>
+  <circle cx="270" cy="600" r="16" fill="#1c1c2e"/>
+
+  <circle cx="270" cy="750" r="38" fill="#3fb950"/>
+  <circle cx="270" cy="750" r="16" fill="#1c1c2e"/>
+
+  <!-- Commit dots on branch (solid orange with dark center) -->
+  <circle cx="450" cy="320" r="38" fill="#f0883e"/>
+  <circle cx="450" cy="320" r="16" fill="#1c1c2e"/>
+
+  <circle cx="450" cy="500" r="38" fill="#f0883e"/>
+  <circle cx="450" cy="500" r="16" fill="#1c1c2e"/>
+
+  <!-- Dashboard status bars (right side) -->
+  <rect x="560" y="252" width="280" height="50" rx="25" fill="#3fb950"/>
+  <rect x="560" y="362" width="190" height="50" rx="25" fill="#f0883e"/>
+  <rect x="560" y="472" width="240" height="50" rx="25" fill="#3fb950"/>
+  <rect x="560" y="582" width="150" height="50" rx="25" fill="#f0883e"/>
+  <rect x="560" y="692" width="280" height="50" rx="25" fill="#3fb950"/>
+</svg>
