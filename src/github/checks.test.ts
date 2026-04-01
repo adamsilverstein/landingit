@@ -22,8 +22,8 @@ describe('getCheckStatus', () => {
         listForRef: vi.fn().mockResolvedValue({
           data: {
             check_runs: [
-              { status: 'completed', conclusion: 'success' },
-              { status: 'completed', conclusion: 'success' },
+              { name: 'test', status: 'completed', conclusion: 'success', started_at: '2024-01-01T00:00:00Z' },
+              { name: 'lint', status: 'completed', conclusion: 'success', started_at: '2024-01-01T00:00:00Z' },
             ],
           },
         }),
@@ -38,9 +38,9 @@ describe('getCheckStatus', () => {
         listForRef: vi.fn().mockResolvedValue({
           data: {
             check_runs: [
-              { status: 'completed', conclusion: 'success' },
-              { status: 'completed', conclusion: 'skipped' },
-              { status: 'completed', conclusion: 'neutral' },
+              { name: 'test', status: 'completed', conclusion: 'success', started_at: '2024-01-01T00:00:00Z' },
+              { name: 'lint', status: 'completed', conclusion: 'skipped', started_at: '2024-01-01T00:00:00Z' },
+              { name: 'docs', status: 'completed', conclusion: 'neutral', started_at: '2024-01-01T00:00:00Z' },
             ],
           },
         }),
@@ -55,8 +55,8 @@ describe('getCheckStatus', () => {
         listForRef: vi.fn().mockResolvedValue({
           data: {
             check_runs: [
-              { status: 'completed', conclusion: 'success' },
-              { status: 'completed', conclusion: 'failure' },
+              { name: 'test', status: 'completed', conclusion: 'success', started_at: '2024-01-01T00:00:00Z' },
+              { name: 'lint', status: 'completed', conclusion: 'failure', started_at: '2024-01-01T00:00:00Z' },
             ],
           },
         }),
@@ -70,7 +70,7 @@ describe('getCheckStatus', () => {
       checks: {
         listForRef: vi.fn().mockResolvedValue({
           data: {
-            check_runs: [{ status: 'completed', conclusion: 'timed_out' }],
+            check_runs: [{ name: 'test', status: 'completed', conclusion: 'timed_out', started_at: '2024-01-01T00:00:00Z' }],
           },
         }),
       },
@@ -83,7 +83,7 @@ describe('getCheckStatus', () => {
       checks: {
         listForRef: vi.fn().mockResolvedValue({
           data: {
-            check_runs: [{ status: 'completed', conclusion: 'cancelled' }],
+            check_runs: [{ name: 'test', status: 'completed', conclusion: 'cancelled', started_at: '2024-01-01T00:00:00Z' }],
           },
         }),
       },
@@ -96,7 +96,7 @@ describe('getCheckStatus', () => {
       checks: {
         listForRef: vi.fn().mockResolvedValue({
           data: {
-            check_runs: [{ status: 'completed', conclusion: 'action_required' }],
+            check_runs: [{ name: 'test', status: 'completed', conclusion: 'action_required', started_at: '2024-01-01T00:00:00Z' }],
           },
         }),
       },
@@ -110,8 +110,8 @@ describe('getCheckStatus', () => {
         listForRef: vi.fn().mockResolvedValue({
           data: {
             check_runs: [
-              { status: 'completed', conclusion: 'success' },
-              { status: 'in_progress', conclusion: null },
+              { name: 'test', status: 'completed', conclusion: 'success', started_at: '2024-01-01T00:00:00Z' },
+              { name: 'lint', status: 'in_progress', conclusion: null, started_at: '2024-01-01T00:00:00Z' },
             ],
           },
         }),
@@ -126,8 +126,8 @@ describe('getCheckStatus', () => {
         listForRef: vi.fn().mockResolvedValue({
           data: {
             check_runs: [
-              { status: 'completed', conclusion: 'success' },
-              { status: 'queued', conclusion: null },
+              { name: 'test', status: 'completed', conclusion: 'success', started_at: '2024-01-01T00:00:00Z' },
+              { name: 'lint', status: 'queued', conclusion: null, started_at: '2024-01-01T00:00:00Z' },
             ],
           },
         }),
@@ -142,8 +142,8 @@ describe('getCheckStatus', () => {
         listForRef: vi.fn().mockResolvedValue({
           data: {
             check_runs: [
-              { status: 'completed', conclusion: 'failure' },
-              { status: 'in_progress', conclusion: null },
+              { name: 'test', status: 'completed', conclusion: 'failure', started_at: '2024-01-01T00:00:00Z' },
+              { name: 'lint', status: 'in_progress', conclusion: null, started_at: '2024-01-01T00:00:00Z' },
             ],
           },
         }),
@@ -158,14 +158,63 @@ describe('getCheckStatus', () => {
         listForRef: vi.fn().mockResolvedValue({
           data: {
             check_runs: [
-              { status: 'completed', conclusion: 'success' },
-              { status: 'completed', conclusion: 'stale' },
+              { name: 'test', status: 'completed', conclusion: 'success', started_at: '2024-01-01T00:00:00Z' },
+              { name: 'lint', status: 'completed', conclusion: 'stale', started_at: '2024-01-01T00:00:00Z' },
             ],
           },
         }),
       },
     });
     expect(await getCheckStatus(octokit, 'o', 'r', 'ref')).toBe('mixed');
+  });
+
+  it('deduplicates check runs by app+name, keeping only the latest', async () => {
+    const octokit = mockOctokit({
+      checks: {
+        listForRef: vi.fn().mockResolvedValue({
+          data: {
+            check_runs: [
+              { name: 'test', app: { id: 1 }, status: 'completed', conclusion: 'failure', started_at: '2024-01-01T00:00:00Z' },
+              { name: 'test', app: { id: 1 }, status: 'completed', conclusion: 'success', started_at: '2024-01-01T01:00:00Z' },
+            ],
+          },
+        }),
+      },
+    });
+    expect(await getCheckStatus(octokit, 'o', 'r', 'ref')).toBe('success');
+  });
+
+  it('handles reruns where old failure is superseded by new success', async () => {
+    const octokit = mockOctokit({
+      checks: {
+        listForRef: vi.fn().mockResolvedValue({
+          data: {
+            check_runs: [
+              { name: 'ci/build', app: { id: 1 }, status: 'completed', conclusion: 'failure', started_at: '2024-01-01T00:00:00Z' },
+              { name: 'ci/build', app: { id: 1 }, status: 'completed', conclusion: 'success', started_at: '2024-01-01T02:00:00Z' },
+              { name: 'ci/lint', app: { id: 1 }, status: 'completed', conclusion: 'success', started_at: '2024-01-01T00:00:00Z' },
+            ],
+          },
+        }),
+      },
+    });
+    expect(await getCheckStatus(octokit, 'o', 'r', 'ref')).toBe('success');
+  });
+
+  it('keeps same-named checks from different apps separate', async () => {
+    const octokit = mockOctokit({
+      checks: {
+        listForRef: vi.fn().mockResolvedValue({
+          data: {
+            check_runs: [
+              { name: 'test', app: { id: 1 }, status: 'completed', conclusion: 'success', started_at: '2024-01-01T00:00:00Z' },
+              { name: 'test', app: { id: 2 }, status: 'completed', conclusion: 'failure', started_at: '2024-01-01T00:00:00Z' },
+            ],
+          },
+        }),
+      },
+    });
+    expect(await getCheckStatus(octokit, 'o', 'r', 'ref')).toBe('failure');
   });
 
   it('returns "none" when the API call throws', async () => {

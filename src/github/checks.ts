@@ -14,8 +14,21 @@ export async function getCheckStatus(
       ref,
       per_page: 100,
     });
-    const runs = data.check_runs;
-    if (runs.length === 0) return 'none';
+    const allRuns = data.check_runs;
+    if (allRuns.length === 0) return 'none';
+
+    // Keep only the latest run per app+name (reruns create duplicate entries;
+    // different apps can emit checks with the same name)
+    const latestByKey = new Map<string, (typeof allRuns)[number]>();
+    for (const run of allRuns) {
+      const key = `${run.app?.id ?? 'unknown'}:${run.name}`;
+      const existing = latestByKey.get(key);
+      if (!existing || new Date(run.started_at ?? 0) > new Date(existing.started_at ?? 0)) {
+        latestByKey.set(key, run);
+      }
+    }
+    const runs = [...latestByKey.values()];
+
     const failConclusions = new Set(['failure', 'timed_out', 'cancelled', 'action_required']);
     if (runs.some((r) => r.conclusion && failConclusions.has(r.conclusion)))
       return 'failure';

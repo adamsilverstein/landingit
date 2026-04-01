@@ -142,6 +142,22 @@ function parseTimelineEvents(events: any[]): TimelineEvent[] {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+// Keep only the latest run per app+name (reruns create duplicate entries;
+// different apps can emit checks with the same name)
+function deduplicateCheckRuns<T extends { name: string; started_at?: string | null; app?: { id?: number | null } | null }>(
+  runs: T[]
+): T[] {
+  const latestByKey = new Map<string, T>();
+  for (const run of runs) {
+    const key = `${run.app?.id ?? 'unknown'}:${run.name}`;
+    const existing = latestByKey.get(key);
+    if (!existing || new Date(run.started_at ?? 0) > new Date(existing.started_at ?? 0)) {
+      latestByKey.set(key, run);
+    }
+  }
+  return [...latestByKey.values()];
+}
+
 export async function getPRDetails(
   octokit: Octokit,
   item: PRItem
@@ -202,7 +218,7 @@ export async function getPRDetails(
   const detail: PRDetail = {
     body: pr?.body ?? '',
     labels: pr?.labels?.map((l) => (typeof l === 'string' ? l : l.name ?? '')) ?? [],
-    checkRuns: checks.map((c) => ({
+    checkRuns: deduplicateCheckRuns(checks).map((c) => ({
       name: c.name,
       status: c.status,
       conclusion: c.conclusion,
