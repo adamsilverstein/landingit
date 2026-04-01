@@ -1,6 +1,6 @@
 {
   "name": "git-dashboard",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "GitHub PR dashboard web app",
   "type": "module",
   "main": "electron/main.cjs",
