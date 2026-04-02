@@ -13,7 +13,7 @@ A lightweight, keyboard-driven GitHub PR dashboard built with React and TypeScri
 
 ## Screenshot
 
-![Git Dashboard — Token Setup](https://github.com/user-attachments/assets/a3b5174c-abee-4be4-9748-8ad60d1a0ae6)
+<img width="1780" height="1067" alt="image" src="https://github.com/user-attachments/assets/91f25e0e-dc13-437b-af55-9fd16fed3716" />
 
 ## Getting Started
 
