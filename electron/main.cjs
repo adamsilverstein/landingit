@@ -1,5 +1,20 @@
-const { app, BrowserWindow, session, shell } = require('electron');
+const { app, BrowserWindow, net, protocol, session, shell } = require('electron');
 const path = require('path');
+const { pathToFileURL } = require('url');
+
+// Register the custom scheme as privileged so it gets a proper origin
+// and can make CORS requests (file:// has a null origin which blocks fetch).
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+    },
+  },
+]);
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -14,6 +29,19 @@ function createWindow() {
       sandbox: true,
       webSecurity: true,
     },
+  });
+
+  // Serve dist/ files via the app:// protocol so the renderer has a real
+  // origin and can make authenticated GitHub API requests without CORS issues.
+  const distDir = path.join(__dirname, '..', 'dist');
+  protocol.handle('app', (request) => {
+    const url = new URL(request.url);
+    let filePath = path.join(distDir, decodeURIComponent(url.pathname));
+    // Default to index.html for the root path
+    if (url.pathname === '/' || url.pathname === '') {
+      filePath = path.join(distDir, 'index.html');
+    }
+    return net.fetch(pathToFileURL(filePath).toString());
   });
 
   // Deny all permission requests (camera, microphone, etc.)
@@ -45,7 +73,7 @@ function createWindow() {
     openExternalSafe(url);
   });
 
-  win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+  win.loadURL('app://dashboard/');
 }
 
 app.whenReady().then(createWindow);
