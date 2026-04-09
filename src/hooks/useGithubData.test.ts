@@ -261,4 +261,38 @@ describe('useGithubData', () => {
     expect(warnSpy).toHaveBeenCalledWith('Failed to fetch user issues:', expect.any(Error));
     warnSpy.mockRestore();
   });
+
+  it('sets authError when API returns 401 (user fetch path)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const authErr = Object.assign(new Error('Bad credentials'), { status: 401 });
+    mockedFetchUserPRs.mockRejectedValue(authErr);
+    mockedFetchUserIssues.mockResolvedValue([]);
+
+    const { result } = renderHook(() =>
+      useGithubData(mockOctokit(), repos, 30, 'user'),
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.authError).toBe(true);
+    warnSpy.mockRestore();
+  });
+
+  it('sets authError when API returns 401 (per-repo fetch path)', async () => {
+    const authErr = Object.assign(new Error('Bad credentials'), { status: 401 });
+    mockedFetchAllPRsForRepo.mockRejectedValue(authErr);
+    mockedFetchAllIssuesForRepo.mockResolvedValue([]);
+
+    const { result } = renderHook(() =>
+      useGithubData(mockOctokit(), repos, 30, null),
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.authError).toBe(true);
+  });
 });

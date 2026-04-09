@@ -27,6 +27,7 @@ export function App() {
   const { config, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName } = useConfig();
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('created');
   const [username, setUsername] = useState<string | null>(null);
+  const [tokenExpired, setTokenExpired] = useState(false);
   const { cycleTheme } = useTheme();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [rateLimit, setRateLimit] = useState<RateLimit | null>(null);
@@ -52,12 +53,19 @@ export function App() {
     if (!octokit) return;
     octokit.users.getAuthenticated().then(
       ({ data }) => setUsername(data.login),
-      (e) => console.warn('Failed to fetch user:', e)
+      (e) => {
+        console.warn('Failed to fetch user:', e);
+        if (e && typeof e === 'object' && 'status' in e && e.status === 401) {
+          setTokenExpired(true);
+          clearToken();
+          setTokenState(null);
+        }
+      }
     );
   }, [octokit]);
 
   // Pass username for user-specific filters, null for "everyone"
-  const { items, loading, error, failedRepos, lastRefresh, refresh } = useGithubData(
+  const { items, loading, error, authError, failedRepos, lastRefresh, refresh } = useGithubData(
     octokit,
     enabledRepos,
     config.defaults.maxPrsPerRepo,
@@ -65,6 +73,15 @@ export function App() {
     username,
     ownershipFilter
   );
+
+  // When the API returns 401, clear the token to show the re-auth screen
+  useEffect(() => {
+    if (authError) {
+      setTokenExpired(true);
+      clearToken();
+      setTokenState(null);
+    }
+  }, [authError]);
 
   const {
     filtered, filter, sort, sortDirection, searchQuery, setSearchQuery,
@@ -132,6 +149,7 @@ export function App() {
   const handleSaveToken = useCallback((t: string) => {
     saveToken(t);
     setTokenState(t);
+    setTokenExpired(false);
   }, []);
 
   const unseenCount = useMemo(
@@ -170,7 +188,7 @@ export function App() {
   useKeyboardShortcuts(shortcutActions);
 
   if (!token) {
-    return <TokenSetup onSave={handleSaveToken} />;
+    return <TokenSetup onSave={handleSaveToken} reason={tokenExpired ? 'expired' : null} />;
   }
 
   return (

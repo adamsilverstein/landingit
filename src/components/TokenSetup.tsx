@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 
 interface TokenSetupProps {
   onSave: (token: string) => void;
+  reason?: 'expired' | null;
 }
 
-export function TokenSetup({ onSave }: TokenSetupProps) {
+export function TokenSetup({ onSave, reason }: TokenSetupProps) {
   const [token, setToken] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -19,18 +20,28 @@ export function TokenSetup({ onSave }: TokenSetupProps) {
     <div className="token-setup">
       <div className="token-card">
         <h1>Git Dashboard</h1>
-        <p>Enter a GitHub Personal Access Token to get started.</p>
+        {reason === 'expired' ? (
+          <p className="token-warning">Your GitHub token is invalid or expired. Please enter a new one.</p>
+        ) : (
+          <p>Enter a GitHub Personal Access Token to get started.</p>
+        )}
         <p className="token-hint">
-          Create one at{' '}
-          <a
-            href="https://github.com/settings/tokens"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            github.com/settings/tokens
-          </a>{' '}
-          with <code>repo</code> scope.
+          To create a token:
         </p>
+        <ol className="token-steps">
+          <li>Go to{' '}
+            <a
+              href="https://github.com/settings/tokens"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              github.com/settings/tokens
+            </a>
+          </li>
+          <li>Click <strong>Generate new token (classic)</strong></li>
+          <li>Select the <code>repo</code> scope</li>
+          <li>Copy and paste the token below</li>
+        </ol>
         <form onSubmit={handleSubmit}>
           <input
             type="password"

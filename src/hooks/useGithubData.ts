@@ -5,10 +5,20 @@ import { fetchUserPRs, fetchAllPRsForRepo } from '../github/pulls.js';
 import { fetchUserIssues, fetchAllIssuesForRepo } from '../github/issues.js';
 import { getCheckStatus, getReviewState, isRequestedReviewer } from '../github/checks.js';
 
+function isAuthError(e: unknown): boolean {
+  return (
+    typeof e === 'object' &&
+    e !== null &&
+    'status' in e &&
+    (e as { status: unknown }).status === 401
+  );
+}
+
 interface UseGithubDataResult {
   items: DashboardItem[];
   loading: boolean;
   error: string | null;
+  authError: boolean;
   failedRepos: RepoFetchError[];
   lastRefresh: Date | null;
   refresh: () => void;
@@ -36,6 +46,7 @@ export function useGithubData(
   const [items, setItems] = useState<DashboardItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState(false);
   const [failedRepos, setFailedRepos] = useState<RepoFetchError[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
@@ -75,6 +86,7 @@ export function useGithubData(
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setAuthError(false);
     setFailedRepos([]);
     setItems([]);
 
@@ -104,9 +116,11 @@ export function useGithubData(
 
           if (prResult.status === 'rejected') {
             console.warn('Failed to fetch user PRs:', prResult.reason);
+            if (isAuthError(prResult.reason)) { setAuthError(true); return; }
           }
           if (issueResult.status === 'rejected') {
             console.warn('Failed to fetch user issues:', issueResult.reason);
+            if (isAuthError(issueResult.reason)) { setAuthError(true); return; }
           }
         } else {
           // Fallback: fetch all PRs and issues per repo, streaming each repo's results
@@ -121,6 +135,7 @@ export function useGithubData(
               }
               return prs;
             } catch (e) {
+              if (isAuthError(e)) throw e;
               repoErrors.push({
                 repo: `${repo.owner}/${repo.name}`,
                 message: e instanceof Error ? e.message : 'Unknown error',
@@ -137,6 +152,7 @@ export function useGithubData(
               }
               return issues;
             } catch (e) {
+              if (isAuthError(e)) throw e;
               repoErrors.push({
                 repo: `${repo.owner}/${repo.name}`,
                 message: `Issues: ${e instanceof Error ? e.message : 'Unknown error'}`,
@@ -204,7 +220,11 @@ export function useGithubData(
         }
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Unknown error');
+          if (isAuthError(e)) {
+            setAuthError(true);
+          } else {
+            setError(e instanceof Error ? e.message : 'Unknown error');
+          }
         }
       } finally {
         if (!cancelled) {
@@ -218,5 +238,5 @@ export function useGithubData(
     };
   }, [repoKey, refreshCounter, username, ownershipFilter]);
 
-  return { items, loading, error, failedRepos, lastRefresh, refresh };
+  return { items, loading, error, authError, failedRepos, lastRefresh, refresh };
 }
