@@ -1,5 +1,7 @@
-import type { Config } from './types.js';
-import { STORAGE_KEYS } from './constants.js';
+// Backward-compatible synchronous localStorage config for the web app.
+// The shared module uses async StorageAdapter; this wraps localStorage directly.
+import type { Config } from '../shared/types.js';
+import { STORAGE_KEYS } from '../shared/constants.js';
 
 const DEFAULT_CONFIG: Config = {
   repos: [],
@@ -7,8 +9,8 @@ const DEFAULT_CONFIG: Config = {
     sort: 'updated',
     filter: 'all',
     maxPrsPerRepo: 30,
-    autoRefreshInterval: 300, // 5 minutes in seconds, 0 = disabled
-    staleDays: 14, // days of inactivity before an item is considered stale
+    autoRefreshInterval: 300,
+    staleDays: 14,
   },
 };
 

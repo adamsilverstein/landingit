@@ -4,25 +4,25 @@ import { useGithubData } from '../hooks/useGithubData.js';
 import type { Octokit } from '@octokit/rest';
 import type { RepoConfig } from '../types.js';
 
-vi.mock('../github/pulls.js', () => ({
+vi.mock('../../shared/github/pulls.js', () => ({
   fetchUserPRs: vi.fn(),
   fetchAllPRsForRepo: vi.fn(),
 }));
 
-vi.mock('../github/issues.js', () => ({
+vi.mock('../../shared/github/issues.js', () => ({
   fetchUserIssues: vi.fn(),
   fetchAllIssuesForRepo: vi.fn(),
 }));
 
-vi.mock('../github/checks.js', () => ({
+vi.mock('../../shared/github/checks.js', () => ({
   getCheckStatus: vi.fn(),
   getReviewState: vi.fn(),
   isRequestedReviewer: vi.fn(),
 }));
 
-import { fetchUserPRs, fetchAllPRsForRepo } from '../github/pulls.js';
-import { fetchUserIssues, fetchAllIssuesForRepo } from '../github/issues.js';
-import { getCheckStatus, getReviewState, isRequestedReviewer } from '../github/checks.js';
+import { fetchUserPRs, fetchAllPRsForRepo } from '../../shared/github/pulls.js';
+import { fetchUserIssues, fetchAllIssuesForRepo } from '../../shared/github/issues.js';
+import { getCheckStatus, getReviewState, isRequestedReviewer } from '../../shared/github/checks.js';
 
 const mockedFetchUserPRs = vi.mocked(fetchUserPRs);
 const mockedFetchAllPRsForRepo = vi.mocked(fetchAllPRsForRepo);

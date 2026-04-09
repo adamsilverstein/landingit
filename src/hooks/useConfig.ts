@@ -1,72 +1,8 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { loadConfig, saveConfig } from '../config.js';
-import type { Config } from '../types.js';
+// Web wrapper — injects webStorage into the shared hook.
+// Preserves the original zero-argument API so existing callers don't change.
+import { useConfig as useConfigShared } from '../../shared/hooks/useConfig.js';
+import { webStorage } from '../storage/webStorage.js';
 
 export function useConfig() {
-  const [config, setConfig] = useState<Config>(() => loadConfig());
-  const isInitialMount = useRef(true);
-
-  // Persist config to localStorage whenever it changes (skip initial mount)
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    try {
-      saveConfig(config);
-    } catch (e) {
-      console.warn('Failed to save config:', e);
-    }
-  }, [config]);
-
-  const addRepo = useCallback((owner: string, name: string) => {
-    setConfig((prev) => {
-      const exists = prev.repos.some(
-        (r) => r.owner === owner && r.name === name
-      );
-      if (exists) return prev;
-      return {
-        ...prev,
-        repos: [...prev.repos, { owner, name, enabled: true }],
-      };
-    });
-  }, []);
-
-  const removeRepo = useCallback((index: number) => {
-    setConfig((prev) => ({
-      ...prev,
-      repos: prev.repos.filter((_, i) => i !== index),
-    }));
-  }, []);
-
-  const toggleRepo = useCallback((index: number) => {
-    setConfig((prev) => ({
-      ...prev,
-      repos: prev.repos.map((r, i) =>
-        i === index ? { ...r, enabled: !r.enabled } : r
-      ),
-    }));
-  }, []);
-
-  const toggleRepoByName = useCallback((owner: string, name: string) => {
-    setConfig((prev) => {
-      const index = prev.repos.findIndex(
-        (r) => r.owner === owner && r.name === name
-      );
-      if (index === -1) return prev;
-      return {
-        ...prev,
-        repos: prev.repos.map((r, i) =>
-          i === index ? { ...r, enabled: !r.enabled } : r
-        ),
-      };
-    });
-  }, []);
-
-  const enabledRepos = useMemo(
-    () => config.repos.filter((r) => r.enabled),
-    [config.repos]
-  );
-
-  return { config, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName };
+  return useConfigShared(webStorage);
 }
