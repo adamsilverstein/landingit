@@ -11,6 +11,7 @@ import { useApp } from '../context/AppContext';
 import { useConfigContext } from '../context/ConfigContext';
 import { PRListItem } from '../components/PRListItem';
 import { FilterBar } from '../components/FilterBar';
+import { LabelFilterModal } from '../components/LabelFilterModal';
 import type { DashboardStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<DashboardStackParamList, 'PRList'>;
@@ -20,6 +21,7 @@ export function PRListScreen({ navigation }: Props) {
   const { config, enabledRepos } = useConfigContext();
   const { markSeen, isUnseen } = useLastSeen(asyncStorageAdapter);
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('created');
+  const [labelModalVisible, setLabelModalVisible] = useState(false);
 
   const { items, loading, error, failedRepos, lastRefresh, refresh } = useGithubData(
     octokit,
@@ -130,6 +132,8 @@ export function PRListScreen({ navigation }: Props) {
         onItemTypeChange={setItemTypeFilter}
         prStateFilters={prStateFilters}
         onTogglePRState={togglePRStateFilter}
+        labelFilterCount={labelFilters.size}
+        onLabelFilterPress={() => setLabelModalVisible(true)}
       />
 
       <Text style={styles.headerInfo}>{headerInfo}</Text>
@@ -175,6 +179,15 @@ export function PRListScreen({ navigation }: Props) {
           }
         />
       )}
+
+      <LabelFilterModal
+        visible={labelModalVisible}
+        onClose={() => setLabelModalVisible(false)}
+        labels={availableLabels}
+        selectedLabels={labelFilters}
+        onToggle={toggleLabelFilter}
+        onClear={clearLabelFilters}
+      />
     </View>
   );
 }

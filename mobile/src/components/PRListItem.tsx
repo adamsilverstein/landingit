@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import type { DashboardItem } from '../../shared/types.js';
-import { timeAgo } from '../../shared/utils/timeAgo.js';
-import { isMergeReady } from '../../shared/utils/mergeReady.js';
+import type { DashboardItem } from '../../../shared/types.js';
+import { timeAgo } from '../../../shared/utils/timeAgo.js';
+import { isMergeReady } from '../../../shared/utils/mergeReady.js';
+import { LabelBadge } from './LabelBadge';
 
 const CI_COLORS: Record<string, string> = {
   success: '#3fb950',
@@ -99,6 +100,15 @@ export function PRListItem({ item, isUnseen, onPress, onLongPress }: PRListItemP
 
           <Text style={styles.author}>{item.author}</Text>
         </View>
+
+        {/* Label badges */}
+        {item.labels.length > 0 && (
+          <View style={styles.labelRow}>
+            {item.labels.map((label) => (
+              <LabelBadge key={label.name} label={label} />
+            ))}
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -158,6 +168,11 @@ const styles = StyleSheet.create({
   metaSep: {
     fontSize: 12,
     color: '#484f58',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
   },
   bottomRow: {
     flexDirection: 'row',

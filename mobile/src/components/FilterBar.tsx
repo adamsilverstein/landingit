@@ -56,6 +56,9 @@ interface FilterBarProps {
   // PR state
   prStateFilters: Set<PRStateFilterKey>;
   onTogglePRState: (key: PRStateFilterKey) => void;
+  // Labels
+  labelFilterCount: number;
+  onLabelFilterPress: () => void;
 }
 
 export function FilterBar({
@@ -64,6 +67,7 @@ export function FilterBar({
   ownershipFilter, onOwnershipChange, username,
   itemTypeFilter, onItemTypeChange,
   prStateFilters, onTogglePRState,
+  labelFilterCount, onLabelFilterPress,
 }: FilterBarProps) {
   return (
     <View style={styles.container}>
@@ -113,7 +117,7 @@ export function FilterBar({
         })}
       </ScrollView>
 
-      {/* Filter chips */}
+      {/* Filter chips + Labels button */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.row}>
         {FILTERS.map((f) => (
           <TouchableOpacity
@@ -126,6 +130,14 @@ export function FilterBar({
             </Text>
           </TouchableOpacity>
         ))}
+        <TouchableOpacity
+          style={[styles.chip, labelFilterCount > 0 && styles.chipActive]}
+          onPress={onLabelFilterPress}
+        >
+          <Text style={[styles.chipText, labelFilterCount > 0 && styles.chipTextActive]}>
+            Labels{labelFilterCount > 0 ? ` (${labelFilterCount})` : ''}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Sort chips */}
