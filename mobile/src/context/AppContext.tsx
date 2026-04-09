@@ -1,10 +1,21 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import type { Octokit } from '@octokit/rest';
-import { createClient, type RateLimit } from '../../shared/github/client.js';
-import { getToken, setToken, clearToken } from '../../shared/config.js';
-import { initDetailCache } from '../../shared/github/details.js';
+import { createClient, type RateLimit } from '../../../shared/github/client.js';
+import { getToken, setToken, clearToken } from '../../../shared/config.js';
+import { initDetailCache } from '../../../shared/github/details.js';
 import { secureStorageAdapter } from '../storage/secureStorageAdapter';
 import { asyncStorageAdapter } from '../storage/asyncStorageAdapter';
+
+// Load bundled dev token from local.config.json (gitignored, never committed).
+// This file is optional — if missing, the app falls back to Keychain storage.
+let localToken: string | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const localConfig = require('../../local.config.json');
+  if (localConfig?.token) localToken = localConfig.token;
+} catch {
+  // File doesn't exist — normal in production builds
+}
 
 interface AppContextValue {
   token: string | null;
@@ -36,11 +47,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [rateLimit, setRateLimit] = useState<RateLimit | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load token from Keychain on mount
+  // Load token: prefer local dev config, then fall back to Keychain
   useEffect(() => {
     (async () => {
-      const stored = await getToken(secureStorageAdapter);
-      setTokenState(stored);
+      if (localToken) {
+        setTokenState(localToken);
+      } else {
+        const stored = await getToken(secureStorageAdapter);
+        setTokenState(stored);
+      }
       setLoading(false);
       // Initialize detail cache with AsyncStorage
       await initDetailCache(asyncStorageAdapter);
