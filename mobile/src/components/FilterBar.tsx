@@ -35,7 +35,7 @@ const ITEM_TYPES: { key: ItemTypeFilter; label: string }[] = [
 ];
 
 const PR_STATES: { key: PRStateFilterKey; label: string; color: string; activeColor: string }[] = [
-  { key: 'draft', label: 'Draft', color: '#484f58', activeColor: '#484f58' },
+  { key: 'draft', label: 'Draft', color: '#484f58', activeColor: '#d29922' },
   { key: 'open', label: 'Open', color: '#484f58', activeColor: '#3fb950' },
   { key: 'merged', label: 'Merged', color: '#484f58', activeColor: '#a371f7' },
 ];
