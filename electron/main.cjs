@@ -16,23 +16,11 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-function createWindow() {
-  const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    icon: app.isPackaged
-      ? path.join(process.resourcesPath, 'icon.png')
-      : path.join(__dirname, '..', 'build', 'icon.png'),
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: true,
-      webSecurity: true,
-    },
-  });
-
-  // Serve dist/ files via the app:// protocol so the renderer has a real
-  // origin and can make authenticated GitHub API requests without CORS issues.
+// Serve dist/ files via the app:// protocol so the renderer has a real
+// origin and can make authenticated GitHub API requests without CORS issues.
+// Registered once at startup — protocol.handle throws on duplicate registration,
+// and on macOS createWindow() can be called again via the `activate` event.
+function registerAppProtocol() {
   const distDir = path.resolve(__dirname, '..', 'dist');
   protocol.handle('app', (request) => {
     const url = new URL(request.url);
@@ -56,6 +44,22 @@ function createWindow() {
     }
 
     return net.fetch(pathToFileURL(filePath).toString());
+  });
+}
+
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    icon: app.isPackaged
+      ? path.join(process.resourcesPath, 'icon.png')
+      : path.join(__dirname, '..', 'build', 'icon.png'),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      webSecurity: true,
+    },
   });
 
   // Deny all permission requests (camera, microphone, etc.)
@@ -90,7 +94,10 @@ function createWindow() {
   win.loadURL('app://dashboard/');
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  registerAppProtocol();
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
