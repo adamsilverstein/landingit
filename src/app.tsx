@@ -49,6 +49,13 @@ export function App() {
     [token, handleRateLimit]
   );
 
+  const handleInvalidToken = useCallback(() => {
+    setTokenExpired(true);
+    setUsername(null);
+    clearToken();
+    setTokenState(null);
+  }, []);
+
   // Fetch authenticated user's login
   useEffect(() => {
     if (!octokit) {
@@ -64,17 +71,14 @@ export function App() {
         if (cancelled) return;
         console.warn('Failed to fetch user:', e);
         if (isAuthError(e)) {
-          setTokenExpired(true);
-          setUsername(null);
-          clearToken();
-          setTokenState(null);
+          handleInvalidToken();
         }
       }
     );
     return () => {
       cancelled = true;
     };
-  }, [octokit]);
+  }, [octokit, handleInvalidToken]);
 
   // Pass username for user-specific filters, null for "everyone"
   const { items, loading, error, authError, failedRepos, lastRefresh, refresh } = useGithubData(
@@ -89,12 +93,9 @@ export function App() {
   // When the API returns 401, clear the token to show the re-auth screen
   useEffect(() => {
     if (authError) {
-      setTokenExpired(true);
-      setUsername(null);
-      clearToken();
-      setTokenState(null);
+      handleInvalidToken();
     }
-  }, [authError]);
+  }, [authError, handleInvalidToken]);
 
   const {
     filtered, filter, sort, sortDirection, searchQuery, setSearchQuery,

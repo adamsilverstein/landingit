@@ -108,11 +108,17 @@ export function useGithubData(
 
           if (prResult.status === 'rejected') {
             console.warn('Failed to fetch user PRs:', prResult.reason);
-            if (isAuthError(prResult.reason)) { setAuthError(true); return; }
+            if (isAuthError(prResult.reason)) {
+              if (!cancelled) setAuthError(true);
+              return;
+            }
           }
           if (issueResult.status === 'rejected') {
             console.warn('Failed to fetch user issues:', issueResult.reason);
-            if (isAuthError(issueResult.reason)) { setAuthError(true); return; }
+            if (isAuthError(issueResult.reason)) {
+              if (!cancelled) setAuthError(true);
+              return;
+            }
           }
         } else {
           // Fallback: fetch all PRs and issues per repo, streaming each repo's results
