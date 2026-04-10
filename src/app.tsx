@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { DashboardItem, OwnershipFilter } from './types.js';
 import { createClient, type RateLimit } from './github/client.js';
+import { isAuthError } from './github/errors.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
 import { useConfig } from './hooks/useConfig.js';
 import { useGithubData } from './hooks/useGithubData.js';
@@ -50,12 +51,19 @@ export function App() {
 
   // Fetch authenticated user's login
   useEffect(() => {
-    if (!octokit) return;
+    if (!octokit) {
+      setUsername(null);
+      return;
+    }
+    let cancelled = false;
     octokit.users.getAuthenticated().then(
-      ({ data }) => setUsername(data.login),
+      ({ data }) => {
+        if (!cancelled) setUsername(data.login);
+      },
       (e) => {
+        if (cancelled) return;
         console.warn('Failed to fetch user:', e);
-        if (e && typeof e === 'object' && 'status' in e && e.status === 401) {
+        if (isAuthError(e)) {
           setTokenExpired(true);
           setUsername(null);
           clearToken();
@@ -63,6 +71,9 @@ export function App() {
         }
       }
     );
+    return () => {
+      cancelled = true;
+    };
   }, [octokit]);
 
   // Pass username for user-specific filters, null for "everyone"

@@ -4,15 +4,7 @@ import type { PRItem, DashboardItem, RepoConfig, RepoFetchError, OwnershipFilter
 import { fetchUserPRs, fetchAllPRsForRepo } from '../github/pulls.js';
 import { fetchUserIssues, fetchAllIssuesForRepo } from '../github/issues.js';
 import { getCheckStatus, getReviewState, isRequestedReviewer } from '../github/checks.js';
-
-function isAuthError(e: unknown): boolean {
-  return (
-    typeof e === 'object' &&
-    e !== null &&
-    'status' in e &&
-    (e as { status: unknown }).status === 401
-  );
-}
+import { isAuthError } from '../github/errors.js';
 
 interface UseGithubDataResult {
   items: DashboardItem[];
