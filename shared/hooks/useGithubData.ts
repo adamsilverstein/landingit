@@ -248,7 +248,9 @@ export function useGithubData(
     return () => {
       cancelled = true;
     };
-  }, [repoKey, refreshCounter, username, ownershipFilter]);
+    // `octokit` is in the deps so a token refresh (new client instance) triggers
+    // a fresh fetch; the other values are read via refs to keep the effect stable.
+  }, [octokit, repoKey, refreshCounter, username, ownershipFilter]);
 
   return { items, loading, error, authError, failedRepos, lastRefresh, refresh };
 }

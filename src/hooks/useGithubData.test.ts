@@ -53,8 +53,9 @@ describe('useGithubData', () => {
   });
 
   it('returns empty state when repos list is empty', () => {
+    const octokit = mockOctokit();
     const { result } = renderHook(() =>
-      useGithubData(mockOctokit(), [], 30, 'user'),
+      useGithubData(octokit, [], 30, 'user'),
     );
     expect(result.current.items).toEqual([]);
     expect(result.current.loading).toBe(false);
@@ -90,8 +91,9 @@ describe('useGithubData', () => {
     });
     mockedIsRequestedReviewer.mockResolvedValue(false);
 
+    const octokit = mockOctokit();
     const { result } = renderHook(() =>
-      useGithubData(mockOctokit(), repos, 30, 'user'),
+      useGithubData(octokit, repos, 30, 'user'),
     );
 
     await waitFor(() => {
@@ -135,8 +137,9 @@ describe('useGithubData', () => {
     });
     mockedIsRequestedReviewer.mockResolvedValue(false);
 
+    const octokit = mockOctokit();
     const { result } = renderHook(() =>
-      useGithubData(mockOctokit(), repos, 30, null),
+      useGithubData(octokit, repos, 30, null),
     );
 
     await waitFor(() => {
@@ -171,8 +174,9 @@ describe('useGithubData', () => {
     mockedFetchUserPRs.mockResolvedValue([mergedPR]);
     mockedFetchUserIssues.mockResolvedValue([]);
 
+    const octokit = mockOctokit();
     const { result } = renderHook(() =>
-      useGithubData(mockOctokit(), repos, 30, 'user'),
+      useGithubData(octokit, repos, 30, 'user'),
     );
 
     await waitFor(() => {
@@ -246,8 +250,9 @@ describe('useGithubData', () => {
     mockedFetchUserPRs.mockRejectedValue(new Error('Network error'));
     mockedFetchUserIssues.mockRejectedValue(new Error('Issue fetch error'));
 
+    const octokit = mockOctokit();
     const { result } = renderHook(() =>
-      useGithubData(mockOctokit(), repos, 30, 'user'),
+      useGithubData(octokit, repos, 30, 'user'),
     );
 
     await waitFor(() => {
@@ -268,8 +273,9 @@ describe('useGithubData', () => {
     mockedFetchUserPRs.mockRejectedValue(authErr);
     mockedFetchUserIssues.mockResolvedValue([]);
 
+    const octokit = mockOctokit();
     const { result } = renderHook(() =>
-      useGithubData(mockOctokit(), repos, 30, 'user'),
+      useGithubData(octokit, repos, 30, 'user'),
     );
 
     try {
@@ -288,8 +294,9 @@ describe('useGithubData', () => {
     mockedFetchAllPRsForRepo.mockRejectedValue(authErr);
     mockedFetchAllIssuesForRepo.mockResolvedValue([]);
 
+    const octokit = mockOctokit();
     const { result } = renderHook(() =>
-      useGithubData(mockOctokit(), repos, 30, null),
+      useGithubData(octokit, repos, 30, null),
     );
 
     await waitFor(() => {
