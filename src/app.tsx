@@ -161,6 +161,9 @@ export function App() {
   }, []);
 
   const handleSaveToken = useCallback((t: string) => {
+    // Clear any stale username so user-scoped queries don't briefly run
+    // with the previous identity until getAuthenticated() resolves.
+    setUsername(null);
     saveToken(t);
     setTokenState(t);
     setTokenExpired(false);
