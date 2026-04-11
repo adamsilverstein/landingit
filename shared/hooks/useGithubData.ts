@@ -186,7 +186,7 @@ export function useGithubData(
 
         // Enrich PRs with CI status and reviews, updating each PR as it completes
         const authUser = authUserRef.current;
-        await Promise.allSettled(
+        const enrichmentResults = await Promise.allSettled(
           allPRs.map(async (pr) => {
             if (cancelled) return;
             // Only fetch CI/reviews for open PRs (closed/merged don't need it)
@@ -207,6 +207,14 @@ export function useGithubData(
 
             if (cancelled) return;
 
+            // Surface auth failures from enrichment so the outer catch can
+            // trigger the re-auth flow instead of silently rendering partial data.
+            for (const r of [ciResult, reviewResult, requestedResult]) {
+              if (r.status === 'rejected' && isAuthError(r.reason)) {
+                throw r.reason;
+              }
+            }
+
             const enriched: DashboardItem = {
               ...pr,
               ciStatus:
@@ -226,6 +234,14 @@ export function useGithubData(
             setItems((prev) => replaceItem(prev, enriched));
           })
         );
+
+        // Propagate any auth errors that escaped enrichment so the re-auth
+        // flow fires instead of silently keeping the stale token.
+        for (const r of enrichmentResults) {
+          if (r.status === 'rejected' && isAuthError(r.reason)) {
+            throw r.reason;
+          }
+        }
 
         if (!cancelled) {
           setLastRefresh(new Date());

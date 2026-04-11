@@ -305,4 +305,46 @@ describe('useGithubData', () => {
 
     expect(result.current.authError).toBe(true);
   });
+
+  it('sets authError when CI/review enrichment returns 401', async () => {
+    const pr = {
+      kind: 'pr' as const,
+      id: 1,
+      number: 1,
+      title: 'Test PR',
+      author: 'user',
+      repo: { owner: 'acme', name: 'web' },
+      url: 'https://github.com/acme/web/pull/1',
+      updatedAt: '2026-01-15T10:00:00Z',
+      createdAt: '2026-01-10T08:00:00Z',
+      ciStatus: 'none' as const,
+      reviewState: { approvals: 0, changesRequested: 0, commentCount: 0 },
+      draft: false,
+      state: 'open' as const,
+      isRequestedReviewer: false,
+      assignees: [],
+      labels: [],
+    };
+    const authErr = Object.assign(new Error('Bad credentials'), { status: 401 });
+    mockedFetchUserPRs.mockResolvedValue([pr]);
+    mockedFetchUserIssues.mockResolvedValue([]);
+    mockedGetCheckStatus.mockRejectedValue(authErr);
+    mockedGetReviewState.mockResolvedValue({
+      approvals: 0,
+      changesRequested: 0,
+      commentCount: 0,
+    });
+    mockedIsRequestedReviewer.mockResolvedValue(false);
+
+    const octokit = mockOctokit();
+    const { result } = renderHook(() =>
+      useGithubData(octokit, repos, 30, 'user'),
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.authError).toBe(true);
+  });
 });
