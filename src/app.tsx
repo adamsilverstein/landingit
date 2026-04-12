@@ -220,7 +220,6 @@ export function App() {
         onSignOut={handleSignOut}
         onRefresh={handleRefresh}
         autoRefreshSecondsLeft={autoRefreshSecondsLeft}
-        rateLimit={rateLimit}
       />
       <FilterBar
         active={filter}

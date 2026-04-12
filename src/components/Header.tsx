@@ -1,5 +1,4 @@
 import React from 'react';
-import type { RateLimit } from '../github/client.js';
 import { version } from '../../package.json';
 
 interface HeaderProps {
@@ -12,7 +11,6 @@ interface HeaderProps {
   onSignOut: () => void;
   onRefresh: () => void;
   autoRefreshSecondsLeft: number | null;
-  rateLimit: RateLimit | null;
 }
 
 function formatCountdown(seconds: number): string {
@@ -31,10 +29,7 @@ export function Header({
   onSignOut,
   onRefresh,
   autoRefreshSecondsLeft,
-  rateLimit,
 }: HeaderProps) {
-  const rateLimitWarning = rateLimit && rateLimit.remaining < 500;
-  const rateLimitCritical = rateLimit && rateLimit.remaining < 100;
   return (
     <header className="header">
       <div className="header-left">
@@ -72,14 +67,6 @@ export function Header({
         >
           {loading ? <span className="spinner" /> : '↻'}
         </button>
-        {rateLimit && (
-          <span
-            className={`rate-limit ${rateLimitCritical ? 'rate-limit-critical' : rateLimitWarning ? 'rate-limit-warning' : ''}`}
-            title={`API rate limit: ${rateLimit.remaining}/${rateLimit.limit} remaining. Resets at ${rateLimit.resetAt.toLocaleTimeString()}`}
-          >
-            {rateLimit.remaining}/{rateLimit.limit}
-          </span>
-        )}
         <button className="header-btn" onClick={onOpenRepos} title="Manage repos (c)">
           Repos
         </button>

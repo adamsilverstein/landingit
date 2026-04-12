@@ -18,7 +18,7 @@ import type { DashboardStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<DashboardStackParamList, 'PRList'>;
 
 export function PRListScreen({ navigation }: Props) {
-  const { octokit, username, rateLimit } = useApp();
+  const { octokit, username } = useApp();
   const { config, enabledRepos, toggleRepoByName } = useConfigContext();
   const { setUnseenCount } = useBadge();
   const { markSeen, isUnseen } = useLastSeen(asyncStorageAdapter);
@@ -107,9 +107,8 @@ export function PRListScreen({ navigation }: Props) {
       const s = secondsLeft % 60;
       parts.push(`next ${m}:${s.toString().padStart(2, '0')}`);
     }
-    if (rateLimit) parts.push(`API ${rateLimit.remaining}/${rateLimit.limit}`);
     return parts.join(' \u00b7 ');
-  }, [enabledRepos.length, filtered.length, filter, lastRefresh, secondsLeft, rateLimit]);
+  }, [enabledRepos.length, filtered.length, filter, lastRefresh, secondsLeft]);
 
   return (
     <View style={styles.container}>
