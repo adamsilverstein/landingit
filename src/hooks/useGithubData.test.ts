@@ -53,8 +53,9 @@ describe('useGithubData', () => {
   });
 
   it('returns empty state when repos list is empty', () => {
+    const octokit = mockOctokit();
     const { result } = renderHook(() =>
-      useGithubData(mockOctokit(), [], 30, 'user'),
+      useGithubData(octokit, [], 30, 'user'),
     );
     expect(result.current.items).toEqual([]);
     expect(result.current.loading).toBe(false);
@@ -90,8 +91,9 @@ describe('useGithubData', () => {
     });
     mockedIsRequestedReviewer.mockResolvedValue(false);
 
+    const octokit = mockOctokit();
     const { result } = renderHook(() =>
-      useGithubData(mockOctokit(), repos, 30, 'user'),
+      useGithubData(octokit, repos, 30, 'user'),
     );
 
     await waitFor(() => {
@@ -135,8 +137,9 @@ describe('useGithubData', () => {
     });
     mockedIsRequestedReviewer.mockResolvedValue(false);
 
+    const octokit = mockOctokit();
     const { result } = renderHook(() =>
-      useGithubData(mockOctokit(), repos, 30, null),
+      useGithubData(octokit, repos, 30, null),
     );
 
     await waitFor(() => {
@@ -171,8 +174,9 @@ describe('useGithubData', () => {
     mockedFetchUserPRs.mockResolvedValue([mergedPR]);
     mockedFetchUserIssues.mockResolvedValue([]);
 
+    const octokit = mockOctokit();
     const { result } = renderHook(() =>
-      useGithubData(mockOctokit(), repos, 30, 'user'),
+      useGithubData(octokit, repos, 30, 'user'),
     );
 
     await waitFor(() => {
@@ -246,8 +250,9 @@ describe('useGithubData', () => {
     mockedFetchUserPRs.mockRejectedValue(new Error('Network error'));
     mockedFetchUserIssues.mockRejectedValue(new Error('Issue fetch error'));
 
+    const octokit = mockOctokit();
     const { result } = renderHook(() =>
-      useGithubData(mockOctokit(), repos, 30, 'user'),
+      useGithubData(octokit, repos, 30, 'user'),
     );
 
     await waitFor(() => {
@@ -260,5 +265,86 @@ describe('useGithubData', () => {
     expect(warnSpy).toHaveBeenCalledWith('Failed to fetch user PRs:', expect.any(Error));
     expect(warnSpy).toHaveBeenCalledWith('Failed to fetch user issues:', expect.any(Error));
     warnSpy.mockRestore();
+  });
+
+  it('sets authError when API returns 401 (user fetch path)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const authErr = Object.assign(new Error('Bad credentials'), { status: 401 });
+    mockedFetchUserPRs.mockRejectedValue(authErr);
+    mockedFetchUserIssues.mockResolvedValue([]);
+
+    const octokit = mockOctokit();
+    const { result } = renderHook(() =>
+      useGithubData(octokit, repos, 30, 'user'),
+    );
+
+    try {
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      expect(result.current.authError).toBe(true);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('sets authError when API returns 401 (per-repo fetch path)', async () => {
+    const authErr = Object.assign(new Error('Bad credentials'), { status: 401 });
+    mockedFetchAllPRsForRepo.mockRejectedValue(authErr);
+    mockedFetchAllIssuesForRepo.mockResolvedValue([]);
+
+    const octokit = mockOctokit();
+    const { result } = renderHook(() =>
+      useGithubData(octokit, repos, 30, null),
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.authError).toBe(true);
+  });
+
+  it('sets authError when CI/review enrichment returns 401', async () => {
+    const pr = {
+      kind: 'pr' as const,
+      id: 1,
+      number: 1,
+      title: 'Test PR',
+      author: 'user',
+      repo: { owner: 'acme', name: 'web' },
+      url: 'https://github.com/acme/web/pull/1',
+      updatedAt: '2026-01-15T10:00:00Z',
+      createdAt: '2026-01-10T08:00:00Z',
+      ciStatus: 'none' as const,
+      reviewState: { approvals: 0, changesRequested: 0, commentCount: 0 },
+      draft: false,
+      state: 'open' as const,
+      isRequestedReviewer: false,
+      assignees: [],
+      labels: [],
+    };
+    const authErr = Object.assign(new Error('Bad credentials'), { status: 401 });
+    mockedFetchUserPRs.mockResolvedValue([pr]);
+    mockedFetchUserIssues.mockResolvedValue([]);
+    mockedGetCheckStatus.mockRejectedValue(authErr);
+    mockedGetReviewState.mockResolvedValue({
+      approvals: 0,
+      changesRequested: 0,
+      commentCount: 0,
+    });
+    mockedIsRequestedReviewer.mockResolvedValue(false);
+
+    const octokit = mockOctokit();
+    const { result } = renderHook(() =>
+      useGithubData(octokit, repos, 30, 'user'),
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.authError).toBe(true);
   });
 });

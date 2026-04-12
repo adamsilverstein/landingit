@@ -21,6 +21,7 @@ export { fetchUserPRs, fetchAllPRsForRepo } from './github/pulls.js';
 export { fetchUserIssues, fetchAllIssuesForRepo } from './github/issues.js';
 export { getCheckStatus, getReviewState, isRequestedReviewer } from './github/checks.js';
 export { getPRDetails, initDetailCache } from './github/details.js';
+export { isAuthError } from './github/errors.js';
 
 // Utils
 export { isStale } from './utils/staleness.js';

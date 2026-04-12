@@ -4,11 +4,13 @@ import type { PRItem, DashboardItem, RepoConfig, RepoFetchError, OwnershipFilter
 import { fetchUserPRs, fetchAllPRsForRepo } from '../github/pulls.js';
 import { fetchUserIssues, fetchAllIssuesForRepo } from '../github/issues.js';
 import { getCheckStatus, getReviewState, isRequestedReviewer } from '../github/checks.js';
+import { isAuthError } from '../github/errors.js';
 
 interface UseGithubDataResult {
   items: DashboardItem[];
   loading: boolean;
   error: string | null;
+  authError: boolean;
   failedRepos: RepoFetchError[];
   lastRefresh: Date | null;
   refresh: () => void;
@@ -36,6 +38,7 @@ export function useGithubData(
   const [items, setItems] = useState<DashboardItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState(false);
   const [failedRepos, setFailedRepos] = useState<RepoFetchError[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
@@ -75,6 +78,7 @@ export function useGithubData(
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setAuthError(false);
     setFailedRepos([]);
     setItems([]);
 
@@ -104,9 +108,17 @@ export function useGithubData(
 
           if (prResult.status === 'rejected') {
             console.warn('Failed to fetch user PRs:', prResult.reason);
+            if (isAuthError(prResult.reason)) {
+              if (!cancelled) setAuthError(true);
+              return;
+            }
           }
           if (issueResult.status === 'rejected') {
             console.warn('Failed to fetch user issues:', issueResult.reason);
+            if (isAuthError(issueResult.reason)) {
+              if (!cancelled) setAuthError(true);
+              return;
+            }
           }
         } else {
           // Fallback: fetch all PRs and issues per repo, streaming each repo's results
@@ -121,6 +133,7 @@ export function useGithubData(
               }
               return prs;
             } catch (e) {
+              if (isAuthError(e)) throw e;
               repoErrors.push({
                 repo: `${repo.owner}/${repo.name}`,
                 message: e instanceof Error ? e.message : 'Unknown error',
@@ -137,6 +150,7 @@ export function useGithubData(
               }
               return issues;
             } catch (e) {
+              if (isAuthError(e)) throw e;
               repoErrors.push({
                 repo: `${repo.owner}/${repo.name}`,
                 message: `Issues: ${e instanceof Error ? e.message : 'Unknown error'}`,
@@ -145,9 +159,23 @@ export function useGithubData(
             }
           });
 
-          const prResults = await Promise.all(prPromises);
-          await Promise.all(issuePromises);
-          allPRs = prResults.flat();
+          // Use allSettled to avoid unhandled rejections when a 401 re-throw
+          // causes one group to reject before the other is awaited.
+          const [prSettled, issueSettled] = await Promise.all([
+            Promise.allSettled(prPromises),
+            Promise.allSettled(issuePromises),
+          ]);
+
+          // Check for auth errors first
+          for (const r of [...prSettled, ...issueSettled]) {
+            if (r.status === 'rejected' && isAuthError(r.reason)) {
+              throw r.reason;
+            }
+          }
+
+          allPRs = prSettled
+            .filter((r): r is PromiseFulfilledResult<PRItem[]> => r.status === 'fulfilled')
+            .flatMap((r) => r.value);
 
           if (!cancelled) {
             setFailedRepos(repoErrors);
@@ -158,7 +186,7 @@ export function useGithubData(
 
         // Enrich PRs with CI status and reviews, updating each PR as it completes
         const authUser = authUserRef.current;
-        await Promise.allSettled(
+        const enrichmentResults = await Promise.allSettled(
           allPRs.map(async (pr) => {
             if (cancelled) return;
             // Only fetch CI/reviews for open PRs (closed/merged don't need it)
@@ -178,6 +206,14 @@ export function useGithubData(
             ]);
 
             if (cancelled) return;
+
+            // Surface auth failures from enrichment so the outer catch can
+            // trigger the re-auth flow instead of silently rendering partial data.
+            for (const r of [ciResult, reviewResult, requestedResult]) {
+              if (r.status === 'rejected' && isAuthError(r.reason)) {
+                throw r.reason;
+              }
+            }
 
             const enriched: DashboardItem = {
               ...pr,
@@ -199,12 +235,24 @@ export function useGithubData(
           })
         );
 
+        // Propagate any auth errors that escaped enrichment so the re-auth
+        // flow fires instead of silently keeping the stale token.
+        for (const r of enrichmentResults) {
+          if (r.status === 'rejected' && isAuthError(r.reason)) {
+            throw r.reason;
+          }
+        }
+
         if (!cancelled) {
           setLastRefresh(new Date());
         }
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Unknown error');
+          if (isAuthError(e)) {
+            setAuthError(true);
+          } else {
+            setError(e instanceof Error ? e.message : 'Unknown error');
+          }
         }
       } finally {
         if (!cancelled) {
@@ -216,7 +264,9 @@ export function useGithubData(
     return () => {
       cancelled = true;
     };
-  }, [repoKey, refreshCounter, username, ownershipFilter]);
+    // `octokit` is in the deps so a token refresh (new client instance) triggers
+    // a fresh fetch; the other values are read via refs to keep the effect stable.
+  }, [octokit, repoKey, refreshCounter, username, ownershipFilter]);
 
-  return { items, loading, error, failedRepos, lastRefresh, refresh };
+  return { items, loading, error, authError, failedRepos, lastRefresh, refresh };
 }

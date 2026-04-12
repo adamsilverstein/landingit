@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { DashboardItem, OwnershipFilter } from './types.js';
 import { createClient, type RateLimit } from './github/client.js';
+import { isAuthError } from './github/errors.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
 import { useConfig } from './hooks/useConfig.js';
 import { useGithubData } from './hooks/useGithubData.js';
@@ -27,6 +28,7 @@ export function App() {
   const { config, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName } = useConfig();
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('created');
   const [username, setUsername] = useState<string | null>(null);
+  const [tokenExpired, setTokenExpired] = useState(false);
   const { cycleTheme } = useTheme();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [rateLimit, setRateLimit] = useState<RateLimit | null>(null);
@@ -47,17 +49,39 @@ export function App() {
     [token, handleRateLimit]
   );
 
+  const handleInvalidToken = useCallback(() => {
+    setTokenExpired(true);
+    setUsername(null);
+    clearToken();
+    setTokenState(null);
+  }, []);
+
   // Fetch authenticated user's login
   useEffect(() => {
-    if (!octokit) return;
+    if (!octokit) {
+      setUsername(null);
+      return;
+    }
+    let cancelled = false;
     octokit.users.getAuthenticated().then(
-      ({ data }) => setUsername(data.login),
-      (e) => console.warn('Failed to fetch user:', e)
+      ({ data }) => {
+        if (!cancelled) setUsername(data.login);
+      },
+      (e) => {
+        if (cancelled) return;
+        console.warn('Failed to fetch user:', e);
+        if (isAuthError(e)) {
+          handleInvalidToken();
+        }
+      }
     );
-  }, [octokit]);
+    return () => {
+      cancelled = true;
+    };
+  }, [octokit, handleInvalidToken]);
 
   // Pass username for user-specific filters, null for "everyone"
-  const { items, loading, error, failedRepos, lastRefresh, refresh } = useGithubData(
+  const { items, loading, error, authError, failedRepos, lastRefresh, refresh } = useGithubData(
     octokit,
     enabledRepos,
     config.defaults.maxPrsPerRepo,
@@ -65,6 +89,13 @@ export function App() {
     username,
     ownershipFilter
   );
+
+  // When the API returns 401, clear the token to show the re-auth screen
+  useEffect(() => {
+    if (authError) {
+      handleInvalidToken();
+    }
+  }, [authError, handleInvalidToken]);
 
   const {
     filtered, filter, sort, sortDirection, searchQuery, setSearchQuery,
@@ -130,8 +161,12 @@ export function App() {
   }, []);
 
   const handleSaveToken = useCallback((t: string) => {
+    // Clear any stale username so user-scoped queries don't briefly run
+    // with the previous identity until getAuthenticated() resolves.
+    setUsername(null);
     saveToken(t);
     setTokenState(t);
+    setTokenExpired(false);
   }, []);
 
   const unseenCount = useMemo(
@@ -170,7 +205,7 @@ export function App() {
   useKeyboardShortcuts(shortcutActions);
 
   if (!token) {
-    return <TokenSetup onSave={handleSaveToken} />;
+    return <TokenSetup onSave={handleSaveToken} reason={tokenExpired ? 'expired' : null} />;
   }
 
   return (
