@@ -195,25 +195,33 @@ export function useGithubData(
         const prEnrichmentResults = await Promise.allSettled(
           allPRs.map(async (pr) => {
             if (cancelled) return;
-            // Only fetch CI/reviews for open PRs (closed/merged don't need it)
-            if (pr.state !== 'open') return;
 
             // Skip the comments fetch when we already know there are none;
             // commentsCount is undefined for code paths that don't surface it,
             // so we fetch in that case too.
             const shouldFetchCommenter = pr.commentsCount !== 0;
+            // CI/reviews only make sense for open PRs; commenter enrichment
+            // still runs for closed/merged so the column populates everywhere.
+            const isOpen = pr.state === 'open';
+
+            // Nothing to fetch for this PR — skip the work entirely.
+            if (!isOpen && !shouldFetchCommenter) return;
 
             const [ciResult, reviewResult, requestedResult, commenterResult] = await Promise.allSettled([
-              getCheckStatus(
-                client,
-                pr.repo.owner,
-                pr.repo.name,
-                `refs/pull/${pr.number}/head`
-              ),
-              getReviewState(client, pr.repo.owner, pr.repo.name, pr.number),
-              authUser
+              isOpen
+                ? getCheckStatus(
+                    client,
+                    pr.repo.owner,
+                    pr.repo.name,
+                    `refs/pull/${pr.number}/head`
+                  )
+                : Promise.resolve(pr.ciStatus),
+              isOpen
+                ? getReviewState(client, pr.repo.owner, pr.repo.name, pr.number)
+                : Promise.resolve(pr.reviewState),
+              isOpen && authUser
                 ? isRequestedReviewer(client, pr.repo.owner, pr.repo.name, pr.number, authUser)
-                : Promise.resolve(false),
+                : Promise.resolve(pr.isRequestedReviewer),
               shouldFetchCommenter
                 ? getLastCommenter(client, pr.repo.owner, pr.repo.name, pr.number)
                 : Promise.resolve(null),
