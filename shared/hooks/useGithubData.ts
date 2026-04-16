@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Octokit } from '@octokit/rest';
-import type { PRItem, DashboardItem, RepoConfig, RepoFetchError, OwnershipFilter } from '../types.js';
+import type { PRItem, IssueItem, DashboardItem, RepoConfig, RepoFetchError, OwnershipFilter } from '../types.js';
 import { fetchUserPRs, fetchAllPRsForRepo } from '../github/pulls.js';
 import { fetchUserIssues, fetchAllIssuesForRepo } from '../github/issues.js';
 import { getCheckStatus, getReviewState, isRequestedReviewer } from '../github/checks.js';
+import { getLastCommenter } from '../github/comments.js';
 import { isAuthError } from '../github/errors.js';
 
 interface UseGithubDataResult {
@@ -85,6 +86,7 @@ export function useGithubData(
     (async () => {
       try {
         let allPRs: PRItem[];
+        let allIssues: IssueItem[] = [];
 
         if (user) {
           // Fetch PRs and issues in parallel, streaming each into the table as it arrives
@@ -105,6 +107,7 @@ export function useGithubData(
           ]);
 
           allPRs = prResult.status === 'fulfilled' ? prResult.value : [];
+          allIssues = issueResult.status === 'fulfilled' ? issueResult.value : [];
 
           if (prResult.status === 'rejected') {
             console.warn('Failed to fetch user PRs:', prResult.reason);
@@ -155,7 +158,7 @@ export function useGithubData(
                 repo: `${repo.owner}/${repo.name}`,
                 message: `Issues: ${e instanceof Error ? e.message : 'Unknown error'}`,
               });
-              return [] as DashboardItem[];
+              return [] as IssueItem[];
             }
           });
 
@@ -176,6 +179,9 @@ export function useGithubData(
           allPRs = prSettled
             .filter((r): r is PromiseFulfilledResult<PRItem[]> => r.status === 'fulfilled')
             .flatMap((r) => r.value);
+          allIssues = issueSettled
+            .filter((r): r is PromiseFulfilledResult<IssueItem[]> => r.status === 'fulfilled')
+            .flatMap((r) => r.value);
 
           if (!cancelled) {
             setFailedRepos(repoErrors);
@@ -184,32 +190,48 @@ export function useGithubData(
 
         if (cancelled) return;
 
-        // Enrich PRs with CI status and reviews, updating each PR as it completes
+        // Enrich PRs with CI status, reviews, and last-commenter, updating each PR as it completes
         const authUser = authUserRef.current;
-        const enrichmentResults = await Promise.allSettled(
+        const prEnrichmentResults = await Promise.allSettled(
           allPRs.map(async (pr) => {
             if (cancelled) return;
-            // Only fetch CI/reviews for open PRs (closed/merged don't need it)
-            if (pr.state !== 'open') return;
 
-            const [ciResult, reviewResult, requestedResult] = await Promise.allSettled([
-              getCheckStatus(
-                client,
-                pr.repo.owner,
-                pr.repo.name,
-                `refs/pull/${pr.number}/head`
-              ),
-              getReviewState(client, pr.repo.owner, pr.repo.name, pr.number),
-              authUser
+            // Skip the comments fetch when we already know there are none;
+            // commentsCount is undefined for code paths that don't surface it,
+            // so we fetch in that case too.
+            const shouldFetchCommenter = pr.commentsCount !== 0;
+            // CI/reviews only make sense for open PRs; commenter enrichment
+            // still runs for closed/merged so the column populates everywhere.
+            const isOpen = pr.state === 'open';
+
+            // Nothing to fetch for this PR — skip the work entirely.
+            if (!isOpen && !shouldFetchCommenter) return;
+
+            const [ciResult, reviewResult, requestedResult, commenterResult] = await Promise.allSettled([
+              isOpen
+                ? getCheckStatus(
+                    client,
+                    pr.repo.owner,
+                    pr.repo.name,
+                    `refs/pull/${pr.number}/head`
+                  )
+                : Promise.resolve(pr.ciStatus),
+              isOpen
+                ? getReviewState(client, pr.repo.owner, pr.repo.name, pr.number)
+                : Promise.resolve(pr.reviewState),
+              isOpen && authUser
                 ? isRequestedReviewer(client, pr.repo.owner, pr.repo.name, pr.number, authUser)
-                : Promise.resolve(false),
+                : Promise.resolve(pr.isRequestedReviewer),
+              shouldFetchCommenter
+                ? getLastCommenter(client, pr.repo.owner, pr.repo.name, pr.number)
+                : Promise.resolve(null),
             ]);
 
             if (cancelled) return;
 
             // Surface auth failures from enrichment so the outer catch can
             // trigger the re-auth flow instead of silently rendering partial data.
-            for (const r of [ciResult, reviewResult, requestedResult]) {
+            for (const r of [ciResult, reviewResult, requestedResult, commenterResult]) {
               if (r.status === 'rejected' && isAuthError(r.reason)) {
                 throw r.reason;
               }
@@ -229,15 +251,46 @@ export function useGithubData(
                 requestedResult.status === 'fulfilled'
                   ? requestedResult.value
                   : false,
+              lastCommenter:
+                commenterResult.status === 'fulfilled' && commenterResult.value
+                  ? commenterResult.value
+                  : pr.lastCommenter,
             };
 
             setItems((prev) => replaceItem(prev, enriched));
           })
         );
 
+        // Enrich issues with last-commenter only. Skip zero-comment issues to
+        // keep API usage bounded.
+        const issueEnrichmentResults = await Promise.allSettled(
+          allIssues.map(async (issue) => {
+            if (cancelled) return;
+            if (issue.commentsCount === 0) return;
+
+            let commenter: string | null;
+            try {
+              commenter = await getLastCommenter(
+                client,
+                issue.repo.owner,
+                issue.repo.name,
+                issue.number
+              );
+            } catch (e) {
+              if (isAuthError(e)) throw e;
+              return;
+            }
+
+            if (cancelled || !commenter) return;
+
+            const enriched: DashboardItem = { ...issue, lastCommenter: commenter };
+            setItems((prev) => replaceItem(prev, enriched));
+          })
+        );
+
         // Propagate any auth errors that escaped enrichment so the re-auth
         // flow fires instead of silently keeping the stale token.
-        for (const r of enrichmentResults) {
+        for (const r of [...prEnrichmentResults, ...issueEnrichmentResults]) {
           if (r.status === 'rejected' && isAuthError(r.reason)) {
             throw r.reason;
           }

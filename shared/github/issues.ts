@@ -90,6 +90,7 @@ export async function fetchUserIssues(
               dueOn: item.milestone.due_on ?? null,
             }
           : null,
+        commentsCount: item.comments ?? 0,
       });
     }
 
@@ -162,5 +163,6 @@ export async function fetchAllIssuesForRepo(
           dueOn: item.milestone.due_on ?? null,
         }
       : null,
+    commentsCount: item.comments ?? 0,
   }));
 }

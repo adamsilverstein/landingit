@@ -83,6 +83,7 @@ export async function fetchUserPRs(
             description: l.description ?? undefined,
           };
         }),
+        commentsCount: item.comments ?? 0,
       });
     }
 
@@ -149,6 +150,9 @@ export async function fetchAllPRsForRepo(
         color: l.color ?? '888888',
         description: l.description ?? undefined,
       })),
+      // pulls.list doesn't return a comments count; treat as unknown so the
+      // enricher always attempts a fetch for this code path.
+      commentsCount: undefined,
     };
   });
 }

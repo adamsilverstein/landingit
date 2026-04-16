@@ -7,7 +7,7 @@ import { isMergeReady } from '../utils/mergeReady.js';
 import { STORAGE_KEYS } from '../constants.js';
 
 const FILTER_CYCLE: FilterMode[] = ['all', 'failing', 'needs-review', 'review-requested', 'new-activity', 'merge-ready', 'stale'];
-const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'assignees', 'reviews'];
+const SORT_CYCLE: SortMode[] = ['updated', 'created', 'repo', 'status', 'number', 'state', 'title', 'author', 'assignees', 'reviews', 'lastCommenter'];
 const ITEM_TYPE_CYCLE: ItemTypeFilter[] = ['both', 'prs', 'issues'];
 
 interface UseFilteredItemsOptions {
@@ -198,6 +198,9 @@ export function useFilteredItems({ items, defaultFilter, defaultSort, isUnseen, 
           cmp = scoreA - scoreB;
           break;
         }
+        case 'lastCommenter':
+          cmp = (a.lastCommenter ?? '').localeCompare(b.lastCommenter ?? '');
+          break;
         default:
           cmp = 0;
       }

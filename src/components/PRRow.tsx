@@ -119,6 +119,13 @@ export function PRRow({ item, selected, unseen, stale, onPreview, onOpen, onHide
         )}
       </td>
     ),
+    lastCommenter: () => (
+      <td key="lastCommenter" className="col-last-commenter">
+        {item.lastCommenter
+          ? `@${item.lastCommenter}`
+          : <span className="text-muted">&mdash;</span>}
+      </td>
+    ),
     link: () => (
       <td key="link" className="col-link">
         <a

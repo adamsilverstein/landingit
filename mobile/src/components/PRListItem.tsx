@@ -59,6 +59,12 @@ export function PRListItem({ item, isUnseen, onPress, onLongPress }: PRListItemP
           <Text style={styles.metaSep}> · {timeAgo(item.updatedAt)}</Text>
         </View>
 
+        {item.lastCommenter && (
+          <Text style={styles.lastCommenter} numberOfLines={1}>
+            Last comment by @{item.lastCommenter}
+          </Text>
+        )}
+
         <View style={styles.bottomRow}>
           <View style={styles.badges}>
             {isDraft && (
@@ -250,5 +256,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#484f58',
     marginLeft: 'auto',
+  },
+  lastCommenter: {
+    fontSize: 12,
+    color: '#7d8590',
+    marginTop: 3,
+    fontStyle: 'italic',
   },
 });

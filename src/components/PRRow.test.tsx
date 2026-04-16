@@ -197,4 +197,48 @@ describe('PRRow', () => {
     renderRow(makePR({ isRequestedReviewer: false }));
     expect(screen.queryByTitle('Your review is requested')).not.toBeInTheDocument();
   });
+
+  it('renders the last commenter in the lastCommenter column when present', () => {
+    const onPreview = vi.fn();
+    const onOpen = vi.fn();
+    render(
+      <table>
+        <tbody>
+          <PRRow
+            item={makePR({ lastCommenter: 'alice' })}
+            selected={false}
+            unseen={false}
+            stale={false}
+            onPreview={onPreview}
+            onOpen={onOpen}
+            visibleColumns={DEFAULT_COLUMN_ORDER}
+          />
+        </tbody>
+      </table>,
+    );
+    expect(screen.getByText('@alice')).toBeInTheDocument();
+  });
+
+  it('renders a dash in the lastCommenter column when no commenter', () => {
+    const onPreview = vi.fn();
+    const onOpen = vi.fn();
+    const { container } = render(
+      <table>
+        <tbody>
+          <PRRow
+            item={makePR()}
+            selected={false}
+            unseen={false}
+            stale={false}
+            onPreview={onPreview}
+            onOpen={onOpen}
+            visibleColumns={['lastCommenter']}
+          />
+        </tbody>
+      </table>,
+    );
+    const cell = container.querySelector('.col-last-commenter');
+    expect(cell).not.toBeNull();
+    expect(cell!.textContent).toBe('—');
+  });
 });

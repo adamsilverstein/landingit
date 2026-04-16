@@ -16,7 +16,7 @@ export interface Config {
 }
 
 export type CIStatus = 'success' | 'failure' | 'pending' | 'none' | 'mixed';
-export type SortMode = 'updated' | 'created' | 'repo' | 'status' | 'number' | 'state' | 'title' | 'author' | 'assignees' | 'reviews';
+export type SortMode = 'updated' | 'created' | 'repo' | 'status' | 'number' | 'state' | 'title' | 'author' | 'assignees' | 'reviews' | 'lastCommenter';
 export type SortDirection = 'asc' | 'desc';
 export type FilterMode = 'all' | 'failing' | 'needs-review' | 'review-requested' | 'new-activity' | 'merge-ready' | 'stale';
 export type ItemTypeFilter = 'both' | 'prs' | 'issues';
@@ -61,6 +61,8 @@ export interface PRItem {
   isRequestedReviewer: boolean;
   assignees: string[];
   labels: LabelInfo[];
+  commentsCount?: number;
+  lastCommenter?: string;
 }
 
 export interface MilestoneInfo {
@@ -84,6 +86,8 @@ export interface IssueItem {
   labels: LabelInfo[];
   assignees: string[];
   milestone: MilestoneInfo | null;
+  commentsCount?: number;
+  lastCommenter?: string;
 }
 
 export type DashboardItem = PRItem | IssueItem;

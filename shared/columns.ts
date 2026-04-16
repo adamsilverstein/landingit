@@ -19,6 +19,7 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
   { id: 'assignees', label: 'Assignees', className: 'col-assignees', sortKey: 'assignees', defaultVisible: true },
   { id: 'updated', label: 'Updated', className: 'col-updated', sortKey: 'updated', defaultVisible: true },
   { id: 'reviews', label: 'Reviews', className: 'col-reviews', sortKey: 'reviews', defaultVisible: true },
+  { id: 'lastCommenter', label: 'Last Commented By', className: 'col-last-commenter', sortKey: 'lastCommenter', defaultVisible: false },
   { id: 'link', label: 'Link', className: 'col-link', defaultVisible: true },
 ];
 
