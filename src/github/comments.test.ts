@@ -136,6 +136,34 @@ describe('getLastCommenter', () => {
     });
   });
 
+  it('walks back to earlier pages when the last page has only excluded commenters', async () => {
+    const botTail = Array(LAST_COMMENTER_PAGE_SIZE).fill(
+      comment('github-actions[bot]')
+    );
+    const listComments = vi
+      .fn()
+      // Page 1 of 3: returned by the initial fetch. Ends with the most recent
+      // eligible human commenter before the bot tail.
+      .mockResolvedValueOnce({
+        data: [comment('old-one'), comment('alice')],
+        headers: {
+          link:
+            '<https://api.github.com/repositories/1/issues/1/comments?per_page=100&page=3>; rel="last"',
+        },
+      })
+      // Page 3 (fetched first during walk-back): 100 bot comments, nothing eligible.
+      .mockResolvedValueOnce({ data: botTail })
+      // Page 2 (fetched next): more bot comments.
+      .mockResolvedValueOnce({ data: botTail });
+
+    const octokit = mockOctokit({ issues: { listComments } });
+
+    // Falls back to page 1 (reusing the initial fetch) and returns alice.
+    expect(await getLastCommenter(octokit, 'acme', 'web', 1)).toBe('alice');
+    // Three network calls: initial fetch, page 3, page 2. Page 1 is reused.
+    expect(listComments).toHaveBeenCalledTimes(3);
+  });
+
   it('does not fetch a second page when the first page is the last page', async () => {
     const listComments = vi.fn().mockResolvedValue({
       data: [comment('alice')],

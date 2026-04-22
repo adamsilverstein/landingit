@@ -36,9 +36,12 @@ export function parseLastPage(linkHeader: string | undefined): number | null {
  *
  * GitHub's per-issue comments endpoint returns comments in ascending
  * chronological order and ignores `sort`/`direction` params, so we fetch the
- * last page (via the `Link: rel="last"` header) and walk backwards.
+ * last page (via the `Link: rel="last"` header) and walk backwards. If that
+ * page contains only excluded commenters (e.g. a long `github-actions[bot]`
+ * tail that spans a full page), we step back one page at a time until we
+ * find an eligible login or exhaust the history.
  *
- * Returns `null` if there are no non-excluded commenters on the last page.
+ * Returns `null` if there are no non-excluded commenters on the issue.
  */
 export async function getLastCommenter(
   octokit: Octokit,
@@ -53,25 +56,29 @@ export async function getLastCommenter(
     per_page: LAST_COMMENTER_PAGE_SIZE,
   });
 
-  const lastPage = parseLastPage(firstPage.headers?.link);
-  const comments =
-    lastPage != null && lastPage > 1
-      ? (
-          await octokit.issues.listComments({
-            owner,
-            repo,
-            issue_number: issueNumber,
-            per_page: LAST_COMMENTER_PAGE_SIZE,
-            page: lastPage,
-          })
-        ).data
-      : firstPage.data;
+  const lastPage = parseLastPage(firstPage.headers?.link) ?? 1;
 
-  for (let i = comments.length - 1; i >= 0; i--) {
-    const login = comments[i].user?.login;
-    if (!login) continue;
-    if (EXCLUDED_LOGINS.has(login)) continue;
-    return login;
+  for (let page = lastPage; page >= 1; page--) {
+    const comments =
+      page === 1
+        ? firstPage.data
+        : (
+            await octokit.issues.listComments({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              per_page: LAST_COMMENTER_PAGE_SIZE,
+              page,
+            })
+          ).data;
+
+    for (let i = comments.length - 1; i >= 0; i--) {
+      const login = comments[i].user?.login;
+      if (!login) continue;
+      if (EXCLUDED_LOGINS.has(login)) continue;
+      return login;
+    }
   }
+
   return null;
 }
