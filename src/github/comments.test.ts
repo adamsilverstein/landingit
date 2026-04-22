@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getLastCommenter } from '../../shared/github/comments.js';
+import {
+  getLastCommenter,
+  LAST_COMMENTER_PAGE_SIZE,
+} from '../../shared/github/comments.js';
 import type { Octokit } from '@octokit/rest';
 
 function mockOctokit(overrides: Record<string, unknown> = {}): Octokit {
@@ -99,9 +102,8 @@ describe('getLastCommenter', () => {
         repo: 'web',
         issue_number: 42,
         direction: 'desc',
+        per_page: LAST_COMMENTER_PAGE_SIZE,
       })
     );
-    const call = listComments.mock.calls[0][0];
-    expect(call.per_page).toBeGreaterThan(1);
   });
 });

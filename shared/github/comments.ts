@@ -9,6 +9,14 @@ import type { Octokit } from '@octokit/rest';
 const EXCLUDED_LOGINS: ReadonlySet<string> = new Set(['github-actions[bot]']);
 
 /**
+ * Maximum comments fetched in a single page when looking for the most recent
+ * non-excluded commenter. 100 is GitHub's per-page cap and gives the
+ * walk-back enough headroom to skip long runs of `github-actions[bot]`
+ * comments on noisy CI repos.
+ */
+export const LAST_COMMENTER_PAGE_SIZE = 100;
+
+/**
  * Fetch the login of the user who most recently commented on an issue or PR,
  * skipping automated `github-actions[bot]` comments. Works for both issues and
  * PRs — GitHub's issue-comments endpoint covers conversation comments on both
@@ -16,7 +24,7 @@ const EXCLUDED_LOGINS: ReadonlySet<string> = new Set(['github-actions[bot]']);
  * here).
  *
  * Returns `null` if there are no non-excluded commenters among the most recent
- * 100 comments.
+ * page of comments.
  */
 export async function getLastCommenter(
   octokit: Octokit,
@@ -28,7 +36,7 @@ export async function getLastCommenter(
     owner,
     repo,
     issue_number: issueNumber,
-    per_page: 100,
+    per_page: LAST_COMMENTER_PAGE_SIZE,
     sort: 'created',
     direction: 'desc',
   });
