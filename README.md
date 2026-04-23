@@ -20,7 +20,9 @@ A lightweight, keyboard-driven GitHub PR dashboard built with React and TypeScri
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) 20 or later (see `.nvmrc`)
-- A GitHub Personal Access Token (see [Creating a GitHub PAT](#creating-a-github-pat) below)
+- A way to authenticate to GitHub:
+  - **OAuth** (recommended for the desktop and iOS apps) — see [Connecting to GitHub](#connecting-to-github).
+  - **Personal Access Token** — fallback for the browser build, or any time OAuth is unavailable.
 
 ### Installation
 
@@ -40,9 +42,34 @@ npm run build    # Type-checks and builds to dist/
 npm run preview  # Preview the production build locally
 ```
 
-## Creating a GitHub PAT
+## Connecting to GitHub
 
-The dashboard uses a **Personal Access Token** to read pull request data from the GitHub API.
+The dashboard supports two authentication methods. **OAuth via the GitHub Device Flow is the default** when it's available; a **Personal Access Token** is always offered as a fallback.
+
+| Build target | OAuth available? | Why |
+|--------------|------------------|-----|
+| Electron desktop | ✅ Yes | Main process proxies the OAuth POSTs (no browser CORS). |
+| iOS / mobile | ✅ Yes | Native `fetch` has no CORS restriction. |
+| Browser (`npm run dev`, `vite preview`) | ❌ No | GitHub's OAuth endpoints don't return CORS headers; falls back to PAT. |
+
+### Option A — OAuth Device Flow (recommended)
+
+OAuth requires a one-time setup by the project owner: register a GitHub OAuth App and ship its **public** `client_id` with the build. Users then sign in by entering a short code on github.com — no token copy/paste, no `client_secret` required.
+
+1. Register a new OAuth App at [github.com/settings/developers](https://github.com/settings/developers).
+   - **Application name:** Git Dashboard
+   - **Homepage URL:** anything (e.g. your fork's URL)
+   - **Authorization callback URL:** `https://github.com` (Device Flow doesn't use it; GitHub still requires the field)
+   - **Enable Device Flow:** ✅ (under app settings)
+2. Copy the **Client ID** (the `client_secret` is **not** needed).
+3. Provide the client ID to your build:
+   - **Web / Electron** — set `VITE_GITHUB_OAUTH_CLIENT_ID=<client_id>` in your shell or in a `.env` file before `npm run build` or `npm run electron:dev`.
+   - **Mobile** — set `EXPO_PUBLIC_GITHUB_OAUTH_CLIENT_ID=<client_id>` (e.g. via `mobile/.env` or [EAS Secrets](https://docs.expo.dev/build-reference/variables/)) before `npx expo run:ios` or an EAS build.
+4. Launch the app and click **Connect with GitHub** on the sign-in screen.
+
+If the client ID is unset (or you're running in a plain browser), the sign-in screen automatically falls back to PAT entry.
+
+### Option B — Personal Access Token (fallback)
 
 1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
 2. Click **Generate new token** (classic)
@@ -52,6 +79,8 @@ The dashboard uses a **Personal Access Token** to read pull request data from th
 6. Paste the token into the dashboard's setup screen and click **Save & Continue**
 
 > **Tip:** You can also use a [fine-grained token](https://github.com/settings/tokens?type=beta) scoped to specific repositories with **Pull requests** (read) and **Checks** (read) permissions.
+
+The active connection method (OAuth or PAT) is shown next to the **Sign out** button on the desktop/web header and in the **Account** section of the iOS Settings tab.
 
 ## Keyboard Shortcuts
 
@@ -78,7 +107,7 @@ All settings are stored in the browser's `localStorage` — nothing is sent to a
 
 | Key | Description |
 |-----|-------------|
-| `gh-dashboard-token` | Your GitHub Personal Access Token |
+| `gh-dashboard-token` | Your GitHub access token (OAuth `gho_…` or PAT `ghp_…`/`github_pat_…`). |
 | `gh-dashboard-config` | JSON object containing repos and display preferences |
 
 The config object has the following shape:
