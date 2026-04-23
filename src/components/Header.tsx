@@ -1,5 +1,6 @@
 import React from 'react';
 import { version } from '../../package.json';
+import { authMethodLabel, type AuthMethod } from '../../shared/auth/method.js';
 
 interface HeaderProps {
   loading: boolean;
@@ -11,6 +12,7 @@ interface HeaderProps {
   onSignOut: () => void;
   onRefresh: () => void;
   autoRefreshSecondsLeft: number | null;
+  authMethod: AuthMethod | null;
 }
 
 function formatCountdown(seconds: number): string {
@@ -29,6 +31,7 @@ export function Header({
   onSignOut,
   onRefresh,
   autoRefreshSecondsLeft,
+  authMethod,
 }: HeaderProps) {
   return (
     <header className="header">
@@ -70,6 +73,14 @@ export function Header({
         <button className="header-btn" onClick={onOpenRepos} title="Manage repos (c)">
           Repos
         </button>
+        {authMethod && (
+          <span
+            className={`auth-method-badge auth-method-${authMethod}`}
+            title={`Connected via ${authMethodLabel(authMethod)}`}
+          >
+            {authMethod === 'oauth' ? 'OAuth' : 'PAT'}
+          </span>
+        )}
         <button className="header-btn header-btn-subtle" onClick={onSignOut} title="Sign out">
           Sign out
         </button>
