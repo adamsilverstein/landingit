@@ -33,7 +33,7 @@ npm install
 npm run dev
 ```
 
-The dev server starts at **http://localhost:5173**. On first visit you'll be prompted to enter your GitHub token.
+The dev server starts at **http://localhost:5173**. On first visit you'll be prompted to sign in — the dashboard uses GitHub OAuth (Device Flow) by default where available, and falls back to a Personal Access Token otherwise. See [Connecting to GitHub](#connecting-to-github) for setup details.
 
 ### Production Build
 
