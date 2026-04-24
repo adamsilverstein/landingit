@@ -4,3 +4,6 @@ release/
 *.tsbuildinfo
 .DS_Store
 test-results/
+.env
+.env.local
+.env.*.local
