@@ -65,6 +65,7 @@ export function useDeviceFlow() {
     try {
       device = await requestDeviceCode(availability.transport, OAUTH_CLIENT_ID);
     } catch (err) {
+      if (controller.signal.aborted) return;
       setState({
         status: 'error',
         device: null,
@@ -73,6 +74,9 @@ export function useDeviceFlow() {
       });
       return;
     }
+
+    // Bail if cancel() (or a newer start()) aborted while the request was in flight.
+    if (controller.signal.aborted) return;
 
     setState({ status: 'awaiting', device, token: null, error: null });
 

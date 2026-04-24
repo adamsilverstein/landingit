@@ -101,6 +101,9 @@ export async function pollAccessToken(
   while (true) {
     if (signal?.aborted) throw new DeviceFlowAbortedError();
     await sleep(intervalMs, signal);
+    // Re-check after the sleep so a cancel that landed during the wait
+    // doesn't trigger one more access-token POST before we notice.
+    if (signal?.aborted) throw new DeviceFlowAbortedError();
 
     const result = await transport.postForm(GITHUB_ACCESS_TOKEN_URL, {
       client_id: clientId,
