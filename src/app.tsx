@@ -3,6 +3,7 @@ import type { DashboardItem, OwnershipFilter } from './types.js';
 import { createClient, type RateLimit } from './github/client.js';
 import { isAuthError } from './github/errors.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
+import { getAuthMethod } from '../shared/auth/method.js';
 import { useConfig } from './hooks/useConfig.js';
 import { useGithubData } from './hooks/useGithubData.js';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js';
@@ -222,6 +223,7 @@ export function App() {
         onSignOut={handleSignOut}
         onRefresh={handleRefresh}
         autoRefreshSecondsLeft={autoRefreshSecondsLeft}
+        authMethod={getAuthMethod(token)}
       />
       <FilterBar
         active={filter}

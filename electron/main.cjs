@@ -1,6 +1,58 @@
-const { app, BrowserWindow, net, protocol, session, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, net, protocol, session, shell } = require('electron');
 const path = require('path');
 const { pathToFileURL } = require('url');
+
+// GitHub OAuth Device Flow endpoints. The renderer cannot call these directly
+// because GitHub does not return CORS headers for them, so the main process
+// proxies the requests via Node's `net.fetch`.
+const ALLOWED_OAUTH_URLS = new Set([
+  'https://github.com/login/device/code',
+  'https://github.com/login/oauth/access_token',
+]);
+
+function registerOAuthBridge() {
+  ipcMain.handle('oauth:postForm', async (_event, url, body) => {
+    if (typeof url !== 'string' || !ALLOWED_OAUTH_URLS.has(url)) {
+      throw new Error(`Refusing OAuth request to disallowed URL: ${url}`);
+    }
+    if (!body || typeof body !== 'object') {
+      throw new Error('OAuth bridge requires a body object');
+    }
+
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(body)) {
+      if (typeof key !== 'string' || typeof value !== 'string') {
+        throw new Error('OAuth body entries must be strings');
+      }
+      params.append(key, value);
+    }
+
+    // Bound the request so a hung network doesn't leave the Device Flow UI
+    // wedged in a pending state. Electron's `net.fetch` honors AbortSignal.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const response = await net.fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+        },
+        body: params.toString(),
+        signal: controller.signal,
+      });
+
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch {
+        throw new Error(`OAuth endpoint returned non-JSON response (status ${response.status})`);
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+  });
+}
 
 // Register the custom scheme as privileged so it gets a proper origin
 // and can make CORS requests (file:// has a null origin which blocks fetch).
@@ -59,6 +111,7 @@ function createWindow() {
       contextIsolation: true,
       sandbox: true,
       webSecurity: true,
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   });
 
@@ -96,6 +149,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   registerAppProtocol();
+  registerOAuthBridge();
   createWindow();
 });
 

@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useConfigContext } from '../context/ConfigContext';
+import { authMethodLabel, getAuthMethod } from '../../../shared/auth/method';
 
 export function SettingsScreen() {
-  const { username, rateLimit, signOut } = useApp();
+  const { token, username, rateLimit, signOut } = useApp();
+  const authMethod = getAuthMethod(token);
   const { config, addRepo, removeRepo, toggleRepo, updateDefaults } = useConfigContext();
   const [repoInput, setRepoInput] = useState('');
 
@@ -50,6 +52,12 @@ export function SettingsScreen() {
           <Text style={styles.label}>Signed in as</Text>
           <Text style={styles.value}>{username ?? '...'}</Text>
         </View>
+        {authMethod && (
+          <View style={styles.row}>
+            <Text style={styles.label}>Connection</Text>
+            <Text style={styles.value}>{authMethodLabel(authMethod)}</Text>
+          </View>
+        )}
         {rateLimit && (
           <View style={styles.row}>
             <Text style={styles.label}>API Rate Limit</Text>

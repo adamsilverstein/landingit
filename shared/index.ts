@@ -31,6 +31,28 @@ export { filterByPRState } from './utils/prStateFilter.js';
 export { groupByMilestone } from './utils/milestoneGrouping.js';
 export type { MilestoneGroup } from './utils/milestoneGrouping.js';
 
+// Auth (OAuth Device Flow)
+export type { DeviceFlowTransport } from './auth/transport.js';
+export {
+  DEFAULT_OAUTH_SCOPE,
+  GITHUB_DEVICE_CODE_URL,
+  GITHUB_ACCESS_TOKEN_URL,
+  DeviceFlowError,
+  DeviceFlowAbortedError,
+  requestDeviceCode,
+  pollAccessToken,
+} from './auth/deviceFlow.js';
+export type { DeviceCodeResponse, PollOptions } from './auth/deviceFlow.js';
+export type { AuthMethod } from './auth/method.js';
+export { getAuthMethod, authMethodLabel } from './auth/method.js';
+export { useDeviceFlow } from './auth/useDeviceFlow.js';
+export type {
+  DeviceFlowAvailability,
+  DeviceFlowState,
+  DeviceFlowStatus,
+  UseDeviceFlowOptions,
+} from './auth/useDeviceFlow.js';
+
 // Hooks
 export { useGithubData } from './hooks/useGithubData.js';
 export { useFilteredItems } from './hooks/useFilteredItems.js';

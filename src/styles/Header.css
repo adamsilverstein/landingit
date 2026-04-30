@@ -125,6 +125,25 @@
   }
 }
 
+/* ── Auth Method Badge ─────────────────────────────────────── */
+.auth-method-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--bg-surface);
+}
+
+.auth-method-badge.auth-method-oauth {
+  border-color: rgba(35, 134, 54, 0.5);
+  color: #3fb950;
+}
+
 /* ── Unseen / New Activity ─────────────────────────────────── */
 .unseen-badge {
   display: inline-flex;
