@@ -53,7 +53,7 @@ export function TokenSetup({ onSave, reason }: TokenSetupProps) {
   return (
     <div className="token-setup">
       <div className="token-card">
-        <h1>Git Dashboard</h1>
+        <h1>LandinGit</h1>
         {reason === 'expired' && (
           <p className="token-warning">Your GitHub credentials are invalid or expired. Please reconnect.</p>
         )}

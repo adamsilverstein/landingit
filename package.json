@@ -1,11 +1,11 @@
 {
-  "name": "git-dashboard",
+  "name": "landingit",
   "version": "1.0.0",
-  "description": "GitHub PR dashboard web app",
+  "description": "LandinGit — the keyboard-first GitHub PR dashboard",
   "type": "module",
   "main": "electron/main.cjs",
   "bin": {
-    "git-dashboard": "./bin/git-dashboard.mjs"
+    "landingit": "./bin/landingit.mjs"
   },
   "files": [
     "bin",
@@ -24,7 +24,7 @@
   },
   "build": {
     "appId": "com.github.adamsilverstein.git-dashboard",
-    "productName": "Git Dashboard",
+    "productName": "LandinGit",
     "directories": {
       "output": "release"
     },
@@ -63,7 +63,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/adamsilverstein/git-dashboard.git"
+    "url": "https://github.com/adamsilverstein/landingit.git"
   },
   "dependencies": {
     "@octokit/rest": "^21.0.0",

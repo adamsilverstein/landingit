@@ -1,6 +1,8 @@
-# Git Dashboard
+# LandinGit
 
-A lightweight, keyboard-driven GitHub PR dashboard built with React and TypeScript. Browse pull requests across multiple repositories with real-time CI status, review state tracking, and vim-style keyboard navigation — all from your browser.
+> _"Land it."_ — the keyboard-first dashboard where every pull request, issue, and review across your repos actually lands, instead of drowning your inbox.
+
+A lightweight, keyboard-driven GitHub PR dashboard built with React and TypeScript. Browse pull requests across multiple repositories with real-time CI status, review state tracking, and vim-style keyboard navigation — all from your browser, your desktop, or your phone.
 
 ## Features
 
@@ -27,8 +29,8 @@ A lightweight, keyboard-driven GitHub PR dashboard built with React and TypeScri
 ### Installation
 
 ```bash
-git clone https://github.com/adamsilverstein/git-dashboard.git
-cd git-dashboard
+git clone https://github.com/adamsilverstein/landingit.git
+cd landingit
 npm install
 npm run dev
 ```
@@ -73,7 +75,7 @@ If the client ID is unset (or you're running in a plain browser), the sign-in sc
 
 1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
 2. Click **Generate new token** (classic)
-3. Give the token a descriptive name (e.g. "Git Dashboard")
+3. Give the token a descriptive name (e.g. "LandinGit")
 4. Select the **`repo`** scope — this grants read access to pull requests, commits, and check statuses for both public and private repositories
 5. Click **Generate token** and copy the value
 6. Paste the token into the dashboard's setup screen and click **Save & Continue**

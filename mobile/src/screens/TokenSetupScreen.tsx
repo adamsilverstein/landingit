@@ -81,7 +81,7 @@ export function TokenSetupScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Git Dashboard</Text>
+        <Text style={styles.title}>LandinGit</Text>
         <Text style={styles.subtitle}>GitHub PR Dashboard for iOS</Text>
 
         {mode === 'oauth' && oauthAvailability.available ? (

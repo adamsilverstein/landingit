@@ -15,6 +15,6 @@
 - Column visibility and reorder customization.
 - Auto-refresh with configurable interval.
 - Desktop app support via Electron (macOS, Linux, Windows).
-- CLI support via `npx git-dashboard`.
+- CLI support via `npx landingit` (previously `npx git-dashboard`).
 - Rate limit monitoring in the header.
 - Unseen PR indicators.

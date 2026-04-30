@@ -1,6 +1,6 @@
 # App Store Submission & Update Guide
 
-This guide covers the full process for submitting the Git Dashboard iOS app to the App Store and releasing updates.
+This guide covers the full process for submitting the LandinGit iOS app to the App Store and releasing updates.
 
 ## Prerequisites
 
@@ -21,8 +21,8 @@ Update `mobile/app.json` with your App Store details:
 ```json
 {
   "expo": {
-    "name": "Git Dashboard",
-    "slug": "git-dashboard",
+    "name": "LandinGit",
+    "slug": "landingit",
     "version": "1.0.0",
     "ios": {
       "bundleIdentifier": "com.github.adamsilverstein.git-dashboard",
@@ -50,10 +50,10 @@ This creates `eas.json` with build profiles. The recommended configuration is al
 2. Click **My Apps** > **+** > **New App**
 3. Fill in:
    - **Platform**: iOS
-   - **Name**: Git Dashboard
+   - **Name**: LandinGit
    - **Primary Language**: English (U.S.)
    - **Bundle ID**: Select the one matching your `bundleIdentifier`
-   - **SKU**: `git-dashboard-ios`
+   - **SKU**: `landingit-ios`
 4. Save
 
 ### 4. Generate Apple Credentials
@@ -117,7 +117,7 @@ In [App Store Connect](https://appstoreconnect.apple.com):
      - iPad Pro 12.9": 2048 x 2732 (if supporting iPad)
    - Description:
      ```
-     Monitor your GitHub pull requests on the go. Git Dashboard brings
+     Monitor your GitHub pull requests on the go. LandinGit brings
      your PR workflow to iOS with real-time CI status, review tracking,
      and powerful filtering — all from one screen.
 
@@ -132,7 +132,7 @@ In [App Store Connect](https://appstoreconnect.apple.com):
      • Dark theme matching GitHub's design
      ```
    - Keywords: `github, pull requests, code review, ci, developer tools, git`
-   - Support URL: `https://github.com/adamsilverstein/git-dashboard/issues`
+   - Support URL: `https://github.com/adamsilverstein/landingit/issues`
 
 5. **Review Information**
    - Notes for reviewer:

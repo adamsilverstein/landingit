@@ -25,7 +25,7 @@ test.describe('Token Setup', () => {
     await page.click('.token-btn');
     // Should now show the main app layout (header with title)
     await expect(page.locator('.header-title')).toBeVisible();
-    await expect(page.locator('.header-title')).toHaveText('Git Dashboard');
+    await expect(page.locator('.header-title')).toHaveText('LandinGit');
   });
 });
 
@@ -45,7 +45,7 @@ test.describe('Dashboard (with token)', () => {
   });
 
   test('shows header with repo count', async ({ page }) => {
-    await expect(page.locator('.header-title')).toHaveText('Git Dashboard');
+    await expect(page.locator('.header-title')).toHaveText('LandinGit');
     await expect(page.locator('.header-stats')).toContainText('1 repo');
   });
 

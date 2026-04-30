@@ -1,8 +1,10 @@
-# Claude Code Instructions — Git Dashboard
+# Claude Code Instructions — LandinGit
+
+> Repository slug is still `git-dashboard` in some local clones; the canonical slug is now `landingit`. iOS bundle identifier and Electron `appId` are intentionally still `com.github.adamsilverstein.git-dashboard` — see #120 for the migration plan before changing those.
 
 ## Project Overview
 
-Git Dashboard is a GitHub PR monitoring tool with three targets:
+LandinGit (formerly "Git Dashboard") is a GitHub PR monitoring tool with three targets:
 - **Web app** (`src/`) — React + TypeScript + Vite
 - **Desktop app** (`electron/`) — Electron wrapper around the web app
 - **iOS app** (`mobile/`) — React Native (Expo) for iPhone/iPad
@@ -12,7 +14,7 @@ All three share platform-agnostic business logic from the `shared/` directory.
 ## Architecture
 
 ```
-git-dashboard/
+landingit/
   shared/       ← Types, GitHub API, hooks, utils (used by web + mobile)
   src/          ← Web app (re-exports from shared/, adds web-specific UI)
   mobile/       ← Expo React Native iOS app (imports from shared/)

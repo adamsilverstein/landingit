@@ -44,10 +44,10 @@ function parseArgs() {
       noBrowser = true;
     } else if (args[i] === '--help' || args[i] === '-h') {
       console.log(`
-  git-dashboard — GitHub PR dashboard
+  landingit — GitHub PR dashboard
 
   Usage:
-    npx git-dashboard [options]
+    npx landingit [options]
 
   Options:
     -p, --port <number>  Port to listen on (default: 4173)
@@ -100,7 +100,7 @@ const server = createServer(async (req, res) => {
 
 server.listen(port, () => {
   const url = `http://localhost:${port}`;
-  console.log(`\n  🚀 Git Dashboard is running at ${url}\n`);
+  console.log(`\n  🚀 LandinGit is running at ${url}\n`);
   console.log(`  Press Ctrl+C to stop.\n`);
   if (!noBrowser) openBrowser(url);
 });

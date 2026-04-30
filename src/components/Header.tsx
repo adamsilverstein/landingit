@@ -37,7 +37,7 @@ export function Header({
     <header className="header">
       <div className="header-left">
         <div className="header-title-block">
-          <h1 className="header-title">Git Dashboard</h1>
+          <h1 className="header-title">LandinGit</h1>
           <span className="header-version">v{version}</span>
         </div>
         <span className="header-stats">
