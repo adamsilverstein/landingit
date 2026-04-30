@@ -25,7 +25,7 @@ Update `mobile/app.json` with your App Store details:
     "slug": "landingit",
     "version": "1.0.0",
     "ios": {
-      "bundleIdentifier": "com.github.adamsilverstein.git-dashboard",
+      "bundleIdentifier": "com.github.adamsilverstein.landingit",
       "buildNumber": "1",
       "supportsTablet": true
     }

@@ -263,7 +263,7 @@ function PatCard({
 
       <TouchableOpacity
         style={styles.linkButton}
-        onPress={() => Linking.openURL('https://github.com/settings/tokens/new?scopes=repo&description=Git+Dashboard+iOS')}
+        onPress={() => Linking.openURL('https://github.com/settings/tokens/new?scopes=repo&description=LandinGit+iOS')}
       >
         <Text style={styles.linkText}>Create a new token on GitHub</Text>
       </TouchableOpacity>

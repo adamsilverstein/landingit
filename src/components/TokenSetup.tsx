@@ -99,7 +99,7 @@ function OAuthPanel({
   if (state.status === 'awaiting' && state.device) {
     return (
       <>
-        <p>Authorize Git Dashboard on GitHub to finish signing in.</p>
+        <p>Authorize LandinGit on GitHub to finish signing in.</p>
         <ol className="token-steps">
           <li>
             Open{' '}

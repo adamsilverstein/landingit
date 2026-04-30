@@ -23,7 +23,7 @@
     "prepublishOnly": "npm run build"
   },
   "build": {
-    "appId": "com.github.adamsilverstein.git-dashboard",
+    "appId": "com.github.adamsilverstein.landingit",
     "productName": "LandinGit",
     "directories": {
       "output": "release"
