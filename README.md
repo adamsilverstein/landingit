@@ -1,8 +1,22 @@
 # LandinGit
 
+[![Latest release](https://img.shields.io/github/v/release/adamsilverstein/landingit?label=latest%20release&logo=github)](https://github.com/adamsilverstein/landingit/releases/latest)
+
 > _"Land it."_ — the keyboard-first dashboard where every pull request, issue, and review across your repos actually lands, instead of drowning your inbox.
 
 A lightweight, keyboard-driven GitHub PR dashboard built with React and TypeScript. Browse pull requests across multiple repositories with real-time CI status, review state tracking, and vim-style keyboard navigation — all from your browser, your desktop, or your phone.
+
+## Download
+
+The fastest way to use LandinGit is to grab the latest desktop build for your platform — no install, no setup beyond signing in to GitHub:
+
+- **macOS** — [Download the latest `.dmg`](https://github.com/adamsilverstein/landingit/releases/latest)
+- **Linux** — [Download the latest `.AppImage` or `.deb`](https://github.com/adamsilverstein/landingit/releases/latest)
+- **Windows** — [Download the latest `.exe` installer](https://github.com/adamsilverstein/landingit/releases/latest)
+
+Or browse every build on the [latest release page](https://github.com/adamsilverstein/landingit/releases/latest).
+
+> **macOS heads-up:** the current builds aren't code-signed by Apple yet, so first launch shows a _"developer cannot be verified"_ warning. Right-click the app icon and choose **Open** to bypass it once. Signing is tracked as a follow-up.
 
 ## Features
 
@@ -17,7 +31,9 @@ A lightweight, keyboard-driven GitHub PR dashboard built with React and TypeScri
 
 <img width="1780" height="1067" alt="image" src="https://github.com/user-attachments/assets/91f25e0e-dc13-437b-af55-9fd16fed3716" />
 
-## Getting Started
+## Run from source
+
+Prefer to build it yourself, hack on the code, or run the web version locally? Follow the steps below. Most users should grab a [prebuilt download](#download) instead.
 
 ### Prerequisites
 
