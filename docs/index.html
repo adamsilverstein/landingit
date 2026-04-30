@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>LandinGit — Land it.</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="description" content="The keyboard-first dashboard where every pull request, issue, and review across your repos actually lands — instead of drowning your inbox."/>
+<meta property="og:title" content="LandinGit — Land it."/>
+<meta property="og:description" content="The keyboard-first dashboard where every PR, issue, and review lands."/>
+<meta property="og:type" content="website"/>
+<meta name="theme-color" content="#14141f"/>
+<link rel="icon" href="favicon.svg" type="image/svg+xml"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1c1c2e; --navy-deep:#14141f; --navy-lift:#2a2a42;
+    --green:#3fb950; --green-deep:#2da44e;
+    --orange:#f0883e; --orange-deep:#d97706;
+    --cream:#f5f1e8; --paper:#faf7f0; --ink:#0d0d14;
+    --muted:rgba(245,241,232,0.62);
+    --rule:rgba(245,241,232,0.08);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--navy-deep); color:var(--cream);
+    font-family:'Geist',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'Geist Mono',ui-monospace,monospace}
+  .serif{font-family:'Fraunces',Georgia,serif; font-weight:500; letter-spacing:-0.02em}
+  a{color:inherit}
+  .wrap{max-width:1240px; margin:0 auto; padding:0 32px}
+
+  /* Brand wordmark */
+  .brand{display:flex; align-items:center; gap:10px; font-size:18px; letter-spacing:-0.01em; text-decoration:none; color:inherit}
+  .brand .n1{font-weight:500}
+  .brand .n2{font-weight:800}
+  .brand .dot{color:var(--orange)}
+
+  /* Top nav */
+  nav.top{
+    position:sticky; top:0; z-index:20;
+    background:rgba(20,20,31,0.72); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--rule);
+  }
+  nav.top .inner{display:flex; align-items:center; gap:28px; height:60px}
+  nav.top .links{display:flex; gap:22px; margin-left:auto; font-size:14px; color:var(--muted)}
+  nav.top .links a{text-decoration:none}
+  nav.top .links a:hover{color:var(--cream)}
+  nav.top .cta{
+    background:var(--cream); color:var(--navy);
+    font-weight:600; font-size:14px;
+    padding:8px 14px; border-radius:8px; text-decoration:none;
+  }
+
+  /* Hero */
+  .hero{padding:96px 0 80px; position:relative; overflow:hidden}
+  .hero .label{
+    font-family:'Geist Mono',monospace; font-size:12px;
+    letter-spacing:0.2em; text-transform:uppercase; color:var(--green);
+    margin-bottom:28px;
+  }
+  .hero .label .bar{display:inline-block; width:22px; height:1px; background:var(--green); vertical-align:middle; margin-right:10px}
+  h1.display{
+    font-family:'Fraunces',Georgia,serif; font-weight:500;
+    font-size:clamp(72px, 12vw, 180px);
+    letter-spacing:-0.045em; line-height:0.9; margin:0 0 28px;
+  }
+  h1.display .period{color:var(--orange)}
+  .hero .sub{font-size:22px; color:var(--muted); max-width:640px; line-height:1.4; margin-bottom:40px}
+  .ctarow{display:flex; gap:14px; align-items:center; flex-wrap:wrap}
+  .btn-primary{
+    background:var(--green); color:var(--navy-deep);
+    font-weight:700; font-size:15px;
+    padding:14px 22px; border-radius:10px; text-decoration:none;
+    display:inline-flex; align-items:center; gap:10px;
+    transition:transform .15s;
+  }
+  .btn-primary:hover{transform:translateY(-1px)}
+  .btn-ghost{
+    color:var(--cream); font-family:'Geist Mono',monospace; font-size:13px;
+    text-decoration:none; padding:14px 18px;
+    border:1px solid var(--rule); border-radius:10px;
+  }
+  .kbd{
+    font-family:'Geist Mono',monospace; font-size:11px; font-weight:600;
+    background:rgba(245,241,232,0.08); color:var(--cream);
+    padding:2px 6px; border-radius:4px;
+    border:1px solid rgba(245,241,232,0.12); border-bottom-width:2px;
+  }
+  .hero .hint{margin-top:24px; font-family:'Geist Mono',monospace; font-size:12px; color:var(--muted)}
+  .hero .hint .kbd{margin:0 2px}
+  .hero .peek{position:absolute; right:-40px; top:60px; opacity:0.9; pointer-events:none}
+
+  /* Product shot */
+  .product{padding:0 0 120px}
+  .frame{
+    background:#fdfcf8; border-radius:16px; overflow:hidden;
+    box-shadow:0 40px 120px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,241,232,0.08);
+    color:var(--ink);
+    font-size:12px;
+  }
+  .frame .tb{display:flex; align-items:center; gap:9px; padding:14px 18px; border-bottom:1px solid rgba(0,0,0,0.06)}
+  .frame .tl{width:11px; height:11px; border-radius:6px}
+  .frame .tl.r{background:#ff5f57} .frame .tl.y{background:#febc2e} .frame .tl.g{background:#28c840}
+  .frame .title{margin-left:14px; font-weight:700; font-size:13px}
+  .frame .title .n1{font-weight:500}
+  .frame .meta{margin-left:10px; font-family:'Geist Mono',monospace; font-size:11px; color:rgba(0,0,0,0.5)}
+  .frame .badge{
+    margin-left:10px; background:var(--orange); color:#fff;
+    font-family:'Geist Mono',monospace; font-size:10px; font-weight:700;
+    padding:2px 8px; border-radius:10px;
+  }
+  .frame .filters{
+    display:flex; gap:8px; padding:10px 18px; flex-wrap:wrap;
+    border-bottom:1px solid rgba(0,0,0,0.06);
+    font-family:'Geist Mono',monospace; font-size:10px; color:rgba(0,0,0,0.65);
+  }
+  .frame .filters span{padding:3px 8px; background:rgba(0,0,0,0.04); border-radius:4px}
+  .frame .cols, .frame .row{
+    display:grid;
+    grid-template-columns: 52px 170px 60px 60px 1fr 80px 80px;
+    gap:10px; padding:8px 20px;
+  }
+  .frame .cols{
+    font-family:'Geist Mono',monospace; font-size:9px;
+    text-transform:uppercase; letter-spacing:1px;
+    color:rgba(0,0,0,0.5);
+    border-bottom:1px solid rgba(0,0,0,0.08);
+  }
+  .frame .row{
+    padding:10px 20px;
+    border-bottom:1px solid rgba(0,0,0,0.04);
+    align-items:center; font-size:12px;
+  }
+  .frame .row.hl{background:#e9f3ff}
+  .frame .pill{
+    font-weight:600; padding:2px 0; text-align:center; border-radius:3px;
+    font-size:10px;
+  }
+  .frame .pill.pr{background:#ffe4cf; color:var(--orange-deep)}
+  .frame .pill.is{background:#dff5e3; color:var(--green-deep)}
+  .frame .pill.sdraft{background:#fff3d6; color:#8a5a00}
+  .frame .pill.sopen{background:#dff5e3; color:var(--green-deep)}
+  .frame .repo{font-family:'Geist Mono',monospace; font-size:10px; color:rgba(0,0,0,0.7); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .frame .num{font-family:'Geist Mono',monospace; font-size:10px; color:rgba(0,0,0,0.55)}
+  .frame .ttl{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .frame .chips{display:inline-flex; gap:5px; margin-left:8px}
+  .frame .chip{
+    font-family:'Geist Mono',monospace; font-size:9px; font-weight:600;
+    color:var(--navy); padding:1px 6px; border-radius:3px;
+    white-space:nowrap;
+  }
+  .frame .ago{text-align:right; font-family:'Geist Mono',monospace; font-size:10px; color:rgba(0,0,0,0.55)}
+  .frame .footer{
+    display:flex; gap:16px; padding:10px 20px; border-top:1px solid rgba(0,0,0,0.06);
+    font-family:'Geist Mono',monospace; font-size:10px; color:rgba(0,0,0,0.55);
+    flex-wrap:wrap;
+  }
+  .frame .footer b{color:var(--ink); font-weight:700}
+
+  /* Section headers */
+  .section{padding:100px 0; border-top:1px solid var(--rule)}
+  .section .eyebrow{
+    font-family:'Geist Mono',monospace; font-size:11px; letter-spacing:0.25em;
+    text-transform:uppercase; color:var(--green); margin-bottom:20px;
+  }
+  .section h2{
+    font-family:'Fraunces',Georgia,serif; font-weight:500;
+    font-size:clamp(48px, 7vw, 88px); letter-spacing:-0.03em; line-height:0.95;
+    margin:0 0 28px; max-width:900px;
+  }
+  .section h2 .acc{color:var(--orange)}
+  .section p.lead{font-size:20px; color:var(--muted); max-width:620px; line-height:1.45; margin:0}
+
+  /* Feature grid */
+  .features{
+    display:grid; grid-template-columns:repeat(6,1fr); gap:0;
+    margin-top:56px; border-top:1px solid var(--rule);
+  }
+  .feature{
+    grid-column:span 2; padding:36px 28px; border-right:1px solid var(--rule); border-bottom:1px solid var(--rule);
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .feature:nth-child(3n){border-right:none}
+  .feature .k{
+    font-family:'Geist Mono',monospace; font-size:11px; letter-spacing:0.2em;
+    text-transform:uppercase; color:var(--green); display:flex; justify-content:space-between;
+  }
+  .feature h3{
+    font-family:'Fraunces',Georgia,serif; font-weight:500;
+    font-size:30px; letter-spacing:-0.02em; line-height:1;
+    margin:8px 0 6px;
+  }
+  .feature p{color:var(--muted); font-size:15px; line-height:1.5; margin:0}
+
+  /* Keyboard showcase */
+  .kb-grid{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:14px;
+    margin-top:56px;
+  }
+  .kb-row{
+    display:flex; align-items:center; gap:18px;
+    padding:16px 22px; border:1px solid var(--rule); border-radius:12px;
+    background:rgba(245,241,232,0.02);
+  }
+  .kb-row .kbg{
+    font-family:'Geist Mono',monospace; font-weight:700; font-size:16px;
+    background:var(--green); color:var(--navy);
+    padding:6px 12px; border-radius:6px; min-width:48px; text-align:center;
+  }
+  .kb-row .desc{flex:1}
+  .kb-row .desc b{font-weight:600}
+  .kb-row .desc small{color:var(--muted); font-size:13px; display:block; margin-top:2px}
+
+  /* Before / after */
+  .ba{
+    display:grid; grid-template-columns:1fr 1fr; gap:28px; margin-top:56px; align-items:stretch;
+  }
+  .ba-card{
+    padding:40px; border-radius:16px; border:1px solid var(--rule);
+    background:rgba(245,241,232,0.02);
+    display:flex; flex-direction:column; gap:18px; min-height:380px;
+  }
+  .ba-card.good{
+    background:linear-gradient(180deg, rgba(63,185,80,0.08), rgba(63,185,80,0.02));
+    border-color:rgba(63,185,80,0.25);
+  }
+  .ba-card .tag{
+    font-family:'Geist Mono',monospace; font-size:11px; letter-spacing:0.25em;
+    text-transform:uppercase; color:var(--muted);
+  }
+  .ba-card .tag.bad{color:#e17a7a}
+  .ba-card .tag.good{color:var(--green)}
+  .ba-card h4{
+    font-family:'Fraunces',Georgia,serif; font-weight:500; font-size:36px;
+    letter-spacing:-0.02em; margin:0; line-height:1;
+  }
+  .chaos{display:flex; flex-direction:column; gap:10px; margin-top:10px}
+  .chaos .notif{
+    padding:10px 12px; border-radius:8px; font-size:13px;
+    background:rgba(245,241,232,0.04); border-left:3px solid var(--orange);
+    font-family:'Geist Mono',monospace; color:var(--muted);
+    display:flex; gap:10px; align-items:center;
+  }
+  .chaos .notif .b{background:var(--orange); color:var(--navy); padding:1px 6px; border-radius:3px; font-weight:700; font-size:10px}
+  .chaos .notif.g{border-left-color:var(--green)}
+  .chaos .notif.g .b{background:var(--green)}
+  .chaos .footnote{margin-top:16px; font-family:'Geist Mono',monospace; font-size:12px; color:rgba(245,241,232,0.55)}
+
+  /* Pricing */
+  .price-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:56px;
+  }
+  .tier{
+    padding:32px; border-radius:16px; border:1px solid var(--rule);
+    background:rgba(245,241,232,0.02); display:flex; flex-direction:column; gap:18px;
+  }
+  .tier.highlight{background:linear-gradient(180deg, rgba(63,185,80,0.1), rgba(63,185,80,0.02)); border-color:rgba(63,185,80,0.3)}
+  .tier h5{
+    font-family:'Geist Mono',monospace; font-size:12px; letter-spacing:0.25em;
+    text-transform:uppercase; margin:0; color:var(--muted);
+  }
+  .tier .price{font-family:'Fraunces',serif; font-weight:500; font-size:56px; letter-spacing:-0.02em; line-height:1}
+  .tier .price small{font-size:16px; color:var(--muted); font-family:'Geist',sans-serif; font-weight:500; margin-left:4px}
+  .tier ul{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px}
+  .tier li{font-size:14px; color:var(--muted); display:flex; align-items:flex-start; gap:10px}
+  .tier li::before{content:''; width:16px; height:16px; flex-shrink:0; border-radius:3px; background:var(--green); -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3 8l3 3 7-7' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/contain no-repeat; mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3 8l3 3 7-7' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/contain no-repeat; margin-top:2px}
+  .tier .tier-cta{text-align:center; padding:12px; border-radius:10px; text-decoration:none; font-weight:600; font-size:14px; margin-top:8px}
+  .tier.highlight .tier-cta{background:var(--green); color:var(--navy-deep)}
+  .tier:not(.highlight) .tier-cta{border:1px solid var(--rule); color:var(--cream)}
+
+  /* FAQ */
+  .faq{display:flex; flex-direction:column; gap:0; margin-top:48px; border-top:1px solid var(--rule)}
+  .faq details{border-bottom:1px solid var(--rule); padding:24px 0}
+  .faq summary{
+    cursor:pointer; list-style:none;
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'Fraunces',serif; font-weight:500; font-size:24px; letter-spacing:-0.01em;
+  }
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::after{
+    content:'+'; color:var(--green); font-family:'Geist Mono',monospace; font-weight:400; font-size:28px; transition:transform .2s;
+  }
+  .faq details[open] summary::after{content:'−'}
+  .faq .ans{padding-top:16px; color:var(--muted); font-size:16px; line-height:1.55; max-width:780px}
+
+  /* Final CTA */
+  .final{padding:140px 0 120px; text-align:center; position:relative; overflow:hidden}
+  .final .icon-row{display:flex; justify-content:center; margin-bottom:28px}
+  .final .huge{
+    font-family:'Fraunces',serif; font-weight:500;
+    font-size:clamp(96px, 18vw, 280px); letter-spacing:-0.05em; line-height:0.88;
+    margin:0 0 36px;
+  }
+  .final .huge .acc{color:var(--orange)}
+  .final .ctarow{justify-content:center}
+  .final .req{margin-top:28px; font-family:'Geist Mono',monospace; font-size:12px; color:rgba(245,241,232,0.5)}
+
+  /* Footer */
+  footer{padding:48px 0 64px; border-top:1px solid var(--rule); font-size:13px; color:var(--muted)}
+  footer .cols{display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr; gap:24px; margin-bottom:44px}
+  footer .col h6{
+    font-family:'Geist Mono',monospace; font-size:11px; letter-spacing:0.2em; text-transform:uppercase;
+    color:var(--cream); margin:0 0 12px;
+  }
+  footer .col a{display:block; text-decoration:none; padding:4px 0}
+  footer .col a:hover{color:var(--cream)}
+  footer .col .placeholder{display:block; padding:4px 0; color:rgba(245,241,232,0.4)}
+  footer .col .blurb{max-width:280px; line-height:1.5}
+  footer .bottom{display:flex; justify-content:space-between; align-items:center; padding-top:24px; border-top:1px solid var(--rule); flex-wrap:wrap; gap:12px}
+
+  @media(max-width:900px){
+    .features{grid-template-columns:repeat(2,1fr)}
+    .feature{grid-column:span 1}
+    .feature:nth-child(3n){border-right:1px solid var(--rule)}
+    .feature:nth-child(2n){border-right:none}
+    .kb-grid,.ba,.price-grid{grid-template-columns:1fr}
+    footer .cols{grid-template-columns:1fr 1fr}
+    .hero .peek{display:none}
+    nav.top .links{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- Reusable inline SVG defs for the icon system -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-branch-graph" viewBox="0 0 1024 1024">
+      <clipPath id="ic-bg-clip"><rect width="1024" height="1024" rx="229" ry="229"/></clipPath>
+      <g clip-path="url(#ic-bg-clip)">
+        <rect width="1024" height="1024" fill="#1c1c2e"/>
+        <g opacity="0.06">
+          <line x1="128" y1="0" x2="128" y2="1024" stroke="#fff" stroke-width="1"/>
+          <line x1="224" y1="0" x2="224" y2="1024" stroke="#fff" stroke-width="1"/>
+          <line x1="320" y1="0" x2="320" y2="1024" stroke="#fff" stroke-width="1"/>
+          <line x1="416" y1="0" x2="416" y2="1024" stroke="#fff" stroke-width="1"/>
+          <line x1="512" y1="0" x2="512" y2="1024" stroke="#fff" stroke-width="1"/>
+          <line x1="608" y1="0" x2="608" y2="1024" stroke="#fff" stroke-width="1"/>
+          <line x1="704" y1="0" x2="704" y2="1024" stroke="#fff" stroke-width="1"/>
+          <line x1="800" y1="0" x2="800" y2="1024" stroke="#fff" stroke-width="1"/>
+          <line x1="896" y1="0" x2="896" y2="1024" stroke="#fff" stroke-width="1"/>
+          <line x1="0" y1="128" x2="1024" y2="128" stroke="#fff" stroke-width="1"/>
+          <line x1="0" y1="224" x2="1024" y2="224" stroke="#fff" stroke-width="1"/>
+          <line x1="0" y1="320" x2="1024" y2="320" stroke="#fff" stroke-width="1"/>
+          <line x1="0" y1="416" x2="1024" y2="416" stroke="#fff" stroke-width="1"/>
+          <line x1="0" y1="512" x2="1024" y2="512" stroke="#fff" stroke-width="1"/>
+          <line x1="0" y1="608" x2="1024" y2="608" stroke="#fff" stroke-width="1"/>
+          <line x1="0" y1="704" x2="1024" y2="704" stroke="#fff" stroke-width="1"/>
+          <line x1="0" y1="800" x2="1024" y2="800" stroke="#fff" stroke-width="1"/>
+          <line x1="0" y1="896" x2="1024" y2="896" stroke="#fff" stroke-width="1"/>
+        </g>
+        <line x1="320" y1="200" x2="320" y2="824" stroke="#3fb950" stroke-width="44" stroke-linecap="round"/>
+        <path d="M 320 440 C 320 520, 540 500, 540 580 L 540 740" stroke="#f0883e" stroke-width="44" stroke-linecap="round" fill="none"/>
+        <path d="M 540 740 C 540 790, 340 780, 320 824" stroke="#f0883e" stroke-width="44" stroke-linecap="round" fill="none" opacity="0.9"/>
+        <circle cx="320" cy="230" r="56" fill="#3fb950"/><circle cx="320" cy="230" r="22" fill="#1c1c2e"/>
+        <circle cx="320" cy="440" r="56" fill="#3fb950"/><circle cx="320" cy="440" r="22" fill="#1c1c2e"/>
+        <circle cx="320" cy="620" r="56" fill="#3fb950"/><circle cx="320" cy="620" r="22" fill="#1c1c2e"/>
+        <circle cx="320" cy="780" r="56" fill="#3fb950"/><circle cx="320" cy="780" r="22" fill="#1c1c2e"/>
+        <circle cx="540" cy="580" r="56" fill="#f0883e"/><circle cx="540" cy="580" r="22" fill="#1c1c2e"/>
+        <circle cx="540" cy="740" r="56" fill="#f0883e"/><circle cx="540" cy="740" r="22" fill="#1c1c2e"/>
+        <circle cx="780" cy="440" r="88" fill="#3fb950"/>
+        <path d="M 740 440 L 775 475 L 825 415" stroke="#1c1c2e" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </g>
+    </symbol>
+    <symbol id="ic-branch-graph-simple" viewBox="0 0 1024 1024">
+      <clipPath id="ic-bgs-clip"><rect width="1024" height="1024" rx="229" ry="229"/></clipPath>
+      <g clip-path="url(#ic-bgs-clip)">
+        <rect width="1024" height="1024" fill="#1c1c2e"/>
+        <line x1="340" y1="240" x2="340" y2="784" stroke="#3fb950" stroke-width="72" stroke-linecap="round"/>
+        <path d="M 340 400 C 340 500, 620 480, 620 620" stroke="#f0883e" stroke-width="72" stroke-linecap="round" fill="none"/>
+        <circle cx="340" cy="280" r="76" fill="#3fb950"/><circle cx="340" cy="280" r="30" fill="#1c1c2e"/>
+        <circle cx="340" cy="620" r="76" fill="#3fb950"/><circle cx="340" cy="620" r="30" fill="#1c1c2e"/>
+        <circle cx="620" cy="620" r="76" fill="#f0883e"/><circle cx="620" cy="620" r="30" fill="#1c1c2e"/>
+        <circle cx="720" cy="300" r="120" fill="#3fb950"/>
+        <path d="M 660 300 L 705 345 L 775 255" stroke="#1c1c2e" stroke-width="48" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<nav class="top">
+  <div class="wrap inner">
+    <a href="#" class="brand">
+      <svg width="28" height="28"><use href="#ic-branch-graph-simple"/></svg>
+      <span><span class="n1">Landin</span><span class="n2">Git</span><span class="dot">.</span></span>
+    </a>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#keyboard">Keyboard</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/adamsilverstein/landingit/releases">Changelog</a>
+    </div>
+    <a href="#download" class="cta">Download</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="wrap" style="position:relative">
+    <div class="label"><span class="bar"></span> macOS · iOS · v1.0</div>
+    <h1 class="display">Land<br/>it<span class="period">.</span></h1>
+    <p class="sub">
+      The keyboard-first dashboard where every pull request, issue, and review across your repos
+      actually lands — instead of drowning your inbox.
+    </p>
+    <div class="ctarow">
+      <a href="#download" class="btn-primary">
+        Download for Mac
+        <span style="opacity:0.5">·</span>
+        <span class="mono" style="font-size:13px;font-weight:600">v1.0</span>
+      </a>
+      <a href="https://github.com/adamsilverstein/landingit" class="btn-ghost">View on GitHub →</a>
+    </div>
+    <div class="hint">
+      Try it: <span class="kbd">J</span> <span class="kbd">K</span> to move ·
+      <span class="kbd">/</span> to search · <span class="kbd">⌘ K</span> for commands
+    </div>
+    <div class="peek" aria-hidden="true">
+      <svg width="360" height="360"><use href="#ic-branch-graph"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="product">
+  <div class="wrap">
+    <div class="frame" role="img" aria-label="LandinGit dashboard preview showing 12 pull requests and issues across WordPress repositories">
+      <div class="tb">
+        <div class="tl r"></div><div class="tl y"></div><div class="tl g"></div>
+        <div class="title"><span class="n1">Landin</span>Git<span style="color:#f0883e">.</span></div>
+        <div class="meta">3 repos · 28 items</div>
+        <div class="badge">74 new</div>
+        <div style="margin-left:auto" class="mono">⌘K · Search…</div>
+      </div>
+      <div class="filters">
+        <span>Owner: @adamsilverstein</span>
+        <span>Type: Both</span>
+        <span>State: Draft, Open</span>
+        <span>Labels: All</span>
+        <span>My replies: Hidden</span>
+        <span>Milestones: Off</span>
+      </div>
+      <div class="cols">
+        <span>Type</span><span>Repo</span><span>State</span><span>#</span><span>Title</span><span style="text-align:right">Reviews</span><span style="text-align:right">Updated</span>
+      </div>
+      <div class="row hl">
+        <span class="pill is">Issue</span>
+        <span class="repo">wordpress/gutenberg</span>
+        <span class="pill sdraft">draft</span>
+        <span class="num">#77633</span>
+        <span class="ttl">Document-Isolation-Policy header scope is too narrow, breaking cross-window…</span>
+        <span class="ago">—</span>
+        <span class="ago">7m</span>
+      </div>
+      <div class="row">
+        <span class="pill pr">PR</span>
+        <span class="repo">wordpress/gutenberg</span>
+        <span class="pill sdraft">draft</span>
+        <span class="num">#76882</span>
+        <span class="ttl">Media: Broaden DIP header scope to all admin pages<span class="chips"><span class="chip" style="background:#ffb3b3">Type: Bug</span><span class="chip" style="background:#b0e9b8">Status: In Progress</span></span></span>
+        <span class="ago">—</span>
+        <span class="ago">8m</span>
+      </div>
+      <div class="row">
+        <span class="pill pr">PR</span>
+        <span class="repo">wordpress/gutenberg</span>
+        <span class="pill sopen">open</span>
+        <span class="num">#76990</span>
+        <span class="ttl">Client-side media: Add JPEG XL (JXL) support via canonical plugin<span class="chips"><span class="chip" style="background:#b0e9b8">Status: In Progress</span><span class="chip" style="background:#ffc59e">Feature: Client Side Media</span></span></span>
+        <span class="ago">—</span>
+        <span class="ago">19m</span>
+      </div>
+      <div class="row">
+        <span class="pill pr">PR</span>
+        <span class="repo">wordpress/gutenberg</span>
+        <span class="pill sopen">open</span>
+        <span class="num">#77584</span>
+        <span class="ttl">Media: Lazy-load JPEG XL (JXL) WASM on demand</span>
+        <span class="ago">—</span>
+        <span class="ago">19h</span>
+      </div>
+      <div class="row">
+        <span class="pill is">Issue</span>
+        <span class="repo">wordpress/gutenberg</span>
+        <span class="pill sopen">open</span>
+        <span class="num">#77582</span>
+        <span class="ttl">Media: Where should EXIF rotation belong — server, client, or hybrid?<span class="chips"><span class="chip" style="background:#cfc1f0">Type: Discussion</span><span class="chip" style="background:#ffc59e">Feature: Client Side Media</span></span></span>
+        <span class="ago">—</span>
+        <span class="ago">20h</span>
+      </div>
+      <div class="row">
+        <span class="pill pr">PR</span>
+        <span class="repo">wordpress/wordpress-develop</span>
+        <span class="pill sopen">open</span>
+        <span class="num">#11324</span>
+        <span class="ttl">Media: Re-introduce client-side media processing feature</span>
+        <span class="ago">—</span>
+        <span class="ago">22h</span>
+      </div>
+      <div class="row">
+        <span class="pill pr">PR</span>
+        <span class="repo">wordpress/gutenberg</span>
+        <span class="pill sopen">open</span>
+        <span class="num">#77570</span>
+        <span class="ttl">Client-side media: Bundle JPEG XL support directly into Gutenberg</span>
+        <span class="ago">—</span>
+        <span class="ago">1d</span>
+      </div>
+      <div class="row">
+        <span class="pill is">Issue</span>
+        <span class="repo">wordpress/gutenberg</span>
+        <span class="pill sopen">open</span>
+        <span class="num">#76790</span>
+        <span class="ttl">Add retry logic and network resilience media uploads<span class="chips"><span class="chip" style="background:#ffd49a">Type: Enhancement</span><span class="chip" style="background:#ffc59e">Feature: Client Side Media</span></span></span>
+        <span class="ago">—</span>
+        <span class="ago">1d</span>
+      </div>
+      <div class="row">
+        <span class="pill is">Issue</span>
+        <span class="repo">wordpress/gutenberg</span>
+        <span class="pill sopen">open</span>
+        <span class="num">#75941</span>
+        <span class="ttl">Client Side Media does not work in Playground<span class="chips"><span class="chip" style="background:#ffb3b3">Type: Bug</span><span class="chip" style="background:#ffc59e">Feature: Client Side Media</span></span></span>
+        <span class="ago">—</span>
+        <span class="ago">2d</span>
+      </div>
+      <div class="row">
+        <span class="pill pr">PR</span>
+        <span class="repo">wordpress/gutenberg</span>
+        <span class="pill sdraft">draft</span>
+        <span class="num">#77407</span>
+        <span class="ttl">Phase 5: REST permissions + PHP tests for suggestions<span class="chips"><span class="chip" style="background:#ffd49a">Type: Enhancement</span><span class="chip" style="background:#ffaa8e">Package: Editor</span><span class="chip" style="background:#ffc2d1">Feature: Notes</span></span></span>
+        <span class="ago">—</span>
+        <span class="ago">3d</span>
+      </div>
+      <div class="row">
+        <span class="pill pr">PR</span>
+        <span class="repo">wordpress/gutenberg</span>
+        <span class="pill sdraft">draft</span>
+        <span class="num">#77405</span>
+        <span class="ttl">Phase 3: Add suggestion diff preview, Apply, and Reject<span class="chips"><span class="chip" style="background:#ffaa8e">Package: Editor</span></span></span>
+        <span class="ago">—</span>
+        <span class="ago">3d</span>
+      </div>
+      <div class="row">
+        <span class="pill pr">PR</span>
+        <span class="repo">wordpress/gutenberg</span>
+        <span class="pill sdraft">draft</span>
+        <span class="num">#77404</span>
+        <span class="ttl">Phase 2: Capture Suggest-mode edits as an in-memory overlay<span class="chips"><span class="chip" style="background:#ffaa8e">Package: Editor</span><span class="chip" style="background:#ffc2d1">Feature: Notes</span></span></span>
+        <span class="ago">—</span>
+        <span class="ago">3d</span>
+      </div>
+      <div class="footer">
+        <span><b>?</b> help</span>
+        <span><b>j</b> <b>k</b> navigate</span>
+        <span><b>↵</b> open</span>
+        <span><b>/</b> search</span>
+        <span><b>f</b> filter</span>
+        <span><b>s</b> sort</span>
+        <span><b>r</b> refresh</span>
+        <span><b>o</b> repos</span>
+        <span><b>t</b> theme</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="features">
+  <div class="wrap">
+    <div class="eyebrow">What it does</div>
+    <h2>Every PR and issue across every repo. <span class="acc">In one list.</span></h2>
+    <p class="lead">GitHub's feed is firehose. Your inbox is a graveyard. LandinGit is the sober middle — a single dense list where things that need you rise to the top, and everything else stays quiet.</p>
+    <div class="features">
+      <div class="feature"><div class="k"><span>01</span><span>Multi-repo</span></div><h3>Every repo, one list.</h3><p>Hook up as many repositories as you own or watch. One sortable, filterable, keyboard-navigable inbox.</p></div>
+      <div class="feature"><div class="k"><span>02</span><span>Keyboard</span></div><h3>j/k your day.</h3><p>Every action has a shortcut. Move, filter, open, triage — your hands never touch the mouse.</p></div>
+      <div class="feature"><div class="k"><span>03</span><span>Labels</span></div><h3>Faithful color.</h3><p>Your labels render with the exact colors you set on GitHub — so bugs look like bugs and features look like features.</p></div>
+      <div class="feature"><div class="k"><span>04</span><span>Filters</span></div><h3>Built for triage.</h3><p>Filter by owner, type, state, label, milestone, or your own replies. Save filter sets and switch with a keystroke.</p></div>
+      <div class="feature"><div class="k"><span>05</span><span>Menu bar</span></div><h3>Quietly watching.</h3><p>A monochrome bird in your menu bar with live counts. Opens the full list with ⌘⇧G — land, then close.</p></div>
+      <div class="feature"><div class="k"><span>06</span><span>iOS</span></div><h3>On the go.</h3><p>The same triage flow in your pocket. Swipe to open, long-press to mark, pull to refresh. Still keyboard-first on iPad.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="keyboard">
+  <div class="wrap">
+    <div class="eyebrow">Keyboard</div>
+    <h2>Learn ten keys. <span class="acc">Never look back.</span></h2>
+    <p class="lead">The home row is the whole UI. Mouse support is a courtesy, not a requirement — and ⌘ K opens the rest when your muscle memory hasn't caught up yet.</p>
+    <div class="kb-grid">
+      <div class="kb-row"><div class="kbg">J K</div><div class="desc"><b>Move</b><small>Up/down through the list</small></div></div>
+      <div class="kb-row"><div class="kbg">↵</div><div class="desc"><b>Open</b><small>Launch the selected item in your browser</small></div></div>
+      <div class="kb-row"><div class="kbg">/</div><div class="desc"><b>Search</b><small>Fuzzy search title, number, label, repo</small></div></div>
+      <div class="kb-row"><div class="kbg">F</div><div class="desc"><b>Filter</b><small>Pop the filter drawer, edit, apply</small></div></div>
+      <div class="kb-row"><div class="kbg">S</div><div class="desc"><b>Sort</b><small>Cycle updated / created / reviews / state</small></div></div>
+      <div class="kb-row"><div class="kbg">O</div><div class="desc"><b>Repos</b><small>Toggle which repos are visible right now</small></div></div>
+      <div class="kb-row"><div class="kbg">L</div><div class="desc"><b>Label</b><small>Quick-add or remove a label inline</small></div></div>
+      <div class="kb-row"><div class="kbg">R</div><div class="desc"><b>Refresh</b><small>Force a re-poll across all repos</small></div></div>
+      <div class="kb-row"><div class="kbg">T</div><div class="desc"><b>Theme</b><small>Flip between light and dark in place</small></div></div>
+      <div class="kb-row"><div class="kbg">⌘ K</div><div class="desc"><b>Command</b><small>Everything else, in a spotlight-style menu</small></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="eyebrow">Before &amp; After</div>
+    <h2>Notifications out. <span class="acc">Landings in.</span></h2>
+    <div class="ba">
+      <div class="ba-card">
+        <div class="tag bad">BEFORE · inbox</div>
+        <h4>14,238 unread.</h4>
+        <div class="chaos">
+          <div class="notif"><span class="b">GH</span><span>[wp/gutenberg] Re: Client-side media…</span></div>
+          <div class="notif"><span class="b">GH</span><span>[wp/gutenberg] Re: Re: Re: DIP header…</span></div>
+          <div class="notif"><span class="b">GH</span><span>[wp/wordpress-develop] @user mentioned you</span></div>
+          <div class="notif"><span class="b">GH</span><span>[wp/gutenberg] 74 items updated</span></div>
+          <div class="notif"><span class="b">GH</span><span>[wp/gutenberg] Re: Re: EXIF rotation…</span></div>
+          <div class="notif"><span class="b">GH</span><span>[wp/performance] CI: checks failed</span></div>
+        </div>
+      </div>
+      <div class="ba-card good">
+        <div class="tag good">AFTER · LandinGit</div>
+        <h4>28 open. 74 new.</h4>
+        <div class="chaos">
+          <div class="notif g"><span class="b">#77633</span><span>Document-Isolation-Policy header scope…</span></div>
+          <div class="notif g"><span class="b">#76990</span><span>JPEG XL support via canonical plugin</span></div>
+          <div class="notif g"><span class="b">#77582</span><span>Where should EXIF rotation belong?</span></div>
+          <div class="notif g"><span class="b">#77570</span><span>Bundle JPEG XL support into Gutenberg</span></div>
+          <div class="footnote">24 more, sorted by what just changed. Press <span class="kbd">J</span> to begin.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="pricing">
+  <div class="wrap">
+    <div class="eyebrow">Pricing</div>
+    <h2>Simple. <span class="acc">Three tiers.</span></h2>
+    <p class="lead">14-day free trial on every plan. Cancel anytime. No seats, no "contact sales."</p>
+    <div class="price-grid">
+      <div class="tier">
+        <h5>Hobby</h5>
+        <div class="price">Free</div>
+        <ul>
+          <li>Up to 3 repositories</li>
+          <li>macOS + iOS apps</li>
+          <li>Menu bar counts</li>
+          <li>Every keyboard shortcut</li>
+        </ul>
+        <a href="#download" class="tier-cta">Download free</a>
+      </div>
+      <div class="tier highlight">
+        <h5>Pro</h5>
+        <div class="price">$8<small>/month</small></div>
+        <ul>
+          <li>Unlimited repositories</li>
+          <li>Saved filter sets</li>
+          <li>Custom sort + grouping</li>
+          <li>Priority GitHub API quota</li>
+          <li>Sync settings across devices</li>
+        </ul>
+        <a href="#download" class="tier-cta">Start 14-day trial</a>
+      </div>
+      <div class="tier">
+        <h5>Team</h5>
+        <div class="price">$6<small>/seat/mo</small></div>
+        <ul>
+          <li>Everything in Pro</li>
+          <li>Shared filter sets</li>
+          <li>SSO (Google, Okta)</li>
+          <li>Audit log</li>
+          <li>Priority support</li>
+        </ul>
+        <a href="#download" class="tier-cta">Talk to us</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="faq">
+  <div class="wrap">
+    <div class="eyebrow">FAQ</div>
+    <h2>Questions, <span class="acc">answered.</span></h2>
+    <div class="faq">
+      <details open>
+        <summary>Does it work with private repositories?</summary>
+        <div class="ans">Yes. Sign in with GitHub and grant access to any combination of personal, org, or private repos. You control the scope at any time.</div>
+      </details>
+      <details>
+        <summary>Does LandinGit store my GitHub data?</summary>
+        <div class="ans">No. Your token lives in the macOS Keychain, requests go directly from your device to GitHub, and list state is cached locally. We do not have a server with your data on it.</div>
+      </details>
+      <details>
+        <summary>Will you support GitLab or Bitbucket?</summary>
+        <div class="ans">Not in 1.0. GitHub is the only forge we support today. Gitea and GitLab are on the roadmap if enough people ask.</div>
+      </details>
+      <details>
+        <summary>Is there a web version?</summary>
+        <div class="ans">Yes — a web build runs in any modern browser. Native macOS and iOS get the menu bar and notification integrations the web build can't do.</div>
+      </details>
+      <details>
+        <summary>How does the menu bar counter work?</summary>
+        <div class="ans">It polls your repos on an interval you control (default 2 minutes) and shows the count of items that have changed since you last opened the app. Click it to open the list; the count resets when you catch up.</div>
+      </details>
+      <details>
+        <summary>What's the difference between "draft" and "open"?</summary>
+        <div class="ans">Those are GitHub's own PR states, surfaced faithfully. LandinGit never reinterprets a state — it just renders them with a consistent pill color so you can scan hundreds of rows at a glance.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="final" id="download">
+  <div class="wrap">
+    <div class="icon-row">
+      <svg width="120" height="120"><use href="#ic-branch-graph"/></svg>
+    </div>
+    <div class="huge">Land<br/>it<span class="acc">.</span></div>
+    <div class="ctarow">
+      <a href="https://github.com/adamsilverstein/landingit/releases" class="btn-primary">
+        Download for macOS
+        <span style="opacity:0.5">·</span>
+        <span class="mono" style="font-size:13px;font-weight:600">v1.0 · 14 MB</span>
+      </a>
+      <a href="https://github.com/adamsilverstein/landingit/releases" class="btn-ghost">Download for iOS →</a>
+    </div>
+    <div class="req">Requires macOS 13+ or iOS 16+ · Sign in with GitHub</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div class="col">
+        <a href="#" class="brand" style="margin-bottom:14px">
+          <svg width="28" height="28"><use href="#ic-branch-graph-simple"/></svg>
+          <span><span class="n1">Landin</span><span class="n2">Git</span><span class="dot">.</span></span>
+        </a>
+        <div class="blurb">The keyboard-first dashboard where every PR, issue, and review lands.</div>
+      </div>
+      <div class="col">
+        <h6>Product</h6>
+        <a href="#features">Features</a>
+        <a href="#keyboard">Keyboard</a>
+        <a href="#pricing">Pricing</a>
+        <a href="https://github.com/adamsilverstein/landingit/releases">Changelog</a>
+      </div>
+      <div class="col">
+        <h6>Support</h6>
+        <a href="#faq">FAQ</a>
+        <a href="https://github.com/adamsilverstein/landingit">Docs</a>
+        <a href="https://github.com/adamsilverstein/landingit/issues">Contact</a>
+        <a href="https://github.com/adamsilverstein/landingit">Status</a>
+      </div>
+      <div class="col">
+        <h6>Company</h6>
+        <span class="placeholder">Privacy (soon)</span>
+        <span class="placeholder">Terms (soon)</span>
+        <a href="https://github.com/adamsilverstein/landingit/blob/main/LICENSE">License</a>
+        <span class="placeholder">Press kit (soon)</span>
+      </div>
+    </div>
+    <div class="bottom">
+      <a href="#" class="brand" style="font-size:14px">
+        <svg width="22" height="22"><use href="#ic-branch-graph-simple"/></svg>
+        <span><span class="n1">Landin</span><span class="n2">Git</span><span class="dot">.</span></span>
+      </a>
+      <div class="mono" style="font-size:12px">© 2026 · built for people who press J</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
