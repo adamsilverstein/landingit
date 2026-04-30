@@ -20,10 +20,11 @@ interface ShortcutActions {
 export function useKeyboardShortcuts(actions: ShortcutActions) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Skip when typing in inputs
+      // Skip when typing in inputs, except for Escape so modals can still close.
       if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
+        e.key !== 'Escape' &&
+        (e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement)
       ) {
         return;
       }

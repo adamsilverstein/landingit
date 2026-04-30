@@ -174,6 +174,14 @@ describe('useKeyboardShortcuts', () => {
       expect(actions.setViewMode).toHaveBeenCalledWith('list');
     });
 
+    it('Escape closes repos modal even when an input is focused', () => {
+      actions.viewMode = 'repos';
+      renderHook(() => useKeyboardShortcuts(actions));
+      const input = document.createElement('input');
+      pressKey('Escape', input);
+      expect(actions.setViewMode).toHaveBeenCalledWith('list');
+    });
+
     it('other keys are ignored in repos mode', () => {
       actions.viewMode = 'repos';
       renderHook(() => useKeyboardShortcuts(actions));
