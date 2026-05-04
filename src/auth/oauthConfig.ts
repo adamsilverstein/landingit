@@ -2,12 +2,16 @@ import type { DeviceFlowTransport } from '../../shared/auth/transport.js';
 import { getElectronOAuthTransport } from './electronBridge.js';
 
 /**
- * GitHub OAuth App `client_id` for Device Flow login.
- * Set `VITE_GITHUB_OAUTH_CLIENT_ID` at build time. When unset, OAuth is
- * disabled and the UI falls back to PAT entry.
+ * GitHub OAuth App `client_id` for Device Flow login. Public, non-secret —
+ * Device Flow does not use a `client_secret`, and the value is visible in the
+ * verification URL users open. Checked in so CI-built desktop binaries (whose
+ * runners don't load local `.env`) ship with OAuth enabled. Forks can override
+ * via the `VITE_GITHUB_OAUTH_CLIENT_ID` env var at build time.
  */
+const DEFAULT_OAUTH_CLIENT_ID = 'Ov23liKbvHRiXEkU7xi3';
+
 export const OAUTH_CLIENT_ID: string =
-  (import.meta.env.VITE_GITHUB_OAUTH_CLIENT_ID as string | undefined) ?? '';
+  (import.meta.env.VITE_GITHUB_OAUTH_CLIENT_ID as string | undefined) ?? DEFAULT_OAUTH_CLIENT_ID;
 
 export interface OAuthAvailability {
   available: boolean;
