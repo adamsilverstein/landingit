@@ -4,6 +4,7 @@ release/
 *.tsbuildinfo
 .DS_Store
 test-results/
+.playwright-mcp/
 .env
 .env.local
 .env.*.local
