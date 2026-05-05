@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  SafeAreaView,
 } from 'react-native';
 import type { RepoConfig } from '../../../shared/types.js';
 
@@ -21,6 +22,8 @@ interface OnboardingScreenProps {
 
 type Step = 'welcome' | 'add' | 'confirm';
 
+const STEP_ORDER: Step[] = ['welcome', 'add', 'confirm'];
+
 export function OnboardingScreen({
   username,
   repos,
@@ -31,6 +34,11 @@ export function OnboardingScreen({
   const [step, setStep] = useState<Step>('welcome');
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const stepIndex = STEP_ORDER.indexOf(step);
+  const stepNumber = stepIndex + 1;
+  const totalSteps = STEP_ORDER.length;
+  const percent = Math.round((stepNumber / totalSteps) * 100);
 
   const handleAdd = () => {
     setError(null);
@@ -51,279 +59,391 @@ export function OnboardingScreen({
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Progress step={step} />
+    <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.header}>
+          <Text style={styles.headerLabel}>SETUP</Text>
+          <TouchableOpacity onPress={step === 'welcome' ? onSignOut : onFinish} hitSlop={12}>
+            <Text style={styles.headerLink}>{step === 'welcome' ? 'Sign out' : 'Skip'}</Text>
+          </TouchableOpacity>
+        </View>
 
-        {step === 'welcome' && (
-          <View style={styles.card}>
-            <Text style={styles.title}>
-              Welcome to LandinGit{username ? `, ${username}` : ''}
-            </Text>
-            <Text style={styles.body}>
-              LandinGit gives you a fast dashboard for the pull requests and
-              issues you care about across your GitHub repositories.
-            </Text>
-            <Text style={styles.bullet}>• Track PRs you authored, were assigned, or are involved in.</Text>
-            <Text style={styles.bullet}>• See CI status, review state, and stale work at a glance.</Text>
-            <Text style={styles.bullet}>• Stay focused with filters and quick search.</Text>
-            <Text style={styles.cta}>First, let's connect a repository to monitor.</Text>
-            <TouchableOpacity style={styles.button} onPress={() => setStep('add')}>
-              <Text style={styles.buttonText}>Get started</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.linkButton} onPress={onSignOut}>
-              <Text style={styles.linkText}>Sign out</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={styles.progressMeta}>
+          <Text style={styles.progressText}>Step {stepNumber} of {totalSteps}</Text>
+          <Text style={styles.progressPercent}>{percent}%</Text>
+        </View>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${percent}%` }]} />
+        </View>
 
-        {step === 'add' && (
-          <View style={styles.card}>
-            <Text style={styles.title}>Add a repository</Text>
-            <Text style={styles.body}>
-              Enter a GitHub repository to track. You can add more later from
-              the Settings tab.
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={input}
-              onChangeText={(v) => {
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          {step === 'welcome' && (
+            <WelcomePane username={username} />
+          )}
+          {step === 'add' && (
+            <AddPane
+              input={input}
+              onChange={(v) => {
                 setInput(v);
                 if (error) setError(null);
               }}
-              placeholder="owner/repo (e.g., facebook/react)"
-              placeholderTextColor="#666"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="off"
-              accessibilityLabel="Repository owner and name"
+              error={error}
             />
-            {error && <Text style={styles.error}>{error}</Text>}
-            <TouchableOpacity
-              style={[styles.button, !input.trim() && styles.buttonDisabled]}
-              onPress={handleAdd}
-              disabled={!input.trim()}
-            >
-              <Text style={styles.buttonText}>Add repository</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.linkButton} onPress={() => setStep('welcome')}>
-              <Text style={styles.linkText}>Back</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+          )}
+          {step === 'confirm' && (
+            <ConfirmPane repos={repos} />
+          )}
+        </ScrollView>
 
-        {step === 'confirm' && (
-          <View style={styles.card}>
-            <Text style={styles.title}>You're all set</Text>
-            <Text style={styles.body}>
-              {repos.length === 1
-                ? "Great — you're tracking your first repository:"
-                : `Great — you're tracking ${repos.length} repositories:`}
-            </Text>
-            {repos.map((r) => (
-              <View key={`${r.owner}/${r.name}`} style={styles.repoRow}>
-                <Text style={styles.repoText}>{r.owner}/{r.name}</Text>
-              </View>
-            ))}
-            <TouchableOpacity style={styles.button} onPress={onFinish}>
-              <Text style={styles.buttonText}>Open dashboard</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.linkButton} onPress={() => setStep('add')}>
-              <Text style={styles.linkText}>Add another repository</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+        <View style={styles.footer}>
+          {step === 'welcome' && (
+            <PrimaryButton label="Get started" onPress={() => setStep('add')} />
+          )}
+          {step === 'add' && (
+            <>
+              <PrimaryButton
+                label="Add repository"
+                onPress={handleAdd}
+                disabled={!input.trim()}
+              />
+              <TouchableOpacity style={styles.secondaryButton} onPress={() => setStep('welcome')}>
+                <Text style={styles.secondaryText}>Back</Text>
+              </TouchableOpacity>
+            </>
+          )}
+          {step === 'confirm' && (
+            <>
+              <PrimaryButton label="Open dashboard" onPress={onFinish} />
+              <TouchableOpacity style={styles.secondaryButton} onPress={() => setStep('add')}>
+                <Text style={styles.secondaryText}>Add another repository</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-function Progress({ step }: { step: Step }) {
-  const order: Step[] = ['welcome', 'add', 'confirm'];
-  const labels: Record<Step, string> = {
-    welcome: 'Welcome',
-    add: 'Add repo',
-    confirm: 'Done',
-  };
-  const activeIndex = order.indexOf(step);
+function WelcomePane({ username }: { username: string | null }) {
   return (
-    <View style={styles.progress}>
-      {order.map((s, i) => {
-        const state = i < activeIndex ? 'done' : i === activeIndex ? 'active' : 'pending';
-        return (
-          <View key={s} style={styles.progressStep}>
-            <View
-              style={[
-                styles.progressDot,
-                state === 'active' && styles.progressDotActive,
-                state === 'done' && styles.progressDotDone,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.progressDotText,
-                  state === 'active' && styles.progressDotTextActive,
-                  state === 'done' && styles.progressDotTextDone,
-                ]}
-              >
-                {i + 1}
-              </Text>
-            </View>
-            <Text
-              style={[styles.progressLabel, state !== 'pending' && styles.progressLabelOn]}
-            >
-              {labels[s]}
-            </Text>
-          </View>
-        );
-      })}
+    <>
+      <View style={styles.brandIcon}>
+        <Text style={styles.brandIconText}>L</Text>
+      </View>
+      <Text style={styles.title}>
+        Welcome to <Text style={styles.titleAccent}>LandinGit</Text>
+        {username ? <Text style={styles.titleAccent}>, {username}</Text> : null}
+      </Text>
+      <Text style={styles.tagline}>where prs land.</Text>
+      <Text style={styles.body}>
+        Track pull requests across your repositories — reviews, CI, mentions —
+        all in one fast, keyboard-friendly feed.
+      </Text>
+
+      <View style={styles.featureRow}>
+        <FeatureGlyph kind="eye" />
+        <Text style={styles.featureText}>See every PR that needs your attention</Text>
+      </View>
+      <View style={styles.featureRow}>
+        <FeatureGlyph kind="layers" />
+        <Text style={styles.featureText}>All your repos, one quiet feed</Text>
+      </View>
+      <View style={styles.featureRow}>
+        <FeatureGlyph kind="bolt" />
+        <Text style={styles.featureText}>Stale-aware — spot stuck PRs early</Text>
+      </View>
+    </>
+  );
+}
+
+function AddPane({
+  input,
+  onChange,
+  error,
+}: {
+  input: string;
+  onChange: (v: string) => void;
+  error: string | null;
+}) {
+  return (
+    <>
+      <Text style={styles.title}>Add a repository</Text>
+      <Text style={styles.body}>
+        Enter a GitHub repository to track. You can add more later from the
+        Settings tab.
+      </Text>
+      <Text style={styles.fieldLabel}>Repository</Text>
+      <TextInput
+        style={styles.input}
+        value={input}
+        onChangeText={onChange}
+        placeholder="owner/repo (e.g., facebook/react)"
+        placeholderTextColor="#666"
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="off"
+        accessibilityLabel="Repository owner and name"
+      />
+      {error && <Text style={styles.error}>{error}</Text>}
+      <Text style={styles.hint}>
+        You can also paste a github.com URL — we'll handle the rest.
+      </Text>
+    </>
+  );
+}
+
+function ConfirmPane({ repos }: { repos: RepoConfig[] }) {
+  return (
+    <>
+      <Text style={styles.title}>You're all set.</Text>
+      <Text style={styles.body}>
+        {repos.length === 1
+          ? "You're tracking your first repository:"
+          : `You're tracking ${repos.length} repositories:`}
+      </Text>
+      {repos.map((r) => (
+        <View key={`${r.owner}/${r.name}`} style={styles.repoRow}>
+          <Text style={styles.repoText}>{r.owner}/{r.name}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
+
+function FeatureGlyph({ kind }: { kind: 'eye' | 'layers' | 'bolt' }) {
+  const glyph = kind === 'eye' ? '◉' : kind === 'layers' ? '❖' : '⚡';
+  return (
+    <View style={styles.glyphBox}>
+      <Text style={styles.glyphText}>{glyph}</Text>
     </View>
   );
 }
 
+function PrimaryButton({
+  label,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.primaryButton, disabled && styles.primaryDisabled]}
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.85}
+    >
+      <Text style={styles.primaryText}>{label}  →</Text>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: '#0d1117',
+  },
   container: {
     flex: 1,
     backgroundColor: '#0d1117',
   },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-  progress: {
+  headerLabel: {
+    fontSize: 12,
+    color: '#7d8590',
+    letterSpacing: 1.5,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerLink: {
+    fontSize: 14,
+    color: '#7d8590',
+    position: 'absolute',
+    right: 24,
+  },
+  progressMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  progressText: {
+    fontSize: 13,
+    color: '#7d8590',
+  },
+  progressPercent: {
+    fontSize: 13,
+    color: '#7d8590',
+  },
+  progressTrack: {
+    marginHorizontal: 24,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#21262d',
+    overflow: 'hidden',
+    marginBottom: 28,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#58a6ff',
+    borderRadius: 2,
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  brandIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: '#1f2a3a',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 28,
+  },
+  brandIconText: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#3fb950',
+    letterSpacing: -1,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#e6edf3',
+    letterSpacing: -0.5,
+    lineHeight: 36,
+    marginBottom: 6,
+  },
+  titleAccent: {
+    color: '#58a6ff',
+  },
+  tagline: {
+    fontSize: 15,
+    color: '#7d8590',
+    fontStyle: 'italic',
+    marginBottom: 18,
+  },
+  body: {
+    fontSize: 15,
+    color: '#7d8590',
+    lineHeight: 22,
     marginBottom: 24,
   },
-  progressStep: {
+  featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    gap: 8,
+    gap: 14,
+    marginBottom: 16,
   },
-  progressDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: '#30363d',
-    backgroundColor: '#0d1117',
+  glyphBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(88, 166, 255, 0.10)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  progressDotActive: {
-    backgroundColor: '#58a6ff',
-    borderColor: '#58a6ff',
+  glyphText: {
+    fontSize: 18,
+    color: '#58a6ff',
   },
-  progressDotDone: {
-    borderColor: '#58a6ff',
+  featureText: {
+    fontSize: 15,
+    color: '#e6edf3',
+    flex: 1,
+    lineHeight: 22,
   },
-  progressDotText: {
+  fieldLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: '#7d8590',
-  },
-  progressDotTextActive: {
-    color: '#fff',
-  },
-  progressDotTextDone: {
-    color: '#58a6ff',
-  },
-  progressLabel: {
-    fontSize: 12,
-    color: '#7d8590',
-  },
-  progressLabelOn: {
-    color: '#e6edf3',
-    fontWeight: '500',
-  },
-  card: {
-    backgroundColor: '#161b22',
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#30363d',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#e6edf3',
-    marginBottom: 12,
-  },
-  body: {
-    fontSize: 14,
-    color: '#7d8590',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  bullet: {
-    fontSize: 14,
-    color: '#7d8590',
-    lineHeight: 20,
-    marginBottom: 4,
-  },
-  cta: {
-    fontSize: 14,
-    color: '#e6edf3',
-    fontWeight: '500',
-    marginTop: 8,
-    marginBottom: 16,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 6,
   },
   input: {
-    backgroundColor: '#0d1117',
+    backgroundColor: '#161b22',
     borderWidth: 1,
     borderColor: '#30363d',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 10,
+    padding: 14,
     fontSize: 16,
     color: '#e6edf3',
-    marginBottom: 12,
   },
   error: {
     color: '#f85149',
     fontSize: 13,
-    marginBottom: 12,
-  },
-  button: {
-    backgroundColor: '#238636',
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
     marginTop: 8,
   },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  linkButton: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  linkText: {
-    color: '#58a6ff',
-    fontSize: 14,
-    textAlign: 'center',
+  hint: {
+    fontSize: 12,
+    color: '#7d8590',
+    marginTop: 8,
   },
   repoRow: {
-    backgroundColor: '#0d1117',
+    backgroundColor: '#161b22',
     borderWidth: 1,
     borderColor: '#30363d',
-    borderRadius: 6,
-    padding: 10,
+    borderRadius: 8,
+    padding: 12,
     marginBottom: 6,
   },
   repoText: {
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     color: '#e6edf3',
+    fontSize: 14,
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#21262d',
+    gap: 8,
+  },
+  primaryButton: {
+    backgroundColor: '#1f6feb',
+    borderRadius: 10,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  primaryDisabled: {
+    opacity: 0.4,
+  },
+  primaryText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  secondaryText: {
+    color: '#7d8590',
     fontSize: 14,
   },
 });

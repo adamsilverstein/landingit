@@ -30,14 +30,15 @@ function renderWizard(overrides: RenderOverrides = {}) {
 describe('OnboardingWizard', () => {
   it('shows the welcome step with the user greeting first', () => {
     renderWizard({ username: 'octocat' });
-    expect(screen.getByRole('heading', { name: /welcome to landingit, octocat/i })).toBeInTheDocument();
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toHaveTextContent(/Track every pull request, octocat/);
     expect(screen.getByRole('button', { name: /get started/i })).toBeInTheDocument();
   });
 
   it('omits the username when not yet known', () => {
     renderWizard({ username: null });
     const heading = screen.getByRole('heading', { level: 1 });
-    expect(heading).toHaveTextContent(/^Welcome to LandinGit$/);
+    expect(heading).toHaveTextContent(/Track every pull request that needs your attention\.$/);
   });
 
   it('advances to the add-repo step on Get started', async () => {
