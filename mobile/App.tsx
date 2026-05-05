@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AppProvider, useApp } from './src/context/AppContext';
-import { ConfigProvider } from './src/context/ConfigContext';
+import { ConfigProvider, useConfigContext } from './src/context/ConfigContext';
 import { BadgeProvider, useBadge } from './src/context/BadgeContext';
 import { TokenSetupScreen } from './src/screens/TokenSetupScreen';
+import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { PRListScreen } from './src/screens/PRListScreen';
 import { PRDetailScreen } from './src/screens/PRDetailScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
@@ -51,8 +52,17 @@ function DashboardNavigator() {
 }
 
 function MainApp() {
-  const { token, loading } = useApp();
+  const { token, username, loading, signOut } = useApp();
+  const { config, addRepo } = useConfigContext();
   const { unseenCount } = useBadge();
+  const [wizardActive, setWizardActive] = useState(false);
+
+  // Activate the onboarding wizard whenever the user has a token but no repos.
+  useEffect(() => {
+    if (token && config.repos.length === 0) {
+      setWizardActive(true);
+    }
+  }, [token, config.repos.length]);
 
   if (loading) {
     return (
@@ -66,6 +76,22 @@ function MainApp() {
     return (
       <NavigationContainer theme={navTheme}>
         <TokenSetupScreen />
+      </NavigationContainer>
+    );
+  }
+
+  if (wizardActive) {
+    return (
+      <NavigationContainer theme={navTheme}>
+        <OnboardingScreen
+          username={username}
+          repos={config.repos}
+          onAddRepo={addRepo}
+          onFinish={() => setWizardActive(false)}
+          onSignOut={() => {
+            signOut().catch(() => {});
+          }}
+        />
       </NavigationContainer>
     );
   }
