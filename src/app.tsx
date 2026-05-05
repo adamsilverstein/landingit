@@ -100,14 +100,19 @@ export function App() {
     }
   }, [authError, handleInvalidToken]);
 
-  // Activate the onboarding wizard whenever the user has a token but no repos.
-  // Gate on configLoaded so we don't trigger during the brief window before
-  // storage finishes loading (when repos defaults to []).
+  // Activate the onboarding wizard for users who haven't completed setup:
+  // either no token at all (brand new) or token but no repos (returning user
+  // who hasn't picked anything to monitor). Gate on configLoaded so we don't
+  // trigger during the brief window before storage finishes loading (when
+  // repos defaults to []). The tokenExpired re-auth path handles itself via
+  // TokenSetup below — we don't pull users mid-task back into the wizard.
   useEffect(() => {
-    if (token && configLoaded && config.repos.length === 0) {
+    if (tokenExpired) return;
+    if (!configLoaded) return;
+    if (!token || config.repos.length === 0) {
       setWizardActive(true);
     }
-  }, [token, configLoaded, config.repos.length]);
+  }, [token, configLoaded, config.repos.length, tokenExpired]);
 
   const {
     filtered, filter, sort, sortDirection, searchQuery, setSearchQuery,
@@ -218,20 +223,30 @@ export function App() {
 
   useKeyboardShortcuts(shortcutActions);
 
-  if (!token) {
-    return <TokenSetup onSave={handleSaveToken} reason={tokenExpired ? 'expired' : null} />;
+  // Re-auth: token was cleared by a 401, send the user to a focused token
+  // screen rather than back through the full wizard.
+  if (tokenExpired && !token) {
+    return <TokenSetup onSave={handleSaveToken} reason="expired" />;
   }
 
   if (wizardActive) {
     return (
       <OnboardingWizard
+        token={token}
         username={username}
         repos={config.repos}
+        onSaveToken={handleSaveToken}
         onAddRepo={addRepo}
         onFinish={() => setWizardActive(false)}
         onSignOut={handleSignOut}
       />
     );
+  }
+
+  // Defensive fallback: dashboard requires a token. If we somehow get here
+  // without one (wizard dismissed before auth), funnel back to TokenSetup.
+  if (!token) {
+    return <TokenSetup onSave={handleSaveToken} reason={null} />;
   }
 
   return (

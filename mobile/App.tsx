@@ -52,16 +52,18 @@ function DashboardNavigator() {
 }
 
 function MainApp() {
-  const { token, username, loading, signOut } = useApp();
+  const { token, username, loading, saveToken, signOut } = useApp();
   const { config, configLoaded, addRepo } = useConfigContext();
   const { unseenCount } = useBadge();
   const [wizardActive, setWizardActive] = useState(false);
 
-  // Activate the onboarding wizard whenever the user has a token but no repos.
-  // Gate on configLoaded so we don't trigger during the brief window before
-  // AsyncStorage finishes loading (when repos defaults to []).
+  // Activate the onboarding wizard for users who haven't completed setup:
+  // either no token at all (brand new) or token but no repos (returning user
+  // who hasn't picked anything to monitor). Gate on configLoaded so we don't
+  // trigger during the brief window before AsyncStorage finishes loading.
   useEffect(() => {
-    if (token && configLoaded && config.repos.length === 0) {
+    if (!configLoaded) return;
+    if (!token || config.repos.length === 0) {
       setWizardActive(true);
     }
   }, [token, configLoaded, config.repos.length]);
@@ -74,26 +76,30 @@ function MainApp() {
     );
   }
 
-  if (!token) {
-    return (
-      <NavigationContainer theme={navTheme}>
-        <TokenSetupScreen />
-      </NavigationContainer>
-    );
-  }
-
   if (wizardActive) {
     return (
       <NavigationContainer theme={navTheme}>
         <OnboardingScreen
+          token={token}
           username={username}
           repos={config.repos}
+          onSaveToken={saveToken}
           onAddRepo={addRepo}
           onFinish={() => setWizardActive(false)}
           onSignOut={() => {
             signOut().catch((e) => console.warn('Sign-out failed:', e));
           }}
         />
+      </NavigationContainer>
+    );
+  }
+
+  // Defensive fallback: tabs require a token. If the wizard was dismissed
+  // before auth completed, fall back to the focused TokenSetup screen.
+  if (!token) {
+    return (
+      <NavigationContainer theme={navTheme}>
+        <TokenSetupScreen />
       </NavigationContainer>
     );
   }

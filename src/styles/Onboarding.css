@@ -320,6 +320,19 @@
   padding: 0;
 }
 
+/* ── Embedded auth (Connect step) ───────────────────────────── */
+.onboarding-auth-slot {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 8px;
+}
+
+.onboarding-auth-slot p:first-child {
+  margin-top: 0;
+}
+
 /* ── Footer (action row) ────────────────────────────────────── */
 .onboarding-footer {
   margin-top: auto;

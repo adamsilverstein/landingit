@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,29 +11,43 @@ import {
   SafeAreaView,
 } from 'react-native';
 import type { RepoConfig } from '../../../shared/types.js';
+import { AuthPanel } from '../components/AuthPanel';
 
 interface OnboardingScreenProps {
+  token: string | null;
   username: string | null;
   repos: RepoConfig[];
+  onSaveToken: (token: string) => Promise<void>;
   onAddRepo: (owner: string, name: string) => void;
   onFinish: () => void;
   onSignOut: () => void;
 }
 
-type Step = 'welcome' | 'add' | 'confirm';
+type Step = 'welcome' | 'connect' | 'add' | 'confirm';
 
-const STEP_ORDER: Step[] = ['welcome', 'add', 'confirm'];
+const STEP_ORDER: Step[] = ['welcome', 'connect', 'add', 'confirm'];
 
 export function OnboardingScreen({
+  token,
   username,
   repos,
+  onSaveToken,
   onAddRepo,
   onFinish,
   onSignOut,
 }: OnboardingScreenProps) {
-  const [step, setStep] = useState<Step>('welcome');
+  // Returning users with a token start at "Choose repositories"; brand-new
+  // users walk through the full flow.
+  const [step, setStep] = useState<Step>(() => (token ? 'add' : 'welcome'));
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-advance from Connect step once authentication completes.
+  useEffect(() => {
+    if (step === 'connect' && token && username) {
+      setStep('add');
+    }
+  }, [step, token, username]);
 
   const stepIndex = STEP_ORDER.indexOf(step);
   const stepNumber = stepIndex + 1;
@@ -66,7 +80,10 @@ export function OnboardingScreen({
       >
         <View style={styles.header}>
           <Text style={styles.headerLabel}>SETUP</Text>
-          <TouchableOpacity onPress={step === 'welcome' ? onSignOut : onFinish} hitSlop={12}>
+          <TouchableOpacity
+            onPress={step === 'welcome' ? onSignOut : onFinish}
+            hitSlop={12}
+          >
             <Text style={styles.headerLink}>{step === 'welcome' ? 'Sign out' : 'Skip'}</Text>
           </TouchableOpacity>
         </View>
@@ -84,8 +101,9 @@ export function OnboardingScreen({
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          {step === 'welcome' && (
-            <WelcomePane username={username} />
+          {step === 'welcome' && <WelcomePane username={username} hasToken={!!token} />}
+          {step === 'connect' && (
+            <ConnectPane token={token} username={username} onSaveToken={onSaveToken} />
           )}
           {step === 'add' && (
             <AddPane
@@ -97,14 +115,20 @@ export function OnboardingScreen({
               error={error}
             />
           )}
-          {step === 'confirm' && (
-            <ConfirmPane repos={repos} />
-          )}
+          {step === 'confirm' && <ConfirmPane repos={repos} />}
         </ScrollView>
 
         <View style={styles.footer}>
           {step === 'welcome' && (
-            <PrimaryButton label="Get started" onPress={() => setStep('add')} />
+            <PrimaryButton
+              label="Get started"
+              onPress={() => setStep(token ? 'add' : 'connect')}
+            />
+          )}
+          {step === 'connect' && (
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => setStep('welcome')}>
+              <Text style={styles.secondaryText}>Back</Text>
+            </TouchableOpacity>
           )}
           {step === 'add' && (
             <>
@@ -132,7 +156,7 @@ export function OnboardingScreen({
   );
 }
 
-function WelcomePane({ username }: { username: string | null }) {
+function WelcomePane({ username, hasToken }: { username: string | null; hasToken: boolean }) {
   return (
     <>
       <View style={styles.brandIcon}>
@@ -145,7 +169,7 @@ function WelcomePane({ username }: { username: string | null }) {
       <Text style={styles.tagline}>where prs land.</Text>
       <Text style={styles.body}>
         Track pull requests across your repositories — reviews, CI, mentions —
-        all in one fast, keyboard-friendly feed.
+        all in one fast feed. {hasToken ? 'Pick a repository to get going.' : 'Four short steps and you’re set.'}
       </Text>
 
       <View style={styles.featureRow}>
@@ -159,6 +183,39 @@ function WelcomePane({ username }: { username: string | null }) {
       <View style={styles.featureRow}>
         <FeatureGlyph kind="bolt" />
         <Text style={styles.featureText}>Stale-aware — spot stuck PRs early</Text>
+      </View>
+    </>
+  );
+}
+
+function ConnectPane({
+  token,
+  username,
+  onSaveToken,
+}: {
+  token: string | null;
+  username: string | null;
+  onSaveToken: (token: string) => Promise<void>;
+}) {
+  if (token && !username) {
+    return (
+      <>
+        <Text style={styles.title}>Verifying connection…</Text>
+        <Text style={styles.body}>
+          We're confirming your GitHub credentials. This should only take a moment.
+        </Text>
+      </>
+    );
+  }
+  return (
+    <>
+      <Text style={styles.title}>Authorize on GitHub.</Text>
+      <Text style={styles.body}>
+        We use a read-friendly token to fetch your PRs and issues. You stay in
+        control — sign out anytime to revoke local access.
+      </Text>
+      <View style={styles.authSlot}>
+        <AuthPanel onSave={onSaveToken} />
       </View>
     </>
   );
@@ -192,7 +249,7 @@ function AddPane({
         autoComplete="off"
         accessibilityLabel="Repository owner and name"
       />
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <Text style={styles.errorText}>{error}</Text>}
       <Text style={styles.hint}>
         You can also paste a github.com URL — we'll handle the rest.
       </Text>
@@ -249,14 +306,8 @@ function PrimaryButton({
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#0d1117',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#0d1117',
-  },
+  safe: { flex: 1, backgroundColor: '#0d1117' },
+  container: { flex: 1, backgroundColor: '#0d1117' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -286,14 +337,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 6,
   },
-  progressText: {
-    fontSize: 13,
-    color: '#7d8590',
-  },
-  progressPercent: {
-    fontSize: 13,
-    color: '#7d8590',
-  },
+  progressText: { fontSize: 13, color: '#7d8590' },
+  progressPercent: { fontSize: 13, color: '#7d8590' },
   progressTrack: {
     marginHorizontal: 24,
     height: 3,
@@ -302,18 +347,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 28,
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#58a6ff',
-    borderRadius: 2,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
+  progressFill: { height: '100%', backgroundColor: '#58a6ff', borderRadius: 2 },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 24, paddingBottom: 24 },
   brandIcon: {
     width: 56,
     height: 56,
@@ -337,9 +373,7 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     marginBottom: 6,
   },
-  titleAccent: {
-    color: '#58a6ff',
-  },
+  titleAccent: { color: '#58a6ff' },
   tagline: {
     fontSize: 15,
     color: '#7d8590',
@@ -366,10 +400,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glyphText: {
-    fontSize: 18,
-    color: '#58a6ff',
-  },
+  glyphText: { fontSize: 18, color: '#58a6ff' },
   featureText: {
     fontSize: 15,
     color: '#e6edf3',
@@ -393,15 +424,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#e6edf3',
   },
-  error: {
-    color: '#f85149',
-    fontSize: 13,
-    marginTop: 8,
-  },
-  hint: {
-    fontSize: 12,
-    color: '#7d8590',
-    marginTop: 8,
+  errorText: { color: '#f85149', fontSize: 13, marginTop: 8 },
+  hint: { fontSize: 12, color: '#7d8590', marginTop: 8 },
+  authSlot: {
+    backgroundColor: '#161b22',
+    borderWidth: 1,
+    borderColor: '#30363d',
+    borderRadius: 12,
+    padding: 16,
   },
   repoRow: {
     backgroundColor: '#161b22',
@@ -430,20 +460,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  primaryDisabled: {
-    opacity: 0.4,
-  },
-  primaryText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  secondaryButton: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  secondaryText: {
-    color: '#7d8590',
-    fontSize: 14,
-  },
+  primaryDisabled: { opacity: 0.4 },
+  primaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  secondaryButton: { alignItems: 'center', paddingVertical: 8 },
+  secondaryText: { color: '#7d8590', fontSize: 14 },
 });

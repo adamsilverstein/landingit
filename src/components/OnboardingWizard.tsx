@@ -1,32 +1,47 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { RepoConfig } from '../types.js';
+import { AuthPanel } from './AuthPanel.js';
 
 interface OnboardingWizardProps {
+  token: string | null;
   username: string | null;
   repos: RepoConfig[];
+  onSaveToken: (token: string) => void;
   onAddRepo: (owner: string, name: string) => void;
   onFinish: () => void;
   onSignOut: () => void;
 }
 
-type Step = 'welcome' | 'add' | 'confirm';
+type Step = 'welcome' | 'connect' | 'add' | 'confirm';
 
 const STEPS: { key: Step; title: string; subtitle: string }[] = [
   { key: 'welcome', title: 'Welcome', subtitle: 'Get to know LandinGit' },
+  { key: 'connect', title: 'Connect GitHub', subtitle: 'Authorize access' },
   { key: 'add', title: 'Choose repositories', subtitle: 'Pick what to monitor' },
   { key: 'confirm', title: "You're ready", subtitle: 'Open the dashboard' },
 ];
 
 export function OnboardingWizard({
+  token,
   username,
   repos,
+  onSaveToken,
   onAddRepo,
   onFinish,
   onSignOut,
 }: OnboardingWizardProps) {
-  const [step, setStep] = useState<Step>('welcome');
+  // Returning users with a token already set start at "Choose repositories";
+  // brand-new users walk through the full flow from "Welcome".
+  const [step, setStep] = useState<Step>(() => (token ? 'add' : 'welcome'));
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-advance from Connect step once authentication completes.
+  useEffect(() => {
+    if (step === 'connect' && token && username) {
+      setStep('add');
+    }
+  }, [step, token, username]);
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,8 +98,18 @@ export function OnboardingWizard({
           {step === 'welcome' && (
             <WelcomeStep
               username={username}
-              onNext={() => setStep('add')}
+              onNext={() => setStep(token ? 'add' : 'connect')}
               onSignOut={onSignOut}
+              hasToken={!!token}
+            />
+          )}
+
+          {step === 'connect' && (
+            <ConnectStep
+              token={token}
+              username={username}
+              onSaveToken={onSaveToken}
+              onBack={() => setStep('welcome')}
             />
           )}
 
@@ -118,10 +143,12 @@ function WelcomeStep({
   username,
   onNext,
   onSignOut,
+  hasToken,
 }: {
   username: string | null;
   onNext: () => void;
   onSignOut: () => void;
+  hasToken: boolean;
 }) {
   return (
     <>
@@ -132,8 +159,9 @@ function WelcomeStep({
       </h1>
       <p className="onboarding-lede">
         LandinGit pulls in PRs and issues across your repositories — reviews,
-        CI, mentions — into one fast, keyboard-driven dashboard. Three short
-        steps and you're set.
+        CI, mentions — into one fast, keyboard-driven dashboard. {hasToken
+          ? 'Pick a repository and you’re set.'
+          : 'Four short steps and you’re set.'}
       </p>
 
       <div className="onboarding-feature-grid">
@@ -152,11 +180,62 @@ function WelcomeStep({
       </div>
 
       <div className="onboarding-footer">
-        <button type="button" className="token-link-btn onboarding-skip" onClick={onSignOut}>
-          Sign out
-        </button>
+        {hasToken ? (
+          <span className="onboarding-rail-sub" aria-label="Authentication status">
+            Signed in as <span className="onboarding-name">{username ?? 'GitHub user'}</span>
+          </span>
+        ) : (
+          <button type="button" className="token-link-btn onboarding-skip" onClick={onSignOut}>
+            Sign out
+          </button>
+        )}
         <button type="button" className="onboarding-cta" onClick={onNext}>
           Get started <span aria-hidden="true">→</span>
+        </button>
+      </div>
+    </>
+  );
+}
+
+function ConnectStep({
+  token,
+  username,
+  onSaveToken,
+  onBack,
+}: {
+  token: string | null;
+  username: string | null;
+  onSaveToken: (token: string) => void;
+  onBack: () => void;
+}) {
+  if (token && !username) {
+    return (
+      <>
+        <p className="onboarding-eyebrow">Step 2 · Connect GitHub</p>
+        <h1 className="onboarding-headline">Verifying your connection…</h1>
+        <p className="onboarding-lede">
+          We're confirming your GitHub credentials. This should only take a moment.
+        </p>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <p className="onboarding-eyebrow">Step 2 · Connect GitHub</p>
+      <h1 className="onboarding-headline">Authorize LandinGit on GitHub.</h1>
+      <p className="onboarding-lede">
+        We use a read-friendly token to fetch your PRs and issues. You stay in
+        control — sign out anytime to revoke local access.
+      </p>
+
+      <div className="onboarding-auth-slot">
+        <AuthPanel onSave={onSaveToken} />
+      </div>
+
+      <div className="onboarding-footer">
+        <button type="button" className="token-link-btn onboarding-skip" onClick={onBack}>
+          Back
         </button>
       </div>
     </>
@@ -178,7 +257,7 @@ function AddRepoStep({
 }) {
   return (
     <>
-      <p className="onboarding-eyebrow">Step 2 · Choose repositories</p>
+      <p className="onboarding-eyebrow">Step 3 · Choose repositories</p>
       <h1 className="onboarding-headline">Add a repository to monitor.</h1>
       <p className="onboarding-lede">
         Enter the GitHub repository you want to track. You can add more later
@@ -227,7 +306,7 @@ function ConfirmStep({
 }) {
   return (
     <>
-      <p className="onboarding-eyebrow">Step 3 · You're ready</p>
+      <p className="onboarding-eyebrow">Step 4 · You're ready</p>
       <h1 className="onboarding-headline">You're all set.</h1>
       <p className="onboarding-lede">
         {repos.length === 1
