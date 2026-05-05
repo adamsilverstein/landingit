@@ -11,6 +11,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import type { RepoConfig } from '../../../shared/types.js';
+import { parseRepoInput } from '../../../shared/utils/parseRepoInput.js';
 import { AuthPanel } from '../components/AuthPanel';
 
 interface OnboardingScreenProps {
@@ -55,19 +56,13 @@ export function OnboardingScreen({
   const percent = Math.round((stepNumber / totalSteps) * 100);
 
   const handleAdd = () => {
+    const result = parseRepoInput(input, repos);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
     setError(null);
-    const trimmed = input.trim().replace(/^https?:\/\/github\.com\//, '');
-    const parts = trimmed.split('/').filter(Boolean);
-    if (parts.length !== 2) {
-      setError('Enter a repository in owner/name format (e.g., facebook/react).');
-      return;
-    }
-    const [owner, name] = parts;
-    if (repos.some((r) => r.owner === owner && r.name === name)) {
-      setError(`${owner}/${name} is already in your list.`);
-      return;
-    }
-    onAddRepo(owner, name);
+    onAddRepo(result.owner, result.name);
     setInput('');
     setStep('confirm');
   };

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { RepoConfig } from '../types.js';
+import { parseRepoInput } from '../../shared/utils/parseRepoInput.js';
 import { AuthPanel } from './AuthPanel.js';
 
 interface OnboardingWizardProps {
@@ -45,19 +46,13 @@ export function OnboardingWizard({
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
+    const result = parseRepoInput(input, repos);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
     setError(null);
-    const trimmed = input.trim().replace(/^https?:\/\/github\.com\//, '');
-    const parts = trimmed.split('/').filter(Boolean);
-    if (parts.length !== 2) {
-      setError('Enter a repository in owner/name format (e.g., facebook/react).');
-      return;
-    }
-    const [owner, name] = parts;
-    if (repos.some((r) => r.owner === owner && r.name === name)) {
-      setError(`${owner}/${name} is already in your list.`);
-      return;
-    }
-    onAddRepo(owner, name);
+    onAddRepo(result.owner, result.name);
     setInput('');
     setStep('confirm');
   };
