@@ -9,6 +9,7 @@ import './styles/PRTable.css';
 import './styles/Modal.css';
 import './styles/DetailPanel.css';
 import './styles/TokenSetup.css';
+import './styles/Onboarding.css';
 import './styles/StatusBar.css';
 import './styles/ErrorBoundary.css';
 

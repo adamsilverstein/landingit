@@ -20,6 +20,7 @@ import { StatusBar } from './components/StatusBar.js';
 import { HelpModal } from './components/HelpModal.js';
 import { RepoManager } from './components/RepoManager.js';
 import { TokenSetup } from './components/TokenSetup.js';
+import { OnboardingWizard } from './components/OnboardingWizard.js';
 import { DetailPanel } from './components/DetailPanel.js';
 
 const OWNERSHIP_CYCLE: OwnershipFilter[] = ['created', 'assigned', 'involved', 'everyone'];
@@ -34,6 +35,7 @@ export function App() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [rateLimit, setRateLimit] = useState<RateLimit | null>(null);
   const [milestoneGrouping, setMilestoneGrouping] = useState(false);
+  const [wizardActive, setWizardActive] = useState(false);
 
   const { markSeen, isUnseen } = useLastSeen();
   const { visibleColumns, columnOrder, toggleColumn, reorderColumns, resetColumns } = useColumnSettings();
@@ -97,6 +99,13 @@ export function App() {
       handleInvalidToken();
     }
   }, [authError, handleInvalidToken]);
+
+  // Activate the onboarding wizard whenever the user has a token but no repos.
+  useEffect(() => {
+    if (token && config.repos.length === 0) {
+      setWizardActive(true);
+    }
+  }, [token, config.repos.length]);
 
   const {
     filtered, filter, sort, sortDirection, searchQuery, setSearchQuery,
@@ -209,6 +218,18 @@ export function App() {
 
   if (!token) {
     return <TokenSetup onSave={handleSaveToken} reason={tokenExpired ? 'expired' : null} />;
+  }
+
+  if (wizardActive) {
+    return (
+      <OnboardingWizard
+        username={username}
+        repos={config.repos}
+        onAddRepo={addRepo}
+        onFinish={() => setWizardActive(false)}
+        onSignOut={handleSignOut}
+      />
+    );
   }
 
   return (
