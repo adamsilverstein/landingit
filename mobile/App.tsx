@@ -53,16 +53,18 @@ function DashboardNavigator() {
 
 function MainApp() {
   const { token, username, loading, signOut } = useApp();
-  const { config, addRepo } = useConfigContext();
+  const { config, configLoaded, addRepo } = useConfigContext();
   const { unseenCount } = useBadge();
   const [wizardActive, setWizardActive] = useState(false);
 
   // Activate the onboarding wizard whenever the user has a token but no repos.
+  // Gate on configLoaded so we don't trigger during the brief window before
+  // AsyncStorage finishes loading (when repos defaults to []).
   useEffect(() => {
-    if (token && config.repos.length === 0) {
+    if (token && configLoaded && config.repos.length === 0) {
       setWizardActive(true);
     }
-  }, [token, config.repos.length]);
+  }, [token, configLoaded, config.repos.length]);
 
   if (loading) {
     return (
@@ -89,7 +91,7 @@ function MainApp() {
           onAddRepo={addRepo}
           onFinish={() => setWizardActive(false)}
           onSignOut={() => {
-            signOut().catch(() => {});
+            signOut().catch((e) => console.warn('Sign-out failed:', e));
           }}
         />
       </NavigationContainer>

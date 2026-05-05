@@ -27,7 +27,7 @@ const OWNERSHIP_CYCLE: OwnershipFilter[] = ['created', 'assigned', 'involved', '
 
 export function App() {
   const [token, setTokenState] = useState<string | null>(() => getToken());
-  const { config, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName } = useConfig();
+  const { config, configLoaded, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName } = useConfig();
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('created');
   const [username, setUsername] = useState<string | null>(null);
   const [tokenExpired, setTokenExpired] = useState(false);
@@ -101,11 +101,13 @@ export function App() {
   }, [authError, handleInvalidToken]);
 
   // Activate the onboarding wizard whenever the user has a token but no repos.
+  // Gate on configLoaded so we don't trigger during the brief window before
+  // storage finishes loading (when repos defaults to []).
   useEffect(() => {
-    if (token && config.repos.length === 0) {
+    if (token && configLoaded && config.repos.length === 0) {
       setWizardActive(true);
     }
-  }, [token, config.repos.length]);
+  }, [token, configLoaded, config.repos.length]);
 
   const {
     filtered, filter, sort, sortDirection, searchQuery, setSearchQuery,

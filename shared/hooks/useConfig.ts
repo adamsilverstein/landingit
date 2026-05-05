@@ -5,6 +5,7 @@ import type { Config } from '../types.js';
 
 export function useConfig(storage: StorageAdapter) {
   const [config, setConfig] = useState<Config>(getDefaultConfig);
+  const [configLoaded, setConfigLoaded] = useState(false);
   const isInitialMount = useRef(true);
   const storageRef = useRef(storage);
   storageRef.current = storage;
@@ -13,6 +14,7 @@ export function useConfig(storage: StorageAdapter) {
   useEffect(() => {
     loadConfig(storage).then((loaded) => {
       setConfig(loaded);
+      setConfigLoaded(true);
     });
   }, [storage]);
 
@@ -83,5 +85,5 @@ export function useConfig(storage: StorageAdapter) {
     [config.repos]
   );
 
-  return { config, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName, updateDefaults };
+  return { config, configLoaded, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName, updateDefaults };
 }
