@@ -175,15 +175,16 @@ function WelcomeStep({
       </div>
 
       <div className="onboarding-footer">
-        {hasToken ? (
-          <span className="onboarding-rail-sub" aria-label="Authentication status">
-            Signed in as <span className="onboarding-name">{username ?? 'GitHub user'}</span>
-          </span>
-        ) : (
+        <span className="onboarding-footer-status">
+          {hasToken && (
+            <span className="onboarding-rail-sub" aria-label="Authentication status">
+              Signed in as <span className="onboarding-name">{username ?? 'GitHub user'}</span>
+            </span>
+          )}
           <button type="button" className="token-link-btn onboarding-skip" onClick={onSignOut}>
             Sign out
           </button>
-        )}
+        </span>
         <button type="button" className="onboarding-cta" onClick={onNext}>
           Get started <span aria-hidden="true">→</span>
         </button>

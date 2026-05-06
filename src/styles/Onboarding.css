@@ -344,6 +344,12 @@
   border-top: 1px solid var(--border);
 }
 
+.onboarding-footer-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .onboarding-skip {
   font-size: 13px;
   text-decoration: none;
