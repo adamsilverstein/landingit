@@ -27,6 +27,19 @@ describe('parseRepoInput', () => {
     });
   });
 
+  it('handles bare github.com/owner/repo (no protocol)', () => {
+    expect(parseRepoInput('github.com/facebook/react')).toEqual({
+      ok: true,
+      owner: 'facebook',
+      name: 'react',
+    });
+    expect(parseRepoInput('www.github.com/facebook/react')).toEqual({
+      ok: true,
+      owner: 'facebook',
+      name: 'react',
+    });
+  });
+
   it('tolerates trailing path segments like /tree/main or /pulls', () => {
     expect(parseRepoInput('https://github.com/facebook/react/tree/main')).toEqual({
       ok: true,

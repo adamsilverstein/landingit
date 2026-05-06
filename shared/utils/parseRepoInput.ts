@@ -20,7 +20,7 @@ export function parseRepoInput(
 ): ParseRepoResult {
   const trimmed = input
     .trim()
-    .replace(/^https?:\/\/(www\.)?github\.com\//i, '')
+    .replace(/^(?:https?:\/\/)?(?:www\.)?github\.com\//i, '')
     .replace(/\.git$/i, '');
 
   const parts = trimmed.split('/').filter(Boolean);
