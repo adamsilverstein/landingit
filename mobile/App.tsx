@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AppProvider, useApp } from './src/context/AppContext';
-import { ConfigProvider } from './src/context/ConfigContext';
+import { ConfigProvider, useConfigContext } from './src/context/ConfigContext';
 import { BadgeProvider, useBadge } from './src/context/BadgeContext';
 import { TokenSetupScreen } from './src/screens/TokenSetupScreen';
+import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { PRListScreen } from './src/screens/PRListScreen';
 import { PRDetailScreen } from './src/screens/PRDetailScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
@@ -51,8 +52,20 @@ function DashboardNavigator() {
 }
 
 function MainApp() {
-  const { token, loading } = useApp();
+  const { token, username, loading, saveToken, signOut } = useApp();
+  const { config, configLoaded, addRepo } = useConfigContext();
   const { unseenCount } = useBadge();
+  const [wizardActive, setWizardActive] = useState(false);
+
+  // Activate the onboarding wizard once the user has authenticated but has
+  // no repos configured. TokenSetupScreen is the auth surface; signing out
+  // should drop the user there rather than back into the wizard. Setting
+  // both branches means the flag also clears on sign-out and on adding the
+  // first repo.
+  useEffect(() => {
+    if (!configLoaded) return;
+    setWizardActive(Boolean(token && config.repos.length === 0));
+  }, [token, configLoaded, config.repos.length]);
 
   if (loading) {
     return (
@@ -62,6 +75,26 @@ function MainApp() {
     );
   }
 
+  if (wizardActive) {
+    return (
+      <NavigationContainer theme={navTheme}>
+        <OnboardingScreen
+          token={token}
+          username={username}
+          repos={config.repos}
+          onSaveToken={saveToken}
+          onAddRepo={addRepo}
+          onFinish={() => setWizardActive(false)}
+          onSignOut={() => {
+            signOut().catch((e) => console.warn('Sign-out failed:', e));
+          }}
+        />
+      </NavigationContainer>
+    );
+  }
+
+  // Defensive fallback: tabs require a token. If the wizard was dismissed
+  // before auth completed, fall back to the focused TokenSetup screen.
   if (!token) {
     return (
       <NavigationContainer theme={navTheme}>

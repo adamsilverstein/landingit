@@ -5,15 +5,25 @@ import type { Config } from '../types.js';
 
 export function useConfig(storage: StorageAdapter) {
   const [config, setConfig] = useState<Config>(getDefaultConfig);
+  const [configLoaded, setConfigLoaded] = useState(false);
   const isInitialMount = useRef(true);
   const storageRef = useRef(storage);
   storageRef.current = storage;
 
-  // Load config from storage on mount
+  // Load config from storage on mount. Always flip configLoaded — even on
+  // failure — so the onboarding gate falls through to the empty-state UI
+  // instead of hanging on a blank screen.
   useEffect(() => {
-    loadConfig(storage).then((loaded) => {
-      setConfig(loaded);
-    });
+    loadConfig(storage)
+      .then((loaded) => {
+        setConfig(loaded);
+      })
+      .catch((e) => {
+        console.warn('Failed to load config:', e);
+      })
+      .finally(() => {
+        setConfigLoaded(true);
+      });
   }, [storage]);
 
   // Persist config to storage whenever it changes (skip initial mount)
@@ -83,5 +93,5 @@ export function useConfig(storage: StorageAdapter) {
     [config.repos]
   );
 
-  return { config, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName, updateDefaults };
+  return { config, configLoaded, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName, updateDefaults };
 }

@@ -20,13 +20,14 @@ import { StatusBar } from './components/StatusBar.js';
 import { HelpModal } from './components/HelpModal.js';
 import { RepoManager } from './components/RepoManager.js';
 import { TokenSetup } from './components/TokenSetup.js';
+import { OnboardingWizard } from './components/OnboardingWizard.js';
 import { DetailPanel } from './components/DetailPanel.js';
 
 const OWNERSHIP_CYCLE: OwnershipFilter[] = ['created', 'assigned', 'involved', 'everyone'];
 
 export function App() {
   const [token, setTokenState] = useState<string | null>(() => getToken());
-  const { config, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName } = useConfig();
+  const { config, configLoaded, enabledRepos, addRepo, removeRepo, toggleRepo, toggleRepoByName } = useConfig();
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('created');
   const [username, setUsername] = useState<string | null>(null);
   const [tokenExpired, setTokenExpired] = useState(false);
@@ -34,6 +35,7 @@ export function App() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [rateLimit, setRateLimit] = useState<RateLimit | null>(null);
   const [milestoneGrouping, setMilestoneGrouping] = useState(false);
+  const [wizardActive, setWizardActive] = useState(false);
 
   const { markSeen, isUnseen } = useLastSeen();
   const { visibleColumns, columnOrder, toggleColumn, reorderColumns, resetColumns } = useColumnSettings();
@@ -97,6 +99,18 @@ export function App() {
       handleInvalidToken();
     }
   }, [authError, handleInvalidToken]);
+
+  // Activate the onboarding wizard once the user has authenticated but has
+  // no repos configured. We deliberately don't open it for unauthenticated
+  // users — TokenSetup is the auth surface, and signing out should drop the
+  // user back there rather than into the wizard. Setting both branches
+  // (true/false) means the flag also clears on sign-out and on adding the
+  // first repo.
+  useEffect(() => {
+    if (tokenExpired) return;
+    if (!configLoaded) return;
+    setWizardActive(Boolean(token && config.repos.length === 0));
+  }, [token, configLoaded, config.repos.length, tokenExpired]);
 
   const {
     filtered, filter, sort, sortDirection, searchQuery, setSearchQuery,
@@ -207,8 +221,30 @@ export function App() {
 
   useKeyboardShortcuts(shortcutActions);
 
+  // Re-auth: token was cleared by a 401, send the user to a focused token
+  // screen rather than back through the full wizard.
+  if (tokenExpired && !token) {
+    return <TokenSetup onSave={handleSaveToken} reason="expired" />;
+  }
+
+  if (wizardActive) {
+    return (
+      <OnboardingWizard
+        token={token}
+        username={username}
+        repos={config.repos}
+        onSaveToken={handleSaveToken}
+        onAddRepo={addRepo}
+        onFinish={() => setWizardActive(false)}
+        onSignOut={handleSignOut}
+      />
+    );
+  }
+
+  // Defensive fallback: dashboard requires a token. If we somehow get here
+  // without one (wizard dismissed before auth), funnel back to TokenSetup.
   if (!token) {
-    return <TokenSetup onSave={handleSaveToken} reason={tokenExpired ? 'expired' : null} />;
+    return <TokenSetup onSave={handleSaveToken} reason={null} />;
   }
 
   return (
