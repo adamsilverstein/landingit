@@ -15,17 +15,34 @@ export function AuthPanel({ onSave }: AuthPanelProps) {
   const { state, start, cancel } = useDeviceFlow();
   const [token, setToken] = useState('');
   const [copied, setCopied] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // localStorage writes can throw (quota, disabled storage in private mode);
+  // wrap the call so the user sees a real message instead of a stuck screen.
+  // Promise.resolve().then(...) covers both sync throws and async rejection.
+  const trySave = (t: string) => {
+    setSaveError(null);
+    Promise.resolve()
+      .then(() => onSave(t))
+      .catch((err) => {
+        console.warn('Failed to save token:', err);
+        setSaveError(
+          err instanceof Error ? err.message : 'Could not save the token.'
+        );
+      });
+  };
 
   useEffect(() => {
     if (state.status === 'success' && state.token) {
-      onSave(state.token);
+      trySave(state.token);
     }
-  }, [state.status, state.token, onSave]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.status, state.token]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = token.trim();
-    if (trimmed) onSave(trimmed);
+    if (trimmed) trySave(trimmed);
   };
 
   const switchToPat = () => {
@@ -53,6 +70,7 @@ export function AuthPanel({ onSave }: AuthPanelProps) {
         onCopyCode={copyCode}
         copied={copied}
         onUsePat={switchToPat}
+        saveError={saveError}
       />
     );
   }
@@ -63,6 +81,7 @@ export function AuthPanel({ onSave }: AuthPanelProps) {
       onSubmit={handleSubmit}
       oauthReason={oauthAvailability.available ? null : oauthAvailability.reason ?? null}
       onUseOAuth={oauthAvailability.available ? switchToOAuth : undefined}
+      saveError={saveError}
     />
   );
 }
@@ -74,6 +93,7 @@ function OAuthPanel({
   onCopyCode,
   copied,
   onUsePat,
+  saveError,
 }: {
   state: ReturnType<typeof useDeviceFlow>['state'];
   onStart: () => void;
@@ -81,6 +101,7 @@ function OAuthPanel({
   onCopyCode: () => void;
   copied: boolean;
   onUsePat: () => void;
+  saveError: string | null;
 }) {
   if (state.status === 'awaiting' && state.device) {
     return (
@@ -121,6 +142,7 @@ function OAuthPanel({
     <>
       <p>Sign in with your GitHub account to read pull requests across your repos.</p>
       {state.status === 'error' && state.error && <p className="token-error">{state.error}</p>}
+      {saveError && <p className="token-error">{saveError}</p>}
       <button
         type="button"
         className="token-btn"
@@ -145,12 +167,14 @@ function PatPanel({
   onSubmit,
   oauthReason,
   onUseOAuth,
+  saveError,
 }: {
   token: string;
   onTokenChange: (v: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   oauthReason: string | null;
   onUseOAuth?: () => void;
+  saveError: string | null;
 }) {
   return (
     <>
@@ -181,6 +205,7 @@ function PatPanel({
           className="token-input"
           autoFocus
         />
+        {saveError && <p className="token-error">{saveError}</p>}
         <button type="submit" className="token-btn" disabled={!token.trim()}>
           Save & Continue
         </button>
