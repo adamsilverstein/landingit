@@ -100,18 +100,16 @@ export function App() {
     }
   }, [authError, handleInvalidToken]);
 
-  // Activate the onboarding wizard for users who haven't completed setup:
-  // either no token at all (brand new) or token but no repos (returning user
-  // who hasn't picked anything to monitor). Gate on configLoaded so we don't
-  // trigger during the brief window before storage finishes loading (when
-  // repos defaults to []). The tokenExpired re-auth path handles itself via
-  // TokenSetup below — we don't pull users mid-task back into the wizard.
+  // Activate the onboarding wizard once the user has authenticated but has
+  // no repos configured. We deliberately don't open it for unauthenticated
+  // users — TokenSetup is the auth surface, and signing out should drop the
+  // user back there rather than into the wizard. Setting both branches
+  // (true/false) means the flag also clears on sign-out and on adding the
+  // first repo.
   useEffect(() => {
     if (tokenExpired) return;
     if (!configLoaded) return;
-    if (!token || config.repos.length === 0) {
-      setWizardActive(true);
-    }
+    setWizardActive(Boolean(token && config.repos.length === 0));
   }, [token, configLoaded, config.repos.length, tokenExpired]);
 
   const {

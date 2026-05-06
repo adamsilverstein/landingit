@@ -57,15 +57,14 @@ function MainApp() {
   const { unseenCount } = useBadge();
   const [wizardActive, setWizardActive] = useState(false);
 
-  // Activate the onboarding wizard for users who haven't completed setup:
-  // either no token at all (brand new) or token but no repos (returning user
-  // who hasn't picked anything to monitor). Gate on configLoaded so we don't
-  // trigger during the brief window before AsyncStorage finishes loading.
+  // Activate the onboarding wizard once the user has authenticated but has
+  // no repos configured. TokenSetupScreen is the auth surface; signing out
+  // should drop the user there rather than back into the wizard. Setting
+  // both branches means the flag also clears on sign-out and on adding the
+  // first repo.
   useEffect(() => {
     if (!configLoaded) return;
-    if (!token || config.repos.length === 0) {
-      setWizardActive(true);
-    }
+    setWizardActive(Boolean(token && config.repos.length === 0));
   }, [token, configLoaded, config.repos.length]);
 
   if (loading) {
