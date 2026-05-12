@@ -12,6 +12,9 @@ export interface Config {
     maxPrsPerRepo: number;
     autoRefreshInterval: number; // seconds, 0 = disabled
     staleDays: number; // days of inactivity before an item is considered stale
+    notificationsEnabled: boolean;
+    notificationsRefreshInterval: number; // seconds, 0 = disabled. Polled independently of PRs.
+    highlightWorkingSet: boolean; // emphasize notifications tied to PRs the user authored / is reviewing
   };
 }
 
@@ -21,7 +24,7 @@ export type SortDirection = 'asc' | 'desc';
 export type FilterMode = 'all' | 'failing' | 'needs-review' | 'review-requested' | 'new-activity' | 'merge-ready' | 'stale';
 export type ItemTypeFilter = 'both' | 'prs' | 'issues';
 export type OwnershipFilter = 'everyone' | 'created' | 'assigned' | 'involved';
-export type ViewMode = 'list' | 'repos' | 'help' | 'detail';
+export type ViewMode = 'list' | 'repos' | 'help' | 'detail' | 'notifications' | 'notification-rules';
 export type ThemeMode = 'dark' | 'light' | 'system';
 
 export interface RepoFetchError {
@@ -156,4 +159,77 @@ export interface PRDetail {
   headBranch: string;
   baseBranch: string;
   timeline: TimelineEvent[];
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Notifications
+
+export type NotificationSubjectType =
+  | 'PullRequest'
+  | 'Issue'
+  | 'Commit'
+  | 'Release'
+  | 'Discussion'
+  | 'CheckSuite'
+  | 'RepositoryVulnerabilityAlert'
+  | 'RepositoryDependabotAlertsThread'
+  | 'WorkflowRun';
+
+export type NotificationReason =
+  | 'assign'
+  | 'author'
+  | 'comment'
+  | 'ci_activity'
+  | 'invitation'
+  | 'manual'
+  | 'mention'
+  | 'review_requested'
+  | 'security_alert'
+  | 'state_change'
+  | 'subscribed'
+  | 'team_mention'
+  | 'approval_requested'
+  | 'member_feature_requested';
+
+export interface NotificationItem {
+  /** GitHub thread ID (string in the API). */
+  id: string;
+  unread: boolean;
+  reason: NotificationReason;
+  updatedAt: string;
+  lastReadAt: string | null;
+  repo: { owner: string; name: string };
+  subject: {
+    title: string;
+    type: NotificationSubjectType;
+    /** API URL of the subject, or null for some subject types. */
+    url: string | null;
+    latestCommentUrl: string | null;
+  };
+  /** PR/issue number parsed from `subject.url`. Null when the URL isn't a PR/issue. */
+  subjectNumber: number | null;
+}
+
+export type RuleField = 'title' | 'author' | 'repo' | 'reason' | 'subjectType';
+export type RuleOp = 'startsWith' | 'equals' | 'contains' | 'regex';
+
+export interface RuleCondition {
+  field: RuleField;
+  op: RuleOp;
+  value: string;
+}
+
+export interface NotificationRule {
+  /** UUID-like string; generated locally on rule creation. */
+  id: string;
+  /** User-facing label. */
+  name: string;
+  enabled: boolean;
+  /** When true, the rule's matching threads are auto-marked-read after each refresh. */
+  autoApply: boolean;
+  /** All conditions must match (AND). An empty list matches nothing. */
+  conditions: RuleCondition[];
+  /** Action to apply to matching notifications. Only mark-read in v1. */
+  action: 'mark-read';
+  createdAt: string;
 }

@@ -11,6 +11,9 @@ const DEFAULT_CONFIG: Config = {
     maxPrsPerRepo: 30,
     autoRefreshInterval: 300,
     staleDays: 14,
+    notificationsEnabled: true,
+    notificationsRefreshInterval: 60,
+    highlightWorkingSet: true,
   },
 };
 

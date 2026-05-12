@@ -10,6 +10,9 @@ const DEFAULT_CONFIG: Config = {
     maxPrsPerRepo: 30,
     autoRefreshInterval: 300, // 5 minutes in seconds, 0 = disabled
     staleDays: 14, // days of inactivity before an item is considered stale
+    notificationsEnabled: true,
+    notificationsRefreshInterval: 60, // 1 minute; 304 responses are free
+    highlightWorkingSet: true,
   },
 };
 
