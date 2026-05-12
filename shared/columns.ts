@@ -14,6 +14,7 @@ export const DEFAULT_COLUMNS: ColumnDef[] = [
   { id: 'repo', label: 'Repo', className: 'col-repo', sortKey: 'repo', defaultVisible: true },
   { id: 'number', label: '#', className: 'col-number', sortKey: 'number', defaultVisible: true },
   { id: 'state', label: 'State', className: 'col-state', sortKey: 'state', defaultVisible: true },
+  { id: 'notifications', label: '🔔', className: 'col-notifications', defaultVisible: true },
   { id: 'title', label: 'Title', className: 'col-title', sortKey: 'title', defaultVisible: true },
   { id: 'author', label: 'Author', className: 'col-author', sortKey: 'author', defaultVisible: true },
   { id: 'assignees', label: 'Assignees', className: 'col-assignees', sortKey: 'assignees', defaultVisible: true },

@@ -14,6 +14,7 @@ import { useFilteredItems } from './hooks/useFilteredItems.js';
 import { useModalState } from './hooks/useModalState.js';
 import { useColumnSettings } from './hooks/useColumnSettings.js';
 import { useNotifications } from '../shared/hooks/useNotifications.js';
+import { notificationsByItemKey, itemKey } from '../shared/utils/notificationMatch.js';
 import { webStorage } from './storage/webStorage.js';
 import { Header } from './components/Header.js';
 import { FilterBar } from './components/FilterBar.js';
@@ -157,6 +158,19 @@ export function App() {
   const notificationsUnreadCount = useMemo(
     () => notifications.filter((n) => n.unread).length,
     [notifications]
+  );
+
+  /** Map keyed by `${owner}/${repo}#${number}` → unread thread count, for the PR-table indicator. */
+  const unreadNotificationsByItem = useMemo(() => {
+    const grouped = notificationsByItemKey(notifications.filter((n) => n.unread));
+    const counts = new Map<string, number>();
+    for (const [key, list] of grouped) counts.set(key, list.length);
+    return counts;
+  }, [notifications]);
+
+  const getUnreadNotificationCount = useCallback(
+    (item: DashboardItem) => unreadNotificationsByItem.get(itemKey(item)) ?? 0,
+    [unreadNotificationsByItem]
   );
 
   // Treat a 401 from notifications the same as a 401 from the main fetch.
@@ -335,7 +349,9 @@ export function App() {
         onSort={handleSetSort}
         onPreview={previewPR}
         isUnseen={isUnseen}
+        getUnreadNotificationCount={getUnreadNotificationCount}
         onOpen={markSeen}
+        onOpenNotifications={openNotifications}
         onHideRepo={toggleRepoByName}
         staleDays={config.defaults.staleDays}
         visibleColumns={visibleColumns}
