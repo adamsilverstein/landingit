@@ -24,6 +24,24 @@ export interface FetchNotificationsResult {
 }
 
 /**
+ * Thrown by fetchNotifications when GitHub returns 403/404 from the
+ * notifications endpoint, which usually means the auth token lacks the
+ * `notifications` OAuth scope. Surfaced separately from generic errors
+ * so the UI can show a "your token is missing a scope" prompt rather
+ * than a confusing "Not Found".
+ */
+export class NotificationsScopeError extends Error {
+  readonly status: number;
+  constructor(status: number) {
+    super(
+      'GitHub denied access to the notifications endpoint. Your token is missing the "notifications" scope — re-authenticate to grant it.'
+    );
+    this.name = 'NotificationsScopeError';
+    this.status = status;
+  }
+}
+
+/**
  * Map a raw GitHub notification thread to our internal `NotificationItem`.
  * Pulled out so it can be reused by tests and future endpoints.
  */
@@ -103,13 +121,17 @@ export async function fetchNotifications(
 
     return { notifications, lastModified, notModified: false };
   } catch (e) {
-    if (
-      typeof e === 'object' &&
-      e !== null &&
-      'status' in e &&
-      (e as { status: unknown }).status === 304
-    ) {
-      return { notifications: [], lastModified: null, notModified: true };
+    if (typeof e === 'object' && e !== null && 'status' in e) {
+      const status = (e as { status: unknown }).status;
+      if (status === 304) {
+        return { notifications: [], lastModified: null, notModified: true };
+      }
+      // 403 (or sometimes 404) from this endpoint nearly always means the
+      // token lacks the `notifications` scope. 401 is bubbled up so the
+      // existing re-auth flow handles it; everything else propagates.
+      if (status === 403 || status === 404) {
+        throw new NotificationsScopeError(status as number);
+      }
     }
     throw e;
   }

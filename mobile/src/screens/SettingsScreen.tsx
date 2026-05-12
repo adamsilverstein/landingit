@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  Switch,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { useConfigContext } from '../context/ConfigContext';
@@ -159,6 +160,49 @@ export function SettingsScreen() {
         </View>
 
         <Text style={styles.prefHint}>Set auto-refresh to 0 to disable.</Text>
+      </View>
+
+      {/* Notifications */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Notifications</Text>
+
+        <View style={styles.prefRow}>
+          <Text style={styles.label}>Enable Inbox tab</Text>
+          <Switch
+            value={config.defaults.notificationsEnabled}
+            onValueChange={(v) => updateDefaults({ notificationsEnabled: v })}
+            trackColor={{ true: '#58a6ff', false: '#30363d' }}
+          />
+        </View>
+
+        <View style={styles.prefRow}>
+          <Text style={styles.label}>Refresh every (sec)</Text>
+          <TextInput
+            style={styles.prefInput}
+            value={String(config.defaults.notificationsRefreshInterval)}
+            onChangeText={(v) => {
+              const n = parseInt(v, 10);
+              if (!isNaN(n) && n >= 0) {
+                updateDefaults({ notificationsRefreshInterval: n });
+              }
+            }}
+            keyboardType="number-pad"
+            placeholderTextColor="#484f58"
+          />
+        </View>
+
+        <View style={styles.prefRow}>
+          <Text style={styles.label}>Highlight working set</Text>
+          <Switch
+            value={config.defaults.highlightWorkingSet}
+            onValueChange={(v) => updateDefaults({ highlightWorkingSet: v })}
+            trackColor={{ true: '#58a6ff', false: '#30363d' }}
+          />
+        </View>
+
+        <Text style={styles.prefHint}>
+          304 responses don't count against rate limit, so 60s is safe.
+        </Text>
       </View>
 
       {/* Sign out */}

@@ -8,6 +8,7 @@ import {
   markThreadAsRead as apiMarkThreadAsRead,
   markThreadsAsRead as apiMarkThreadsAsRead,
   markAllAsRead as apiMarkAllAsRead,
+  NotificationsScopeError,
 } from '../github/notifications.js';
 import { isAuthError } from '../github/errors.js';
 
@@ -31,6 +32,8 @@ interface UseNotificationsResult {
   loading: boolean;
   error: string | null;
   authError: boolean;
+  /** True when the token lacks the `notifications` scope. Distinct from authError so the UI can prompt for a re-auth with the right scope rather than a fresh sign-in. */
+  scopeError: boolean;
   lastRefresh: Date | null;
   /** Manually trigger a refresh (also resets the auto-refresh countdown). */
   refresh: () => void;
@@ -62,6 +65,7 @@ export function useNotifications({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authError, setAuthError] = useState(false);
+  const [scopeError, setScopeError] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [refreshCounter, setRefreshCounter] = useState(0);
 
@@ -96,6 +100,7 @@ export function useNotifications({
     setLoading(true);
     setError(null);
     setAuthError(false);
+    setScopeError(false);
 
     (async () => {
       try {
@@ -126,6 +131,8 @@ export function useNotifications({
         if (cancelled) return;
         if (isAuthError(e)) {
           setAuthError(true);
+        } else if (e instanceof NotificationsScopeError) {
+          setScopeError(true);
         } else {
           setError(e instanceof Error ? e.message : 'Unknown error');
         }
@@ -236,6 +243,7 @@ export function useNotifications({
     loading,
     error,
     authError,
+    scopeError,
     lastRefresh,
     refresh,
     markThreadRead,

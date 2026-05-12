@@ -13,6 +13,7 @@ interface NotificationsViewProps {
   notifications: NotificationItem[];
   loading: boolean;
   error: string | null;
+  scopeError: boolean;
   lastRefresh: Date | null;
   /** All fetched PRs/issues — used to cross-reference and to derive working-set membership. */
   items: DashboardItem[];
@@ -42,6 +43,7 @@ export function NotificationsView({
   notifications,
   loading,
   error,
+  scopeError,
   lastRefresh,
   items,
   authUser,
@@ -286,7 +288,13 @@ export function NotificationsView({
           </div>
         )}
 
-        {error && (
+        {scopeError && (
+          <div className="notifications-error" role="alert">
+            Your GitHub token can't read notifications. Sign out and re-authenticate
+            with the <code>notifications</code> scope to enable this view.
+          </div>
+        )}
+        {error && !scopeError && (
           <div className="notifications-error" role="alert">
             {error}
           </div>

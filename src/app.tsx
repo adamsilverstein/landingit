@@ -177,6 +177,7 @@ export function App() {
     loading: notificationsLoading,
     error: notificationsError,
     authError: notificationsAuthError,
+    scopeError: notificationsScopeError,
     lastRefresh: notificationsLastRefresh,
     refresh: refreshNotifications,
     markThreadRead,
@@ -446,6 +447,7 @@ export function App() {
           notifications={notifications}
           loading={notificationsLoading}
           error={notificationsError}
+          scopeError={notificationsScopeError}
           lastRefresh={notificationsLastRefresh}
           items={items}
           authUser={username}

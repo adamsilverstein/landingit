@@ -6,6 +6,7 @@ import {
   markThreadsAsRead,
   markAllAsRead,
   mapNotification,
+  NotificationsScopeError,
 } from './notifications.js';
 
 function mockOctokit(overrides: Record<string, unknown> = {}): Octokit {
@@ -146,6 +147,24 @@ describe('fetchNotifications', () => {
     });
 
     await expect(fetchNotifications(octokit)).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('wraps 403 in NotificationsScopeError', async () => {
+    const fn = vi.fn().mockRejectedValue({ status: 403, message: 'Resource not accessible by integration' });
+    const octokit = mockOctokit({
+      activity: { listNotificationsForAuthenticatedUser: fn },
+    });
+
+    await expect(fetchNotifications(octokit)).rejects.toBeInstanceOf(NotificationsScopeError);
+  });
+
+  it('wraps 404 in NotificationsScopeError', async () => {
+    const fn = vi.fn().mockRejectedValue({ status: 404 });
+    const octokit = mockOctokit({
+      activity: { listNotificationsForAuthenticatedUser: fn },
+    });
+
+    await expect(fetchNotifications(octokit)).rejects.toBeInstanceOf(NotificationsScopeError);
   });
 
   it('clamps perPage to 50', async () => {
