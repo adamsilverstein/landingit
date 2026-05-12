@@ -18,6 +18,12 @@ interface UseNotificationsOptions {
   /** Auto-refresh interval in seconds. 0 disables polling. */
   refreshIntervalSeconds: number;
   storage: StorageAdapter;
+  /**
+   * Called after each successful refresh with the freshly-fetched notifications.
+   * Used by app.tsx to wire up rules `autoApply` — the hook stays unaware of
+   * the rules engine, callers compose the two.
+   */
+  onAfterRefresh?: (notifications: NotificationItem[]) => void;
 }
 
 interface UseNotificationsResult {
@@ -50,6 +56,7 @@ export function useNotifications({
   enabled,
   refreshIntervalSeconds,
   storage,
+  onAfterRefresh,
 }: UseNotificationsOptions): UseNotificationsResult {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,6 +71,8 @@ export function useNotifications({
   storageRef.current = storage;
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
+  const onAfterRefreshRef = useRef(onAfterRefresh);
+  onAfterRefreshRef.current = onAfterRefresh;
 
   const refresh = useCallback(() => {
     setRefreshCounter((c) => c + 1);
@@ -107,6 +116,9 @@ export function useNotifications({
               .setItem(STORAGE_KEYS.NOTIFICATIONS_LAST_MODIFIED, result.lastModified)
               .catch(() => {});
           }
+          // Notify the caller so auto-apply rules can run against fresh data.
+          // Guarded so 304 ticks don't re-trigger rules against unchanged data.
+          onAfterRefreshRef.current?.(result.notifications);
         }
 
         setLastRefresh(new Date());

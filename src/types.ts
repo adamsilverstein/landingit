@@ -24,4 +24,11 @@ export type {
   TimelineEventType,
   TimelineEvent,
   PRDetail,
+  NotificationItem,
+  NotificationRule,
+  NotificationReason,
+  NotificationSubjectType,
+  RuleCondition,
+  RuleField,
+  RuleOp,
 } from '../shared/types.js';
