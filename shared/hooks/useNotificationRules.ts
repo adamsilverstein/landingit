@@ -160,14 +160,29 @@ export function useNotificationRules({
         try {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
-            const valid = parsed.filter(
-              (r): r is NotificationRule =>
-                r != null &&
-                typeof r.id === 'string' &&
-                typeof r.name === 'string' &&
-                typeof r.enabled === 'boolean' &&
-                Array.isArray(r.conditions)
-            );
+            const valid = parsed.filter((r): r is NotificationRule => {
+              if (
+                r == null ||
+                typeof r.id !== 'string' ||
+                typeof r.name !== 'string' ||
+                typeof r.enabled !== 'boolean' ||
+                typeof r.autoApply !== 'boolean' ||
+                r.action !== 'mark-read' ||
+                !Array.isArray(r.conditions)
+              ) {
+                return false;
+              }
+              // Every condition needs a fully-typed shape; a corrupted entry
+              // would otherwise cause ruleMatches to throw at evaluation time.
+              return r.conditions.every(
+                (c: unknown) =>
+                  c != null &&
+                  typeof c === 'object' &&
+                  typeof (c as RuleCondition).field === 'string' &&
+                  typeof (c as RuleCondition).op === 'string' &&
+                  typeof (c as RuleCondition).value === 'string'
+              );
+            });
             if (active) setRules(valid);
           }
         } catch {
@@ -229,14 +244,15 @@ export function useNotificationRules({
   const reorderRules = useCallback((orderedIds: string[]) => {
     setRules((prev) => {
       const byId = new Map(prev.map((r) => [r.id, r]));
+      const orderedSet = new Set(orderedIds);
       const reordered: NotificationRule[] = [];
       for (const id of orderedIds) {
         const r = byId.get(id);
         if (r) reordered.push(r);
       }
-      // Append any rules not present in orderedIds (defensive).
+      // Append any rules not present in orderedIds (defensive — O(n) lookup).
       for (const r of prev) {
-        if (!orderedIds.includes(r.id)) reordered.push(r);
+        if (!orderedSet.has(r.id)) reordered.push(r);
       }
       return reordered;
     });
