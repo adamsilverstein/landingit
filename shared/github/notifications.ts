@@ -35,7 +35,9 @@ export function mapNotification(raw: unknown): NotificationItem | null {
   const owner = repository?.owner as Record<string, unknown> | undefined;
 
   const id = typeof r.id === 'string' ? r.id : String(r.id ?? '');
-  if (!id) return null;
+  // Thread IDs must be numeric — Number(threadId) inside markThreadAsRead
+  // would silently NaN out on a malformed value otherwise.
+  if (!id || !/^\d+$/.test(id)) return null;
 
   const repoOwner = typeof owner?.login === 'string' ? owner.login : '';
   const repoName = typeof repository?.name === 'string' ? repository.name : '';

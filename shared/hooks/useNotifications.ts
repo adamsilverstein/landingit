@@ -78,6 +78,7 @@ export function useNotifications({
     if (!client || !enabledNow) {
       setNotifications([]);
       setError(null);
+      setAuthError(false);
       setLoading(false);
       return;
     }

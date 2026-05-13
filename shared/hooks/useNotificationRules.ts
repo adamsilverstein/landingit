@@ -145,12 +145,18 @@ export function useNotificationRules({
   const storageRef = useRef(storage);
   storageRef.current = storage;
 
-  // Load
+  // Load. `active` guards against a `storage` swap (or unmount) racing with
+  // the async getItem — without it, a stale resolution could call setRules
+  // after we've already started loading from a new adapter, and the persist
+  // effect below could then write those stale rules back to the new storage.
   useEffect(() => {
+    let active = true;
+    setRulesLoaded(false);
+
     storage
       .getItem(STORAGE_KEYS.NOTIFICATION_RULES)
       .then((raw) => {
-        if (!raw) return;
+        if (!active || !raw) return;
         try {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
@@ -162,17 +168,25 @@ export function useNotificationRules({
                 typeof r.enabled === 'boolean' &&
                 Array.isArray(r.conditions)
             );
-            setRules(valid);
+            if (active) setRules(valid);
           }
         } catch {
           /* corrupted — start fresh */
         }
       })
       .catch(() => {})
-      .finally(() => setRulesLoaded(true));
+      .finally(() => {
+        if (active) setRulesLoaded(true);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [storage]);
 
-  // Persist after the initial async load completes.
+  // Persist after the initial async load completes. `rulesLoaded` is reset
+  // to false at the top of the load effect on a storage swap, so this won't
+  // fire with stale rules against a new adapter before its load finishes.
   useEffect(() => {
     if (!rulesLoaded) return;
     storageRef.current
