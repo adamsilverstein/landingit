@@ -9,10 +9,16 @@ import { parseNotificationSubject } from '../utils/parseNotificationSubject.js';
 export interface FetchNotificationsOptions {
   /** Include already-read threads. Default false. */
   all?: boolean;
-  /** If set, sent as `If-Modified-Since`. A 304 response is free against the rate limit. */
+  /** If set, sent as `If-Modified-Since` on the first page. A 304 response is free against the rate limit. */
   ifModifiedSince?: string | null;
   /** Page size, max 50 per GitHub's limit. Default 50. */
   perPage?: number;
+  /**
+   * Safety cap on pages walked. Default 20 → up to 1000 threads, which covers
+   * any realistic inbox while bounding worst-case requests if GitHub keeps
+   * returning full pages.
+   */
+  maxPages?: number;
 }
 
 export interface FetchNotificationsResult {
@@ -97,29 +103,48 @@ export async function fetchNotifications(
   options: FetchNotificationsOptions = {}
 ): Promise<FetchNotificationsResult> {
   const perPage = Math.max(1, Math.min(options.perPage ?? 50, 50));
-  const headers: Record<string, string> = {};
-  if (options.ifModifiedSince) {
-    headers['If-Modified-Since'] = options.ifModifiedSince;
-  }
+  const maxPages = Math.max(1, options.maxPages ?? 20);
+  const all = options.all ?? false;
 
   try {
-    const response = await octokit.activity.listNotificationsForAuthenticatedUser({
-      all: options.all ?? false,
-      per_page: perPage,
-      headers,
-    });
+    const collected: NotificationItem[] = [];
+    let lastModified: string | null = null;
 
-    const raw = Array.isArray(response.data) ? response.data : [];
-    const notifications = raw
-      .map((n) => mapNotification(n))
-      .filter((n): n is NotificationItem => n !== null);
+    for (let page = 1; page <= maxPages; page++) {
+      // Only the first page carries If-Modified-Since. Once we know the
+      // inbox changed, subsequent pages should fetch unconditionally so
+      // we don't risk a 304 mid-pagination.
+      const headers: Record<string, string> = {};
+      if (page === 1 && options.ifModifiedSince) {
+        headers['If-Modified-Since'] = options.ifModifiedSince;
+      }
 
-    const lastModified =
-      typeof response.headers?.['last-modified'] === 'string'
-        ? response.headers['last-modified']
-        : null;
+      const response = await octokit.activity.listNotificationsForAuthenticatedUser({
+        all,
+        per_page: perPage,
+        page,
+        headers,
+      });
 
-    return { notifications, lastModified, notModified: false };
+      const raw = Array.isArray(response.data) ? response.data : [];
+      for (const n of raw) {
+        const mapped = mapNotification(n);
+        if (mapped) collected.push(mapped);
+      }
+
+      if (page === 1) {
+        lastModified =
+          typeof response.headers?.['last-modified'] === 'string'
+            ? response.headers['last-modified']
+            : null;
+      }
+
+      // Short page → last page. GitHub stops sending the `next` Link too,
+      // but length comparison is enough and doesn't require parsing Link.
+      if (raw.length < perPage) break;
+    }
+
+    return { notifications: collected, lastModified, notModified: false };
   } catch (e) {
     if (typeof e === 'object' && e !== null && 'status' in e) {
       const status = (e as { status: unknown }).status;

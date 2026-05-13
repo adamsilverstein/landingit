@@ -175,8 +175,81 @@ describe('fetchNotifications', () => {
 
     await fetchNotifications(octokit, { perPage: 200 });
     expect(fn).toHaveBeenCalledWith(
-      expect.objectContaining({ per_page: 50 })
+      expect.objectContaining({ per_page: 50, page: 1 })
     );
+  });
+
+  it('paginates until a short page is returned', async () => {
+    // Page 1 full (50), page 2 full (50), page 3 partial (3) → stop.
+    // IDs must be all-digit strings; mapNotification rejects others.
+    const page1 = Array.from({ length: 50 }, (_, i) =>
+      rawNotification({ id: `1${String(i).padStart(3, '0')}` })
+    );
+    const page2 = Array.from({ length: 50 }, (_, i) =>
+      rawNotification({ id: `2${String(i).padStart(3, '0')}` })
+    );
+    const page3 = Array.from({ length: 3 }, (_, i) =>
+      rawNotification({ id: `3${String(i).padStart(3, '0')}` })
+    );
+
+    const fn = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: page1,
+        headers: { 'last-modified': 'Tue, 12 May 2026 10:00:00 GMT' },
+      })
+      .mockResolvedValueOnce({ data: page2, headers: {} })
+      .mockResolvedValueOnce({ data: page3, headers: {} });
+
+    const octokit = mockOctokit({
+      activity: { listNotificationsForAuthenticatedUser: fn },
+    });
+
+    const result = await fetchNotifications(octokit);
+    expect(result.notifications).toHaveLength(103);
+    expect(fn).toHaveBeenCalledTimes(3);
+    expect(fn).toHaveBeenNthCalledWith(1, expect.objectContaining({ page: 1 }));
+    expect(fn).toHaveBeenNthCalledWith(2, expect.objectContaining({ page: 2 }));
+    expect(fn).toHaveBeenNthCalledWith(3, expect.objectContaining({ page: 3 }));
+    // Last-Modified comes from the first page only.
+    expect(result.lastModified).toBe('Tue, 12 May 2026 10:00:00 GMT');
+  });
+
+  it('only sends If-Modified-Since on the first paginated request', async () => {
+    const page1 = Array.from({ length: 50 }, (_, i) =>
+      rawNotification({ id: `4${String(i).padStart(3, '0')}` })
+    );
+    const fn = vi
+      .fn()
+      .mockResolvedValueOnce({ data: page1, headers: {} })
+      .mockResolvedValueOnce({ data: [], headers: {} });
+
+    const octokit = mockOctokit({
+      activity: { listNotificationsForAuthenticatedUser: fn },
+    });
+
+    await fetchNotifications(octokit, {
+      ifModifiedSince: 'Mon, 11 May 2026 09:00:00 GMT',
+    });
+
+    expect(fn.mock.calls[0][0].headers).toEqual({
+      'If-Modified-Since': 'Mon, 11 May 2026 09:00:00 GMT',
+    });
+    expect(fn.mock.calls[1][0].headers).toEqual({});
+  });
+
+  it('honors maxPages as a safety cap', async () => {
+    const fullPage = Array.from({ length: 50 }, (_, i) =>
+      rawNotification({ id: `5${String(i).padStart(3, '0')}` })
+    );
+    const fn = vi.fn().mockResolvedValue({ data: fullPage, headers: {} });
+    const octokit = mockOctokit({
+      activity: { listNotificationsForAuthenticatedUser: fn },
+    });
+
+    const result = await fetchNotifications(octokit, { maxPages: 2 });
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(result.notifications).toHaveLength(100);
   });
 
   it('filters out unmappable entries instead of throwing', async () => {
