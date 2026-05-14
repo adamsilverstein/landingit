@@ -8,9 +8,7 @@ interface HeaderProps {
   repoCount: number;
   itemCount: number;
   unseenCount: number;
-  notificationsUnreadCount: number;
   onOpenRepos: () => void;
-  onOpenNotifications: () => void;
   onSignOut: () => void;
   onRefresh: () => void;
   autoRefreshSecondsLeft: number | null;
@@ -29,9 +27,7 @@ export function Header({
   repoCount,
   itemCount,
   unseenCount,
-  notificationsUnreadCount,
   onOpenRepos,
-  onOpenNotifications,
   onSignOut,
   onRefresh,
   autoRefreshSecondsLeft,
@@ -73,18 +69,6 @@ export function Header({
           aria-label="Refresh data"
         >
           {loading ? <span className="spinner" /> : '↻'}
-        </button>
-        <button
-          className="header-btn"
-          onClick={onOpenNotifications}
-          title="Open notifications (n)"
-        >
-          Notifications
-          {notificationsUnreadCount > 0 && (
-            <span className="notifications-trigger-badge">
-              {notificationsUnreadCount > 99 ? '99+' : notificationsUnreadCount}
-            </span>
-          )}
         </button>
         <button className="header-btn" onClick={onOpenRepos} title="Manage repos (c)">
           Repos

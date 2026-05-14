@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts.js';
-import type { ViewMode } from '../types.js';
+import type { MainTab, ViewMode } from '../types.js';
 
 function makeActions() {
   return {
     viewMode: 'list' as ViewMode,
     setViewMode: vi.fn(),
+    mainTab: 'pulls' as MainTab,
+    setMainTab: vi.fn(),
     moveCursor: vi.fn(),
     openSelected: vi.fn(),
     previewSelected: vi.fn(),

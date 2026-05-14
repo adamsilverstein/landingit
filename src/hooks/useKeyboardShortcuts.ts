@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
-import type { ViewMode } from '../types.js';
+import type { MainTab, ViewMode } from '../types.js';
 
 interface ShortcutActions {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
+  mainTab: MainTab;
+  setMainTab: (tab: MainTab) => void;
   moveCursor: (delta: number) => void;
   openSelected: () => void;
   previewSelected: () => void;
@@ -29,7 +31,29 @@ export function useKeyboardShortcuts(actions: ShortcutActions) {
         return;
       }
 
-      const { viewMode, setViewMode } = actions;
+      const { viewMode, setViewMode, mainTab, setMainTab } = actions;
+
+      // `n` toggles between the pulls and notifications tabs from any non-modal state.
+      if (viewMode === 'list' && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        setMainTab(mainTab === 'notifications' ? 'pulls' : 'notifications');
+        return;
+      }
+
+      // Most PR-list shortcuts are inert while the notifications tab is foregrounded;
+      // it has its own filters/search and doesn't have a cursor to move.
+      if (viewMode === 'list' && mainTab === 'notifications') {
+        if (e.key === '?') {
+          setViewMode('help');
+        } else if (e.key === 'r') {
+          actions.refresh();
+        } else if (e.key === 'T') {
+          actions.cycleTheme();
+        } else if (e.key === 'c') {
+          setViewMode('repos');
+        }
+        return;
+      }
 
       if (viewMode === 'help') {
         if (e.key === '?' || e.key === 'Escape') {
