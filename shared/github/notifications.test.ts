@@ -106,7 +106,7 @@ describe('fetchNotifications', () => {
     expect(result.notModified).toBe(false);
   });
 
-  it('sends If-Modified-Since when ifModifiedSince is provided', async () => {
+  it('sends a conditional probe with If-Modified-Since when provided', async () => {
     const fn = vi.fn().mockResolvedValue({ data: [], headers: {} });
     const octokit = mockOctokit({
       activity: { listNotificationsForAuthenticatedUser: fn },
@@ -116,14 +116,31 @@ describe('fetchNotifications', () => {
       ifModifiedSince: 'Mon, 11 May 2026 09:00:00 GMT',
     });
 
-    expect(fn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        headers: { 'If-Modified-Since': 'Mon, 11 May 2026 09:00:00 GMT' },
-      })
-    );
+    // First call is the conditional probe (per_page:1 to keep it cheap).
+    expect(fn.mock.calls[0][0]).toMatchObject({
+      per_page: 1,
+      page: 1,
+      headers: { 'If-Modified-Since': 'Mon, 11 May 2026 09:00:00 GMT' },
+    });
+    // Subsequent calls fetch the full list unconditionally.
+    expect(fn.mock.calls[1][0]).toMatchObject({ per_page: 50, page: 1 });
+    expect(fn.mock.calls[1][0].headers).toBeUndefined();
   });
 
-  it('returns notModified:true when the server responds 304', async () => {
+  it('does not send a probe when ifModifiedSince is absent', async () => {
+    const fn = vi.fn().mockResolvedValue({ data: [], headers: {} });
+    const octokit = mockOctokit({
+      activity: { listNotificationsForAuthenticatedUser: fn },
+    });
+
+    await fetchNotifications(octokit);
+
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn.mock.calls[0][0]).toMatchObject({ per_page: 50, page: 1 });
+    expect(fn.mock.calls[0][0].headers).toBeUndefined();
+  });
+
+  it('returns notModified:true when the conditional probe responds 304', async () => {
     const fn = vi.fn().mockRejectedValue({ status: 304 });
     const octokit = mockOctokit({
       activity: { listNotificationsForAuthenticatedUser: fn },
@@ -138,6 +155,8 @@ describe('fetchNotifications', () => {
       lastModified: null,
       notModified: true,
     });
+    // Only the probe ran — no unconditional pagination follow-up.
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 
   it('propagates non-304 errors (e.g. 401)', async () => {
@@ -215,27 +234,42 @@ describe('fetchNotifications', () => {
     expect(result.lastModified).toBe('Tue, 12 May 2026 10:00:00 GMT');
   });
 
-  it('only sends If-Modified-Since on the first paginated request', async () => {
+  it('on probe 200, refetches the full inbox unconditionally', async () => {
+    // Probe returns 1 thread (simulating GitHub's delta behavior).
+    // Real GitHub would return only newly-changed threads here; we
+    // discard that response and refetch unconditionally to get the
+    // full inbox.
+    const probe = rawNotification({ id: '999' });
     const page1 = Array.from({ length: 50 }, (_, i) =>
       rawNotification({ id: `4${String(i).padStart(3, '0')}` })
     );
     const fn = vi
       .fn()
-      .mockResolvedValueOnce({ data: page1, headers: {} })
+      .mockResolvedValueOnce({ data: [probe], headers: {} })
+      .mockResolvedValueOnce({ data: page1, headers: { 'last-modified': 'Tue, 12 May 2026 10:00:00 GMT' } })
       .mockResolvedValueOnce({ data: [], headers: {} });
 
     const octokit = mockOctokit({
       activity: { listNotificationsForAuthenticatedUser: fn },
     });
 
-    await fetchNotifications(octokit, {
+    const result = await fetchNotifications(octokit, {
       ifModifiedSince: 'Mon, 11 May 2026 09:00:00 GMT',
     });
 
+    // Probe + two pagination calls (page 1 full → page 2 empty → stop).
+    expect(fn).toHaveBeenCalledTimes(3);
+    // Probe carries the header; full-fetch calls don't.
     expect(fn.mock.calls[0][0].headers).toEqual({
       'If-Modified-Since': 'Mon, 11 May 2026 09:00:00 GMT',
     });
-    expect(fn.mock.calls[1][0].headers).toEqual({});
+    expect(fn.mock.calls[1][0].headers).toBeUndefined();
+    expect(fn.mock.calls[2][0].headers).toBeUndefined();
+    // The probe's single thread is discarded — only the full-fetch
+    // pages contribute to the result.
+    expect(result.notifications).toHaveLength(50);
+    expect(result.lastModified).toBe('Tue, 12 May 2026 10:00:00 GMT');
+    expect(result.notModified).toBe(false);
   });
 
   it('honors maxPages as a safety cap', async () => {

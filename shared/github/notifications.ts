@@ -9,7 +9,14 @@ import { parseNotificationSubject } from '../utils/parseNotificationSubject.js';
 export interface FetchNotificationsOptions {
   /** Include already-read threads. Default false. */
   all?: boolean;
-  /** If set, sent as `If-Modified-Since` on the first page. A 304 response is free against the rate limit. */
+  /**
+   * Optional conditional probe timestamp. When set, we send a single
+   * `If-Modified-Since` request first; on 304 we short-circuit. On 200
+   * we discard that probe and re-fetch the full list unconditionally,
+   * because GitHub's /notifications endpoint returns *only the threads
+   * updated since that timestamp* on a 200 — not the full inbox — and
+   * pagination would stop short on the first partial page.
+   */
   ifModifiedSince?: string | null;
   /** Page size, max 50 per GitHub's limit. Default 50. */
   perPage?: number;
@@ -23,9 +30,9 @@ export interface FetchNotificationsOptions {
 
 export interface FetchNotificationsResult {
   notifications: NotificationItem[];
-  /** `Last-Modified` from the response, suitable for the next `If-Modified-Since`. */
+  /** `Last-Modified` from the response, suitable for the next conditional probe. */
   lastModified: string | null;
-  /** True when the server returned 304 (nothing changed). `notifications` will be empty. */
+  /** True when the conditional probe returned 304 (nothing changed). `notifications` will be empty. */
   notModified: boolean;
 }
 
@@ -106,24 +113,46 @@ export async function fetchNotifications(
   const maxPages = Math.max(1, options.maxPages ?? 20);
   const all = options.all ?? false;
 
+  // Conditional probe. GitHub's /notifications endpoint treats
+  // If-Modified-Since as a *filter*, not just a cache validator —
+  // a 200 response with this header set contains only threads updated
+  // since the timestamp, not the full inbox. So we use the header
+  // exclusively as a cheap "is the inbox dirty?" check: 304 ⇒ skip
+  // the work entirely; anything else ⇒ fall through and re-fetch
+  // unconditionally below.
+  if (options.ifModifiedSince) {
+    try {
+      await octokit.activity.listNotificationsForAuthenticatedUser({
+        all,
+        per_page: 1,
+        page: 1,
+        headers: { 'If-Modified-Since': options.ifModifiedSince },
+      });
+      // 200 means something changed — discard this response and refetch
+      // the full list below.
+    } catch (e) {
+      if (typeof e === 'object' && e !== null && 'status' in e) {
+        const status = (e as { status: unknown }).status;
+        if (status === 304) {
+          return { notifications: [], lastModified: null, notModified: true };
+        }
+        if (status === 403 || status === 404) {
+          throw new NotificationsScopeError(status as number);
+        }
+      }
+      throw e;
+    }
+  }
+
   try {
     const collected: NotificationItem[] = [];
     let lastModified: string | null = null;
 
     for (let page = 1; page <= maxPages; page++) {
-      // Only the first page carries If-Modified-Since. Once we know the
-      // inbox changed, subsequent pages should fetch unconditionally so
-      // we don't risk a 304 mid-pagination.
-      const headers: Record<string, string> = {};
-      if (page === 1 && options.ifModifiedSince) {
-        headers['If-Modified-Since'] = options.ifModifiedSince;
-      }
-
       const response = await octokit.activity.listNotificationsForAuthenticatedUser({
         all,
         per_page: perPage,
         page,
-        headers,
       });
 
       const raw = Array.isArray(response.data) ? response.data : [];
@@ -148,9 +177,6 @@ export async function fetchNotifications(
   } catch (e) {
     if (typeof e === 'object' && e !== null && 'status' in e) {
       const status = (e as { status: unknown }).status;
-      if (status === 304) {
-        return { notifications: [], lastModified: null, notModified: true };
-      }
       // 403 (or sometimes 404) from this endpoint nearly always means the
       // token lacks the `notifications` scope. 401 is bubbled up so the
       // existing re-auth flow handles it; everything else propagates.
