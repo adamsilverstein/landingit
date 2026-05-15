@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -51,7 +52,7 @@ function DashboardNavigator() {
       <DashboardStack.Screen
         name="PRList"
         component={PRListScreen}
-        options={{ title: 'Pull Requests' }}
+        options={{ title: 'Pull Requests', headerShown: false }}
       />
       <DashboardStack.Screen
         name="PRDetail"
@@ -74,7 +75,7 @@ function NotificationsNavigator() {
       <NotificationsStack.Screen
         name="Notifications"
         component={NotificationsScreen}
-        options={{ title: 'Notifications' }}
+        options={{ title: 'Notifications', headerShown: false }}
       />
       <NotificationsStack.Screen
         name="NotificationRules"
@@ -183,15 +184,17 @@ function MainApp() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <ConfigProvider>
-        <BadgeProvider>
-          <NotificationsProvider>
-            <MainApp />
-          </NotificationsProvider>
-        </BadgeProvider>
-      </ConfigProvider>
-    </AppProvider>
+    <SafeAreaProvider>
+      <AppProvider>
+        <ConfigProvider>
+          <BadgeProvider>
+            <NotificationsProvider>
+              <MainApp />
+            </NotificationsProvider>
+          </BadgeProvider>
+        </ConfigProvider>
+      </AppProvider>
+    </SafeAreaProvider>
   );
 }
 
