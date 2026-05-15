@@ -36,6 +36,7 @@ interface PRTableProps {
 
 export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPreview, isUnseen, onOpen, onHideRepo, staleDays, visibleColumns, columnOrder, onToggleColumn, onReorderColumns, onResetColumns, milestoneGrouping }: PRTableProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const prevCursorIndexRef = useRef<number | null>(null);
   const { isCollapsed, toggle } = useMilestoneCollapse();
 
   const milestoneGroups = useMemo(
@@ -77,13 +78,17 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPre
     overscan: 10,
   });
 
-  // Scroll to keep the selected row visible when cursor moves
+  // Scroll to keep the selected row visible when the cursor moves.
+  // Only scroll when cursorIndex actually changes — otherwise auto-refresh
+  // (which gives `items` and `groupedRows` new identities) would yank the
+  // viewport back to the selected row on every refresh tick.
   useEffect(() => {
+    if (prevCursorIndexRef.current === cursorIndex) return;
+    prevCursorIndexRef.current = cursorIndex;
+
     if (milestoneGrouping) {
-      // In grouped mode, map cursorIndex to the visible row index
       const visibleIdx = flatToVisibleIndex.get(cursorIndex);
       if (visibleIdx !== undefined) {
-        // Account for milestone header rows preceding this visible item
         let rowIdx = 0;
         let itemsSeen = 0;
         for (const entry of groupedRows) {
