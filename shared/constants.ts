@@ -9,4 +9,6 @@ export const STORAGE_KEYS = {
   COLUMN_SETTINGS: 'gh-dashboard-column-settings',
   LABEL_FILTERS: 'gh-dashboard-label-filters',
   HIDE_MY_REPLIES: 'gh-dashboard-hide-my-replies',
+  NOTIFICATION_RULES: 'gh-dashboard-notification-rules',
+  NOTIFICATIONS_LAST_MODIFIED: 'gh-dashboard-notifications-last-modified',
 } as const;
