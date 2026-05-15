@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import type { DashboardItem, OwnershipFilter } from './types.js';
+import type { DashboardItem, NotificationItem, OwnershipFilter } from './types.js';
 import { createClient, type RateLimit } from './github/client.js';
 import { isAuthError } from './github/errors.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
@@ -14,6 +14,10 @@ import { useFilteredItems } from './hooks/useFilteredItems.js';
 import { useModalState } from './hooks/useModalState.js';
 import { useColumnSettings } from './hooks/useColumnSettings.js';
 import { useNotifications } from '../shared/hooks/useNotifications.js';
+import {
+  useNotificationRules,
+  notificationsMatchingRule,
+} from '../shared/hooks/useNotificationRules.js';
 import { notificationsByItemKey, itemKey } from '../shared/utils/notificationMatch.js';
 import { webStorage } from './storage/webStorage.js';
 import { Header } from './components/Header.js';
@@ -26,6 +30,7 @@ import { TokenSetup } from './components/TokenSetup.js';
 import { OnboardingWizard } from './components/OnboardingWizard.js';
 import { DetailPanel } from './components/DetailPanel.js';
 import { NotificationsView } from './components/NotificationsView.js';
+import { NotificationRulesEditor } from './components/NotificationRulesEditor.js';
 
 const OWNERSHIP_CYCLE: OwnershipFilter[] = ['created', 'assigned', 'involved', 'everyone'];
 
@@ -46,7 +51,7 @@ export function App() {
 
   const {
     viewMode, setViewMode, previewItem, notificationsPinnedItem, isModalOpen,
-    openDetail, closeDetail, openRepos, openNotifications, closeModal,
+    openDetail, closeDetail, openRepos, openNotifications, openRules, closeModal,
   } = useModalState();
 
   const handleRateLimit = useCallback((rl: RateLimit) => setRateLimit(rl), []);
@@ -139,6 +144,34 @@ export function App() {
     onRefresh: refresh,
   });
 
+  // `rulesRef` lets the refresh-time auto-apply callback read the latest
+  // rules without re-instantiating the notifications hook on every rule
+  // edit (which would re-trigger a fetch).
+  const rulesRef = useRef<ReturnType<typeof useNotificationRules>['rules']>([]);
+
+  const handleAfterNotificationsRefresh = useCallback(
+    (fresh: NotificationItem[] | undefined) => {
+      if (!fresh) return;
+      const ids = new Set<string>();
+      for (const rule of rulesRef.current) {
+        if (!rule.enabled || !rule.autoApply) continue;
+        for (const n of notificationsMatchingRule(rule, fresh)) {
+          if (n.unread) ids.add(n.id);
+        }
+      }
+      if (ids.size > 0) {
+        // Fire-and-forget; failures are surfaced through the optimistic
+        // rollback in useNotifications.
+        void markThreadsReadRef.current?.([...ids]);
+      }
+    },
+    []
+  );
+
+  // We need to reference markThreadsRead inside the callback above, but the
+  // hook hasn't returned yet. Forward via a ref.
+  const markThreadsReadRef = useRef<((ids: string[]) => Promise<unknown>) | null>(null);
+
   const {
     notifications,
     loading: notificationsLoading,
@@ -153,7 +186,12 @@ export function App() {
     enabled: config.defaults.notificationsEnabled,
     refreshIntervalSeconds: config.defaults.notificationsRefreshInterval,
     storage: webStorage,
+    onAfterRefresh: handleAfterNotificationsRefresh,
   });
+
+  // Keep the ref in sync so the after-refresh callback always sees the
+  // freshest mark-read function.
+  markThreadsReadRef.current = markThreadsRead;
 
   const notificationsUnreadCount = useMemo(
     () => notifications.filter((n) => n.unread).length,
@@ -171,6 +209,27 @@ export function App() {
   const getUnreadNotificationCount = useCallback(
     (item: DashboardItem) => unreadNotificationsByItem.get(itemKey(item)) ?? 0,
     [unreadNotificationsByItem]
+  );
+
+  const {
+    rules,
+    addRule,
+    updateRule,
+    deleteRule,
+    toggleRule,
+  } = useNotificationRules({ storage: webStorage });
+
+  // Keep rulesRef in sync for the after-refresh auto-apply callback.
+  rulesRef.current = rules;
+
+  const applyRule = useCallback(
+    async (rule: typeof rules[number]) => {
+      const matches = notificationsMatchingRule(rule, notifications);
+      const ids = matches.filter((n) => n.unread).map((n) => n.id);
+      if (ids.length === 0) return;
+      await markThreadsRead(ids);
+    },
+    [notifications, markThreadsRead]
   );
 
   // Treat a 401 from notifications the same as a 401 from the main fetch.
@@ -390,12 +449,27 @@ export function App() {
           lastRefresh={notificationsLastRefresh}
           items={items}
           authUser={username}
+          rules={rules}
+          onApplyRule={applyRule}
+          onOpenRules={openRules}
           onClose={closeModal}
           onRefresh={refreshNotifications}
           onMarkRead={markThreadRead}
           onMarkManyRead={markThreadsRead}
           onJumpToItem={jumpToItem}
           pinnedItem={notificationsPinnedItem}
+        />
+      )}
+      {viewMode === 'notification-rules' && (
+        <NotificationRulesEditor
+          rules={rules}
+          notifications={notifications}
+          onClose={closeModal}
+          onAdd={addRule}
+          onUpdate={updateRule}
+          onDelete={deleteRule}
+          onToggle={toggleRule}
+          onApplyRule={applyRule}
         />
       )}
     </div>

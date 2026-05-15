@@ -3,8 +3,10 @@ import type {
   DashboardItem,
   NotificationItem,
   NotificationReason,
+  NotificationRule,
 } from '../../shared/types.js';
 import { matchNotifications } from '../../shared/utils/notificationMatch.js';
+import { notificationsMatchingRule } from '../../shared/hooks/useNotificationRules.js';
 import { NotificationRow } from './NotificationRow.js';
 
 interface NotificationsViewProps {
@@ -15,6 +17,9 @@ interface NotificationsViewProps {
   /** All fetched PRs/issues — used to cross-reference and to derive working-set membership. */
   items: DashboardItem[];
   authUser: string | null;
+  rules: NotificationRule[];
+  onApplyRule: (rule: NotificationRule) => Promise<unknown>;
+  onOpenRules: () => void;
   onClose: () => void;
   onRefresh: () => void;
   onMarkRead: (id: string) => void;
@@ -40,6 +45,9 @@ export function NotificationsView({
   lastRefresh,
   items,
   authUser,
+  rules,
+  onApplyRule,
+  onOpenRules,
   onClose,
   onRefresh,
   onMarkRead,
@@ -230,6 +238,53 @@ export function NotificationsView({
               : 'Select all visible'}
           </button>
         </div>
+
+        {rules.length > 0 && (
+          <div className="notifications-rules-bar">
+            <span className="rules-presets-label">Rules:</span>
+            {rules
+              .filter((r) => r.enabled)
+              .map((rule) => {
+                const matchCount = notificationsMatchingRule(rule, notifications).length;
+                return (
+                  <button
+                    key={rule.id}
+                    type="button"
+                    className="notifications-chip"
+                    onClick={() => onApplyRule(rule)}
+                    disabled={matchCount === 0}
+                    title={rule.conditions
+                      .map((c) => `${c.field} ${c.op} "${c.value}"`)
+                      .join(' AND ')}
+                  >
+                    {rule.name}{' '}
+                    <span className="rule-chip-count">({matchCount})</span>
+                  </button>
+                );
+              })}
+            <button
+              type="button"
+              className="notifications-link-btn"
+              onClick={onOpenRules}
+            >
+              Edit rules
+            </button>
+          </div>
+        )}
+        {rules.length === 0 && (
+          <div className="notifications-rules-bar">
+            <span className="rules-presets-label notifications-muted">
+              No rules yet —
+            </span>
+            <button
+              type="button"
+              className="notifications-link-btn"
+              onClick={onOpenRules}
+            >
+              Add a rule to bulk-mark common noise
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className="notifications-error" role="alert">
