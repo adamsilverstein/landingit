@@ -11,13 +11,16 @@ export interface PRRowProps {
   selected: boolean;
   unseen: boolean;
   stale: boolean;
+  /** Count of unread notifications attached to this PR/issue. */
+  unreadNotificationCount?: number;
   onPreview: (item: DashboardItem) => void;
   onOpen: (item: DashboardItem) => void;
+  onOpenNotifications?: (item: DashboardItem) => void;
   onHideRepo?: (owner: string, name: string) => void;
   visibleColumns: string[];
 }
 
-export function PRRow({ item, selected, unseen, stale, onPreview, onOpen, onHideRepo, visibleColumns }: PRRowProps) {
+export function PRRow({ item, selected, unseen, stale, unreadNotificationCount = 0, onPreview, onOpen, onOpenNotifications, onHideRepo, visibleColumns }: PRRowProps) {
 
   const handleClick = () => {
     onOpen(item);
@@ -77,6 +80,27 @@ export function PRRow({ item, selected, unseen, stale, onPreview, onOpen, onHide
             {item.state}
           </span>
         )}
+      </td>
+    ),
+    notifications: () => (
+      <td key="notifications" className="col-notifications">
+        {unreadNotificationCount > 0 ? (
+          <button
+            type="button"
+            className="row-notification-indicator"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenNotifications?.(item);
+            }}
+            title={`${unreadNotificationCount} unread notification${unreadNotificationCount === 1 ? '' : 's'} on this item — click to view`}
+            aria-label={`Open ${unreadNotificationCount} notifications`}
+          >
+            <span className="row-notification-dot" />
+            {unreadNotificationCount > 1 && (
+              <span className="row-notification-count">{unreadNotificationCount}</span>
+            )}
+          </button>
+        ) : null}
       </td>
     ),
     title: () => (

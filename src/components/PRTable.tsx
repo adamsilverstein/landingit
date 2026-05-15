@@ -23,7 +23,10 @@ interface PRTableProps {
   onSort: (key: SortMode) => void;
   onPreview: (item: DashboardItem) => void;
   isUnseen: (item: DashboardItem) => boolean;
+  /** Returns the count of unread notifications attached to the given item. */
+  getUnreadNotificationCount: (item: DashboardItem) => number;
   onOpen: (item: DashboardItem) => void;
+  onOpenNotifications?: (item: DashboardItem) => void;
   onHideRepo?: (owner: string, name: string) => void;
   staleDays: number;
   visibleColumns: string[];
@@ -34,7 +37,7 @@ interface PRTableProps {
   milestoneGrouping?: boolean;
 }
 
-export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPreview, isUnseen, onOpen, onHideRepo, staleDays, visibleColumns, columnOrder, onToggleColumn, onReorderColumns, onResetColumns, milestoneGrouping }: PRTableProps) {
+export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPreview, isUnseen, getUnreadNotificationCount, onOpen, onOpenNotifications, onHideRepo, staleDays, visibleColumns, columnOrder, onToggleColumn, onReorderColumns, onResetColumns, milestoneGrouping }: PRTableProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevCursorIndexRef = useRef<number | null>(null);
   const { isCollapsed, toggle } = useMilestoneCollapse();
@@ -187,8 +190,10 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPre
                   selected={entry.flatIndex === cursorIndex}
                   unseen={isUnseen(entry.item)}
                   stale={isStale(entry.item, staleDays)}
+                  unreadNotificationCount={getUnreadNotificationCount(entry.item)}
                   onPreview={onPreview}
                   onOpen={onOpen}
+                  onOpenNotifications={onOpenNotifications}
                   onHideRepo={onHideRepo}
                   visibleColumns={orderedVisibleColumns.map((c) => c.id)}
                 />
@@ -203,8 +208,10 @@ export function PRTable({ items, cursorIndex, sort, sortDirection, onSort, onPre
                 selected={virtualRow.index === cursorIndex}
                 unseen={isUnseen(item)}
                 stale={isStale(item, staleDays)}
+                unreadNotificationCount={getUnreadNotificationCount(item)}
                 onPreview={onPreview}
                 onOpen={onOpen}
+                onOpenNotifications={onOpenNotifications}
                 onHideRepo={onHideRepo}
                 visibleColumns={orderedVisibleColumns.map((c) => c.id)}
               />

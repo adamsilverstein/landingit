@@ -363,3 +363,39 @@
   min-width: 16px;
   text-align: center;
 }
+
+/* PR-table notification indicator cell */
+.col-notifications {
+  width: 36px;
+  text-align: center;
+}
+
+.row-notification-indicator {
+  background: none;
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.row-notification-indicator:hover .row-notification-dot {
+  transform: scale(1.2);
+}
+
+.row-notification-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: transform 0.1s ease;
+}
+
+.row-notification-count {
+  font-size: 10px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
