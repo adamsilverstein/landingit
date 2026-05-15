@@ -13,6 +13,8 @@ import { useLastSeen } from './hooks/useLastSeen.js';
 import { useFilteredItems } from './hooks/useFilteredItems.js';
 import { useModalState } from './hooks/useModalState.js';
 import { useColumnSettings } from './hooks/useColumnSettings.js';
+import { useNotifications } from '../shared/hooks/useNotifications.js';
+import { webStorage } from './storage/webStorage.js';
 import { Header } from './components/Header.js';
 import { FilterBar } from './components/FilterBar.js';
 import { PRTable } from './components/PRTable.js';
@@ -22,6 +24,7 @@ import { RepoManager } from './components/RepoManager.js';
 import { TokenSetup } from './components/TokenSetup.js';
 import { OnboardingWizard } from './components/OnboardingWizard.js';
 import { DetailPanel } from './components/DetailPanel.js';
+import { NotificationsView } from './components/NotificationsView.js';
 
 const OWNERSHIP_CYCLE: OwnershipFilter[] = ['created', 'assigned', 'involved', 'everyone'];
 
@@ -41,8 +44,8 @@ export function App() {
   const { visibleColumns, columnOrder, toggleColumn, reorderColumns, resetColumns } = useColumnSettings();
 
   const {
-    viewMode, setViewMode, previewItem, isModalOpen,
-    openDetail, closeDetail, openRepos, closeModal,
+    viewMode, setViewMode, previewItem, notificationsPinnedItem, isModalOpen,
+    openDetail, closeDetail, openRepos, openNotifications, closeModal,
   } = useModalState();
 
   const handleRateLimit = useCallback((rl: RateLimit) => setRateLimit(rl), []);
@@ -134,6 +137,43 @@ export function App() {
     paused: isModalOpen,
     onRefresh: refresh,
   });
+
+  const {
+    notifications,
+    loading: notificationsLoading,
+    error: notificationsError,
+    authError: notificationsAuthError,
+    lastRefresh: notificationsLastRefresh,
+    refresh: refreshNotifications,
+    markThreadRead,
+    markThreadsRead,
+  } = useNotifications({
+    octokit,
+    enabled: config.defaults.notificationsEnabled,
+    refreshIntervalSeconds: config.defaults.notificationsRefreshInterval,
+    storage: webStorage,
+  });
+
+  const notificationsUnreadCount = useMemo(
+    () => notifications.filter((n) => n.unread).length,
+    [notifications]
+  );
+
+  // Treat a 401 from notifications the same as a 401 from the main fetch.
+  useEffect(() => {
+    if (notificationsAuthError) handleInvalidToken();
+  }, [notificationsAuthError, handleInvalidToken]);
+
+  const jumpToItem = useCallback(
+    (item: DashboardItem) => {
+      const idx = filtered.findIndex(
+        (f) => f.kind === item.kind && f.id === item.id
+      );
+      if (idx !== -1) setCursorIndex(idx);
+      closeModal();
+    },
+    [filtered, setCursorIndex, closeModal]
+  );
 
   const handleRefresh = useCallback(() => {
     refresh();
@@ -255,7 +295,9 @@ export function App() {
         repoCount={enabledRepos.length}
         itemCount={filtered.length}
         unseenCount={unseenCount}
+        notificationsUnreadCount={notificationsUnreadCount}
         onOpenRepos={openRepos}
+        onOpenNotifications={() => openNotifications()}
         onSignOut={handleSignOut}
         onRefresh={handleRefresh}
         autoRefreshSecondsLeft={autoRefreshSecondsLeft}
@@ -322,6 +364,22 @@ export function App() {
           item={previewItem}
           octokit={octokit}
           onClose={closeDetail}
+        />
+      )}
+      {viewMode === 'notifications' && (
+        <NotificationsView
+          notifications={notifications}
+          loading={notificationsLoading}
+          error={notificationsError}
+          lastRefresh={notificationsLastRefresh}
+          items={items}
+          authUser={username}
+          onClose={closeModal}
+          onRefresh={refreshNotifications}
+          onMarkRead={markThreadRead}
+          onMarkManyRead={markThreadsRead}
+          onJumpToItem={jumpToItem}
+          pinnedItem={notificationsPinnedItem}
         />
       )}
     </div>

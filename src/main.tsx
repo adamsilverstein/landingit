@@ -12,6 +12,7 @@ import './styles/TokenSetup.css';
 import './styles/Onboarding.css';
 import './styles/StatusBar.css';
 import './styles/ErrorBoundary.css';
+import './styles/Notifications.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
