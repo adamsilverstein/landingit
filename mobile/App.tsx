@@ -6,14 +6,25 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AppProvider, useApp } from './src/context/AppContext';
 import { ConfigProvider, useConfigContext } from './src/context/ConfigContext';
 import { BadgeProvider, useBadge } from './src/context/BadgeContext';
+import {
+  NotificationsProvider,
+  useNotificationsContext,
+} from './src/context/NotificationsContext';
 import { TokenSetupScreen } from './src/screens/TokenSetupScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { PRListScreen } from './src/screens/PRListScreen';
 import { PRDetailScreen } from './src/screens/PRDetailScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
-import type { DashboardStackParamList, RootTabParamList } from './src/navigation/types';
+import { NotificationsScreen } from './src/screens/NotificationsScreen';
+import { NotificationRulesScreen } from './src/screens/NotificationRulesScreen';
+import type {
+  DashboardStackParamList,
+  NotificationsStackParamList,
+  RootTabParamList,
+} from './src/navigation/types';
 
 const DashboardStack = createNativeStackNavigator<DashboardStackParamList>();
+const NotificationsStack = createNativeStackNavigator<NotificationsStackParamList>();
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
 const navTheme = {
@@ -51,10 +62,34 @@ function DashboardNavigator() {
   );
 }
 
+function NotificationsNavigator() {
+  return (
+    <NotificationsStack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: '#161b22' },
+        headerTintColor: '#e6edf3',
+        headerTitleStyle: { fontSize: 16 },
+      }}
+    >
+      <NotificationsStack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ title: 'Notifications' }}
+      />
+      <NotificationsStack.Screen
+        name="NotificationRules"
+        component={NotificationRulesScreen}
+        options={{ title: 'Notification Rules' }}
+      />
+    </NotificationsStack.Navigator>
+  );
+}
+
 function MainApp() {
   const { token, username, loading, saveToken, signOut } = useApp();
   const { config, configLoaded, addRepo } = useConfigContext();
   const { unseenCount } = useBadge();
+  const { unreadCount: notificationsUnread } = useNotificationsContext();
   const [wizardActive, setWizardActive] = useState(false);
 
   // Activate the onboarding wizard once the user has authenticated but has
@@ -123,6 +158,16 @@ function MainApp() {
           }}
         />
         <Tab.Screen
+          name="NotificationsTab"
+          component={NotificationsNavigator}
+          options={{
+            tabBarLabel: 'Inbox',
+            tabBarBadge:
+              notificationsUnread > 0 ? notificationsUnread : undefined,
+            tabBarBadgeStyle: { backgroundColor: '#58a6ff', fontSize: 10 },
+          }}
+        />
+        <Tab.Screen
           name="Settings"
           component={SettingsScreen}
           options={{
@@ -141,7 +186,9 @@ export default function App() {
     <AppProvider>
       <ConfigProvider>
         <BadgeProvider>
-          <MainApp />
+          <NotificationsProvider>
+            <MainApp />
+          </NotificationsProvider>
         </BadgeProvider>
       </ConfigProvider>
     </AppProvider>

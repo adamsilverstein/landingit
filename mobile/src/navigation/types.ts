@@ -5,7 +5,13 @@ export type DashboardStackParamList = {
   PRDetail: { item: PRItem };
 };
 
+export type NotificationsStackParamList = {
+  Notifications: undefined;
+  NotificationRules: undefined;
+};
+
 export type RootTabParamList = {
   Dashboard: undefined;
+  NotificationsTab: undefined;
   Settings: undefined;
 };
