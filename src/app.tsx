@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import type { DashboardItem, NotificationItem, OwnershipFilter } from './types.js';
+import type { DashboardItem, MainTab, NotificationItem, OwnershipFilter } from './types.js';
 import { createClient, type RateLimit } from './github/client.js';
 import { isAuthError } from './github/errors.js';
 import { getToken, setToken as saveToken, clearToken } from './config.js';
@@ -31,6 +31,7 @@ import { OnboardingWizard } from './components/OnboardingWizard.js';
 import { DetailPanel } from './components/DetailPanel.js';
 import { NotificationsView } from './components/NotificationsView.js';
 import { NotificationRulesEditor } from './components/NotificationRulesEditor.js';
+import { TabBar } from './components/TabBar.js';
 
 const OWNERSHIP_CYCLE: OwnershipFilter[] = ['created', 'assigned', 'involved', 'everyone'];
 
@@ -50,9 +51,23 @@ export function App() {
   const { visibleColumns, columnOrder, toggleColumn, reorderColumns, resetColumns } = useColumnSettings();
 
   const {
-    viewMode, setViewMode, previewItem, notificationsPinnedItem, isModalOpen,
-    openDetail, closeDetail, openRepos, openNotifications, openRules, closeModal,
+    viewMode, setViewMode, previewItem, isModalOpen,
+    openDetail, closeDetail, openRepos, openRules, closeModal,
   } = useModalState();
+
+  const [mainTab, setMainTab] = useState<MainTab>('pulls');
+  const [notificationsPinnedItem, setNotificationsPinnedItem] =
+    useState<DashboardItem | null>(null);
+
+  const openNotifications = useCallback((pinTo?: DashboardItem | null) => {
+    setNotificationsPinnedItem(pinTo ?? null);
+    setMainTab('notifications');
+  }, []);
+
+  const clearPinnedNotification = useCallback(
+    () => setNotificationsPinnedItem(null),
+    []
+  );
 
   const handleRateLimit = useCallback((rl: RateLimit) => setRateLimit(rl), []);
 
@@ -177,6 +192,7 @@ export function App() {
     loading: notificationsLoading,
     error: notificationsError,
     authError: notificationsAuthError,
+    scopeError: notificationsScopeError,
     lastRefresh: notificationsLastRefresh,
     refresh: refreshNotifications,
     markThreadRead,
@@ -243,6 +259,8 @@ export function App() {
         (f) => f.kind === item.kind && f.id === item.id
       );
       if (idx !== -1) setCursorIndex(idx);
+      setMainTab('pulls');
+      setNotificationsPinnedItem(null);
       closeModal();
     },
     [filtered, setCursorIndex, closeModal]
@@ -317,6 +335,8 @@ export function App() {
     () => ({
       viewMode,
       setViewMode,
+      mainTab,
+      setMainTab,
       moveCursor,
       openSelected,
       previewSelected,
@@ -329,7 +349,7 @@ export function App() {
       cycleItemType,
       toggleMilestoneGrouping,
     }),
-    [viewMode, setViewMode, moveCursor, openSelected, previewSelected, cycleFilter, cycleSort, handleRefresh, cycleOwnership, cycleTheme, focusSearch, cycleItemType, toggleMilestoneGrouping]
+    [viewMode, setViewMode, mainTab, moveCursor, openSelected, previewSelected, cycleFilter, cycleSort, handleRefresh, cycleOwnership, cycleTheme, focusSearch, cycleItemType, toggleMilestoneGrouping]
   );
 
   useKeyboardShortcuts(shortcutActions);
@@ -368,59 +388,91 @@ export function App() {
         repoCount={enabledRepos.length}
         itemCount={filtered.length}
         unseenCount={unseenCount}
-        notificationsUnreadCount={notificationsUnreadCount}
         onOpenRepos={openRepos}
-        onOpenNotifications={() => openNotifications()}
         onSignOut={handleSignOut}
         onRefresh={handleRefresh}
         autoRefreshSecondsLeft={autoRefreshSecondsLeft}
         authMethod={getAuthMethod(token)}
       />
-      <FilterBar
-        active={filter}
-        onFilter={handleSetFilter}
-        ownershipFilter={ownershipFilter}
-        onSetOwnership={setOwnershipFilter}
-        username={username}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        searchInputRef={searchInputRef}
-        itemTypeFilter={itemTypeFilter}
-        onSetItemType={setItemTypeFilter}
-        hiddenRepos={hiddenRepos}
-        onRestoreRepo={toggleRepoByName}
-        prStateFilters={prStateFilters}
-        onTogglePRState={togglePRStateFilter}
-        labelFilters={labelFilters}
-        onToggleLabel={toggleLabelFilter}
-        onClearLabels={clearLabelFilters}
-        availableLabels={availableLabels}
-        hideMyReplies={hideMyReplies}
-        onToggleHideMyReplies={username ? toggleHideMyReplies : undefined}
-        milestoneGrouping={milestoneGrouping}
-        onToggleMilestoneGrouping={toggleMilestoneGrouping}
+      <TabBar
+        active={mainTab}
+        onChange={(tab) => {
+          if (tab === 'pulls') setNotificationsPinnedItem(null);
+          setMainTab(tab);
+        }}
+        pullsCount={filtered.length}
+        unseenCount={unseenCount}
+        notificationsUnreadCount={notificationsUnreadCount}
       />
-      <PRTable
-        items={filtered}
-        cursorIndex={cursorIndex}
-        sort={sort}
-        sortDirection={sortDirection}
-        onSort={handleSetSort}
-        onPreview={previewPR}
-        isUnseen={isUnseen}
-        getUnreadNotificationCount={getUnreadNotificationCount}
-        onOpen={markSeen}
-        onOpenNotifications={openNotifications}
-        onHideRepo={toggleRepoByName}
-        staleDays={config.defaults.staleDays}
-        visibleColumns={visibleColumns}
-        columnOrder={columnOrder}
-        onToggleColumn={toggleColumn}
-        onReorderColumns={reorderColumns}
-        onResetColumns={resetColumns}
-        milestoneGrouping={milestoneGrouping}
-      />
-      <StatusBar error={error} failedRepos={failedRepos} searchQuery={searchQuery} matchCount={filtered.length} totalCount={items.length} />
+      {mainTab === 'pulls' && (
+        <>
+          <FilterBar
+            active={filter}
+            onFilter={handleSetFilter}
+            ownershipFilter={ownershipFilter}
+            onSetOwnership={setOwnershipFilter}
+            username={username}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchInputRef={searchInputRef}
+            itemTypeFilter={itemTypeFilter}
+            onSetItemType={setItemTypeFilter}
+            hiddenRepos={hiddenRepos}
+            onRestoreRepo={toggleRepoByName}
+            prStateFilters={prStateFilters}
+            onTogglePRState={togglePRStateFilter}
+            labelFilters={labelFilters}
+            onToggleLabel={toggleLabelFilter}
+            onClearLabels={clearLabelFilters}
+            availableLabels={availableLabels}
+            hideMyReplies={hideMyReplies}
+            onToggleHideMyReplies={username ? toggleHideMyReplies : undefined}
+            milestoneGrouping={milestoneGrouping}
+            onToggleMilestoneGrouping={toggleMilestoneGrouping}
+          />
+          <PRTable
+            items={filtered}
+            cursorIndex={cursorIndex}
+            sort={sort}
+            sortDirection={sortDirection}
+            onSort={handleSetSort}
+            onPreview={previewPR}
+            isUnseen={isUnseen}
+            getUnreadNotificationCount={getUnreadNotificationCount}
+            onOpen={markSeen}
+            onOpenNotifications={openNotifications}
+            onHideRepo={toggleRepoByName}
+            staleDays={config.defaults.staleDays}
+            visibleColumns={visibleColumns}
+            columnOrder={columnOrder}
+            onToggleColumn={toggleColumn}
+            onReorderColumns={reorderColumns}
+            onResetColumns={resetColumns}
+            milestoneGrouping={milestoneGrouping}
+          />
+          <StatusBar error={error} failedRepos={failedRepos} searchQuery={searchQuery} matchCount={filtered.length} totalCount={items.length} />
+        </>
+      )}
+      {mainTab === 'notifications' && (
+        <NotificationsView
+          notifications={notifications}
+          loading={notificationsLoading}
+          error={notificationsError}
+          scopeError={notificationsScopeError}
+          lastRefresh={notificationsLastRefresh}
+          items={items}
+          authUser={username}
+          rules={rules}
+          onApplyRule={applyRule}
+          onOpenRules={openRules}
+          onClearPinned={notificationsPinnedItem ? clearPinnedNotification : undefined}
+          onRefresh={refreshNotifications}
+          onMarkRead={markThreadRead}
+          onMarkManyRead={markThreadsRead}
+          onJumpToItem={jumpToItem}
+          pinnedItem={notificationsPinnedItem}
+        />
+      )}
 
       {viewMode === 'help' && (
         <HelpModal onClose={closeModal} />
@@ -439,25 +491,6 @@ export function App() {
           item={previewItem}
           octokit={octokit}
           onClose={closeDetail}
-        />
-      )}
-      {viewMode === 'notifications' && (
-        <NotificationsView
-          notifications={notifications}
-          loading={notificationsLoading}
-          error={notificationsError}
-          lastRefresh={notificationsLastRefresh}
-          items={items}
-          authUser={username}
-          rules={rules}
-          onApplyRule={applyRule}
-          onOpenRules={openRules}
-          onClose={closeModal}
-          onRefresh={refreshNotifications}
-          onMarkRead={markThreadRead}
-          onMarkManyRead={markThreadsRead}
-          onJumpToItem={jumpToItem}
-          pinnedItem={notificationsPinnedItem}
         />
       )}
       {viewMode === 'notification-rules' && (

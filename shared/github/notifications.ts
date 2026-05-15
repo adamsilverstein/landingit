@@ -9,18 +9,49 @@ import { parseNotificationSubject } from '../utils/parseNotificationSubject.js';
 export interface FetchNotificationsOptions {
   /** Include already-read threads. Default false. */
   all?: boolean;
-  /** If set, sent as `If-Modified-Since`. A 304 response is free against the rate limit. */
+  /**
+   * Optional conditional probe timestamp. When set, we send a single
+   * `If-Modified-Since` request first; on 304 we short-circuit. On 200
+   * we discard that probe and re-fetch the full list unconditionally,
+   * because GitHub's /notifications endpoint returns *only the threads
+   * updated since that timestamp* on a 200 — not the full inbox — and
+   * pagination would stop short on the first partial page.
+   */
   ifModifiedSince?: string | null;
   /** Page size, max 50 per GitHub's limit. Default 50. */
   perPage?: number;
+  /**
+   * Safety cap on pages walked. Default 20 → up to 1000 threads, which covers
+   * any realistic inbox while bounding worst-case requests if GitHub keeps
+   * returning full pages.
+   */
+  maxPages?: number;
 }
 
 export interface FetchNotificationsResult {
   notifications: NotificationItem[];
-  /** `Last-Modified` from the response, suitable for the next `If-Modified-Since`. */
+  /** `Last-Modified` from the response, suitable for the next conditional probe. */
   lastModified: string | null;
-  /** True when the server returned 304 (nothing changed). `notifications` will be empty. */
+  /** True when the conditional probe returned 304 (nothing changed). `notifications` will be empty. */
   notModified: boolean;
+}
+
+/**
+ * Thrown by fetchNotifications when GitHub returns 403/404 from the
+ * notifications endpoint, which usually means the auth token lacks the
+ * `notifications` OAuth scope. Surfaced separately from generic errors
+ * so the UI can show a "your token is missing a scope" prompt rather
+ * than a confusing "Not Found".
+ */
+export class NotificationsScopeError extends Error {
+  readonly status: number;
+  constructor(status: number) {
+    super(
+      'GitHub denied access to the notifications endpoint. Your token is missing the "notifications" scope — re-authenticate to grant it.'
+    );
+    this.name = 'NotificationsScopeError';
+    this.status = status;
+  }
 }
 
 /**
@@ -79,37 +110,79 @@ export async function fetchNotifications(
   options: FetchNotificationsOptions = {}
 ): Promise<FetchNotificationsResult> {
   const perPage = Math.max(1, Math.min(options.perPage ?? 50, 50));
-  const headers: Record<string, string> = {};
+  const maxPages = Math.max(1, options.maxPages ?? 20);
+  const all = options.all ?? false;
+
+  // Conditional probe. GitHub's /notifications endpoint treats
+  // If-Modified-Since as a *filter*, not just a cache validator —
+  // a 200 response with this header set contains only threads updated
+  // since the timestamp, not the full inbox. So we use the header
+  // exclusively as a cheap "is the inbox dirty?" check: 304 ⇒ skip
+  // the work entirely; anything else ⇒ fall through and re-fetch
+  // unconditionally below.
   if (options.ifModifiedSince) {
-    headers['If-Modified-Since'] = options.ifModifiedSince;
+    try {
+      await octokit.activity.listNotificationsForAuthenticatedUser({
+        all,
+        per_page: 1,
+        page: 1,
+        headers: { 'If-Modified-Since': options.ifModifiedSince },
+      });
+      // 200 means something changed — discard this response and refetch
+      // the full list below.
+    } catch (e) {
+      if (typeof e === 'object' && e !== null && 'status' in e) {
+        const status = (e as { status: unknown }).status;
+        if (status === 304) {
+          return { notifications: [], lastModified: null, notModified: true };
+        }
+        if (status === 403 || status === 404) {
+          throw new NotificationsScopeError(status as number);
+        }
+      }
+      throw e;
+    }
   }
 
   try {
-    const response = await octokit.activity.listNotificationsForAuthenticatedUser({
-      all: options.all ?? false,
-      per_page: perPage,
-      headers,
-    });
+    const collected: NotificationItem[] = [];
+    let lastModified: string | null = null;
 
-    const raw = Array.isArray(response.data) ? response.data : [];
-    const notifications = raw
-      .map((n) => mapNotification(n))
-      .filter((n): n is NotificationItem => n !== null);
+    for (let page = 1; page <= maxPages; page++) {
+      const response = await octokit.activity.listNotificationsForAuthenticatedUser({
+        all,
+        per_page: perPage,
+        page,
+      });
 
-    const lastModified =
-      typeof response.headers?.['last-modified'] === 'string'
-        ? response.headers['last-modified']
-        : null;
+      const raw = Array.isArray(response.data) ? response.data : [];
+      for (const n of raw) {
+        const mapped = mapNotification(n);
+        if (mapped) collected.push(mapped);
+      }
 
-    return { notifications, lastModified, notModified: false };
+      if (page === 1) {
+        lastModified =
+          typeof response.headers?.['last-modified'] === 'string'
+            ? response.headers['last-modified']
+            : null;
+      }
+
+      // Short page → last page. GitHub stops sending the `next` Link too,
+      // but length comparison is enough and doesn't require parsing Link.
+      if (raw.length < perPage) break;
+    }
+
+    return { notifications: collected, lastModified, notModified: false };
   } catch (e) {
-    if (
-      typeof e === 'object' &&
-      e !== null &&
-      'status' in e &&
-      (e as { status: unknown }).status === 304
-    ) {
-      return { notifications: [], lastModified: null, notModified: true };
+    if (typeof e === 'object' && e !== null && 'status' in e) {
+      const status = (e as { status: unknown }).status;
+      // 403 (or sometimes 404) from this endpoint nearly always means the
+      // token lacks the `notifications` scope. 401 is bubbled up so the
+      // existing re-auth flow handles it; everything else propagates.
+      if (status === 403 || status === 404) {
+        throw new NotificationsScopeError(status as number);
+      }
     }
     throw e;
   }

@@ -9,6 +9,7 @@ export type {
   ItemTypeFilter,
   OwnershipFilter,
   ViewMode,
+  MainTab,
   ThemeMode,
   RepoFetchError,
   ReviewState,

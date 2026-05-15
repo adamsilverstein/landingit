@@ -13,6 +13,7 @@ interface NotificationsViewProps {
   notifications: NotificationItem[];
   loading: boolean;
   error: string | null;
+  scopeError: boolean;
   lastRefresh: Date | null;
   /** All fetched PRs/issues — used to cross-reference and to derive working-set membership. */
   items: DashboardItem[];
@@ -20,7 +21,8 @@ interface NotificationsViewProps {
   rules: NotificationRule[];
   onApplyRule: (rule: NotificationRule) => Promise<unknown>;
   onOpenRules: () => void;
-  onClose: () => void;
+  /** Optional: clear the current pinned-item filter (only meaningful when `pinnedItem` is set). */
+  onClearPinned?: () => void;
   onRefresh: () => void;
   onMarkRead: (id: string) => void;
   onMarkManyRead: (ids: string[]) => Promise<unknown>;
@@ -42,13 +44,14 @@ export function NotificationsView({
   notifications,
   loading,
   error,
+  scopeError,
   lastRefresh,
   items,
   authUser,
   rules,
   onApplyRule,
   onOpenRules,
-  onClose,
+  onClearPinned,
   onRefresh,
   onMarkRead,
   onMarkManyRead,
@@ -147,200 +150,202 @@ export function NotificationsView({
   const unreadCount = matches.filter((m) => m.notification.unread).length;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="notifications-modal"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-label="Notifications"
-      >
-        <header className="notifications-header">
-          <div className="notifications-title-block">
-            <h2 className="notifications-title">Notifications</h2>
-            <span className="notifications-count">
-              {unreadCount} unread · {matches.length} total
+    <section className="notifications-pane" aria-label="Notifications">
+      <header className="notifications-header">
+        <div className="notifications-title-block">
+          <h2 className="notifications-title">Notifications</h2>
+          <span className="notifications-count">
+            {unreadCount} unread · {matches.length} total
+          </span>
+          {pinnedItem && (
+            <span
+              className="notifications-pinned-chip"
+              title="Filtered to this PR/issue"
+            >
+              {pinnedItem.repo.owner}/{pinnedItem.repo.name}#{pinnedItem.number}
+              {onClearPinned && (
+                <button
+                  type="button"
+                  className="notifications-pinned-clear"
+                  onClick={onClearPinned}
+                  aria-label="Clear pinned filter"
+                  title="Clear pinned filter"
+                >
+                  ×
+                </button>
+              )}
             </span>
-            {pinnedItem && (
-              <span
-                className="notifications-pinned-chip"
-                title="Filtered to this PR — clear by closing and reopening from the header"
-              >
-                {pinnedItem.repo.owner}/{pinnedItem.repo.name}#{pinnedItem.number}
-              </span>
-            )}
-          </div>
-          <div className="notifications-header-actions">
-            {lastRefresh && (
-              <span className="notifications-last-refresh" title="Last refreshed">
-                {lastRefresh.toLocaleTimeString()}
-              </span>
-            )}
-            <button
-              className="notifications-icon-btn"
-              onClick={onRefresh}
-              disabled={loading}
-              title="Refresh"
-              aria-label="Refresh"
-            >
-              {loading ? <span className="spinner" /> : '↻'}
-            </button>
-            <button
-              className="notifications-icon-btn"
-              onClick={onClose}
-              title="Close (Esc)"
-              aria-label="Close"
-            >
-              ×
-            </button>
-          </div>
-        </header>
-
-        <div className="notifications-toolbar">
-          <input
-            type="text"
-            className="notifications-search"
-            placeholder="Search title, repo, #number…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <div className="notifications-reason-filters">
-            {REASON_FILTERS.map(({ label, reason }) => (
-              <button
-                key={reason}
-                className={
-                  'notifications-chip' +
-                  (reasonFilter === reason ? ' notifications-chip-active' : '')
-                }
-                onClick={() => setReasonFilter(reason)}
-                type="button"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <label className="notifications-toggle">
-            <input
-              type="checkbox"
-              checked={unreadOnly}
-              onChange={(e) => setUnreadOnly(e.target.checked)}
-            />
-            Unread only
-          </label>
-          <button
-            className="notifications-link-btn"
-            onClick={selectAllVisible}
-            type="button"
-            disabled={filtered.length === 0}
-          >
-            {filtered.every((m) => selectedIds.has(m.notification.id)) &&
-            filtered.length > 0
-              ? 'Clear selection'
-              : 'Select all visible'}
-          </button>
-        </div>
-
-        {rules.length > 0 && (
-          <div className="notifications-rules-bar">
-            <span className="rules-presets-label">Rules:</span>
-            {rules
-              .filter((r) => r.enabled)
-              .map((rule) => {
-                const matchCount = notificationsMatchingRule(rule, notifications).length;
-                return (
-                  <button
-                    key={rule.id}
-                    type="button"
-                    className="notifications-chip"
-                    onClick={() => onApplyRule(rule)}
-                    disabled={matchCount === 0}
-                    title={rule.conditions
-                      .map((c) => `${c.field} ${c.op} "${c.value}"`)
-                      .join(' AND ')}
-                  >
-                    {rule.name}{' '}
-                    <span className="rule-chip-count">({matchCount})</span>
-                  </button>
-                );
-              })}
-            <button
-              type="button"
-              className="notifications-link-btn"
-              onClick={onOpenRules}
-            >
-              Edit rules
-            </button>
-          </div>
-        )}
-        {rules.length === 0 && (
-          <div className="notifications-rules-bar">
-            <span className="rules-presets-label notifications-muted">
-              No rules yet —
-            </span>
-            <button
-              type="button"
-              className="notifications-link-btn"
-              onClick={onOpenRules}
-            >
-              Add a rule to bulk-mark common noise
-            </button>
-          </div>
-        )}
-
-        {error && (
-          <div className="notifications-error" role="alert">
-            {error}
-          </div>
-        )}
-
-        <div className="notifications-list">
-          {filtered.length === 0 ? (
-            <div className="notifications-empty">
-              {loading
-                ? 'Loading…'
-                : unreadCount === 0
-                ? '🎉 Inbox zero — no unread notifications.'
-                : 'No notifications match the current filters.'}
-            </div>
-          ) : (
-            filtered.map((m) => (
-              <NotificationRow
-                key={m.notification.id}
-                notification={m.notification}
-                matchedItem={m.item}
-                isWorkingSet={m.isWorkingSet}
-                selected={selectedIds.has(m.notification.id)}
-                onToggleSelected={toggleSelected}
-                onMarkRead={onMarkRead}
-                onJumpToItem={onJumpToItem}
-              />
-            ))
           )}
         </div>
-
-        {selectedIds.size > 0 && (
-          <footer className="notifications-bulk-bar" role="region" aria-label="Bulk actions">
-            <span>
-              {selectedIds.size} selected
+        <div className="notifications-header-actions">
+          {lastRefresh && (
+            <span className="notifications-last-refresh" title="Last refreshed">
+              {lastRefresh.toLocaleTimeString()}
             </span>
-            <div className="notifications-bulk-actions">
-              <button
-                className="notifications-link-btn"
-                onClick={clearSelection}
-                type="button"
-              >
-                Clear
-              </button>
-              <button
-                className="notifications-primary-btn"
-                onClick={handleBulkMarkRead}
-                type="button"
-              >
-                Mark {selectedIds.size} as read
-              </button>
-            </div>
-          </footer>
+          )}
+          <button
+            className="notifications-icon-btn"
+            onClick={onRefresh}
+            disabled={loading}
+            title="Refresh"
+            aria-label="Refresh"
+          >
+            {loading ? <span className="spinner" /> : '↻'}
+          </button>
+        </div>
+      </header>
+
+      <div className="notifications-toolbar">
+        <input
+          type="text"
+          className="notifications-search"
+          placeholder="Search title, repo, #number…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <div className="notifications-reason-filters">
+          {REASON_FILTERS.map(({ label, reason }) => (
+            <button
+              key={reason}
+              className={
+                'notifications-chip' +
+                (reasonFilter === reason ? ' notifications-chip-active' : '')
+              }
+              onClick={() => setReasonFilter(reason)}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <label className="notifications-toggle">
+          <input
+            type="checkbox"
+            checked={unreadOnly}
+            onChange={(e) => setUnreadOnly(e.target.checked)}
+          />
+          Unread only
+        </label>
+        <button
+          className="notifications-link-btn"
+          onClick={selectAllVisible}
+          type="button"
+          disabled={filtered.length === 0}
+        >
+          {filtered.every((m) => selectedIds.has(m.notification.id)) &&
+          filtered.length > 0
+            ? 'Clear selection'
+            : 'Select all visible'}
+        </button>
+      </div>
+
+      {rules.length > 0 && (
+        <div className="notifications-rules-bar">
+          <span className="rules-presets-label">Rules:</span>
+          {rules
+            .filter((r) => r.enabled)
+            .map((rule) => {
+              const matchCount = notificationsMatchingRule(rule, notifications).length;
+              return (
+                <button
+                  key={rule.id}
+                  type="button"
+                  className="notifications-chip"
+                  onClick={() => onApplyRule(rule)}
+                  disabled={matchCount === 0}
+                  title={rule.conditions
+                    .map((c) => `${c.field} ${c.op} "${c.value}"`)
+                    .join(' AND ')}
+                >
+                  {rule.name}{' '}
+                  <span className="rule-chip-count">({matchCount})</span>
+                </button>
+              );
+            })}
+          <button
+            type="button"
+            className="notifications-link-btn"
+            onClick={onOpenRules}
+          >
+            Edit rules
+          </button>
+        </div>
+      )}
+      {rules.length === 0 && (
+        <div className="notifications-rules-bar">
+          <span className="rules-presets-label notifications-muted">
+            No rules yet —
+          </span>
+          <button
+            type="button"
+            className="notifications-link-btn"
+            onClick={onOpenRules}
+          >
+            Add a rule to bulk-mark common noise
+          </button>
+        </div>
+      )}
+
+      {scopeError && (
+        <div className="notifications-error" role="alert">
+          Your GitHub token can't read notifications. Sign out and re-authenticate
+          with the <code>notifications</code> scope to enable this view.
+        </div>
+      )}
+      {error && !scopeError && (
+        <div className="notifications-error" role="alert">
+          {error}
+        </div>
+      )}
+
+      <div className="notifications-list">
+        {filtered.length === 0 ? (
+          <div className="notifications-empty">
+            {loading
+              ? 'Loading…'
+              : unreadCount === 0
+              ? '🎉 Inbox zero — no unread notifications.'
+              : 'No notifications match the current filters.'}
+          </div>
+        ) : (
+          filtered.map((m) => (
+            <NotificationRow
+              key={m.notification.id}
+              notification={m.notification}
+              matchedItem={m.item}
+              isWorkingSet={m.isWorkingSet}
+              selected={selectedIds.has(m.notification.id)}
+              onToggleSelected={toggleSelected}
+              onMarkRead={onMarkRead}
+              onJumpToItem={onJumpToItem}
+            />
+          ))
         )}
       </div>
-    </div>
+
+      {selectedIds.size > 0 && (
+        <footer className="notifications-bulk-bar" role="region" aria-label="Bulk actions">
+          <span>
+            {selectedIds.size} selected
+          </span>
+          <div className="notifications-bulk-actions">
+            <button
+              className="notifications-link-btn"
+              onClick={clearSelection}
+              type="button"
+            >
+              Clear
+            </button>
+            <button
+              className="notifications-primary-btn"
+              onClick={handleBulkMarkRead}
+              type="button"
+            >
+              Mark {selectedIds.size} as read
+            </button>
+          </div>
+        </footer>
+      )}
+    </section>
   );
 }

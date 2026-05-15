@@ -24,7 +24,9 @@ export type SortDirection = 'asc' | 'desc';
 export type FilterMode = 'all' | 'failing' | 'needs-review' | 'review-requested' | 'new-activity' | 'merge-ready' | 'stale';
 export type ItemTypeFilter = 'both' | 'prs' | 'issues';
 export type OwnershipFilter = 'everyone' | 'created' | 'assigned' | 'involved';
-export type ViewMode = 'list' | 'repos' | 'help' | 'detail' | 'notifications' | 'notification-rules';
+export type ViewMode = 'list' | 'repos' | 'help' | 'detail' | 'notification-rules';
+
+export type MainTab = 'pulls' | 'notifications';
 export type ThemeMode = 'dark' | 'light' | 'system';
 
 export interface RepoFetchError {
