@@ -29,7 +29,11 @@ export function AutoHidingHeader({ title, translateY, statusBarHeight }: Props) 
           },
         ]}
       >
-        <Text style={styles.title} numberOfLines={1}>
+        <Text
+          style={styles.title}
+          numberOfLines={1}
+          accessibilityRole="header"
+        >
           {title}
         </Text>
       </Animated.View>
