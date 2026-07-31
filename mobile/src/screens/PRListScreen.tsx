@@ -1,5 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, FlatList, Text, TextInput, StyleSheet, RefreshControl, Linking } from 'react-native';
+import {
+  View,
+  FlatList,
+  Text,
+  TextInput,
+  StyleSheet,
+  RefreshControl,
+  Linking,
+  Animated,
+} from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { DashboardItem, OwnershipFilter } from '../../../shared/types.js';
 import { useGithubData } from '../../../shared/hooks/useGithubData.js';
@@ -13,6 +22,8 @@ import { useBadge } from '../context/BadgeContext';
 import { PRListItem } from '../components/PRListItem';
 import { FilterBar } from '../components/FilterBar';
 import { LabelFilterModal } from '../components/LabelFilterModal';
+import { AutoHidingHeader } from '../components/AutoHidingHeader';
+import { useAutoHidingHeader } from '../hooks/useAutoHidingHeader';
 import type { DashboardStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<DashboardStackParamList, 'PRList'>;
@@ -24,6 +35,13 @@ export function PRListScreen({ navigation }: Props) {
   const { markSeen, isUnseen } = useLastSeen(asyncStorageAdapter);
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>('created');
   const [labelModalVisible, setLabelModalVisible] = useState(false);
+  const {
+    translateY,
+    statusBarHeight,
+    navBarHeight,
+    totalHeaderHeight,
+    onScroll,
+  } = useAutoHidingHeader();
 
   const { items, loading, error, failedRepos, lastRefresh, refresh } = useGithubData(
     octokit,
@@ -114,85 +132,105 @@ export function PRListScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* Search bar */}
-      <View style={styles.searchRow}>
-        <TextInput
-          style={styles.searchInput}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Search PRs..."
-          placeholderTextColor="#484f58"
-          autoCapitalize="none"
-          autoCorrect={false}
-          clearButtonMode="while-editing"
-        />
-      </View>
-
-      {/* Filter & sort chips */}
-      <FilterBar
-        activeFilter={filter}
-        activeSort={sort}
-        sortDirection={sortDirection}
-        onFilterChange={handleSetFilter}
-        onSortChange={handleSetSort}
-        ownershipFilter={ownershipFilter}
-        onOwnershipChange={setOwnershipFilter}
-        username={username}
-        itemTypeFilter={itemTypeFilter}
-        onItemTypeChange={setItemTypeFilter}
-        prStateFilters={prStateFilters}
-        onTogglePRState={togglePRStateFilter}
-        labelFilterCount={labelFilters.size}
-        onLabelFilterPress={() => setLabelModalVisible(true)}
-        hideMyReplies={hideMyReplies}
-        onToggleHideMyReplies={username ? toggleHideMyReplies : undefined}
-        hiddenRepos={hiddenRepos}
-        onRestoreRepo={toggleRepoByName}
+      <AutoHidingHeader
+        title="Pull Requests"
+        translateY={translateY}
+        statusBarHeight={statusBarHeight}
       />
 
-      <Text style={styles.headerInfo}>{headerInfo}</Text>
-
-      {error && <Text style={styles.error}>{error}</Text>}
-
-      {failedRepos.length > 0 && (
-        <View style={styles.warningBanner}>
-          <Text style={styles.warningText}>
-            Failed to fetch: {failedRepos.map((r) => r.repo).join(', ')}
-          </Text>
+      <Animated.View
+        style={[
+          styles.scrollWrapper,
+          {
+            paddingTop: totalHeaderHeight,
+            bottom: -navBarHeight,
+            transform: [{ translateY }],
+          },
+        ]}
+      >
+        {/* Search bar */}
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search PRs..."
+            placeholderTextColor="#484f58"
+            autoCapitalize="none"
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+          />
         </View>
-      )}
 
-      {enabledRepos.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No repositories configured</Text>
-          <Text style={styles.emptySubtitle}>
-            Go to Settings to add repositories to monitor.
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filtered}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          refreshControl={
-            <RefreshControl
-              refreshing={loading}
-              onRefresh={handleRefresh}
-              tintColor="#58a6ff"
-            />
-          }
-          ListEmptyComponent={
-            !loading ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>No items found</Text>
-                <Text style={styles.emptySubtitle}>
-                  Pull to refresh or adjust your filters.
-                </Text>
-              </View>
-            ) : null
-          }
+        {/* Filter & sort chips */}
+        <FilterBar
+          activeFilter={filter}
+          activeSort={sort}
+          sortDirection={sortDirection}
+          onFilterChange={handleSetFilter}
+          onSortChange={handleSetSort}
+          ownershipFilter={ownershipFilter}
+          onOwnershipChange={setOwnershipFilter}
+          username={username}
+          itemTypeFilter={itemTypeFilter}
+          onItemTypeChange={setItemTypeFilter}
+          prStateFilters={prStateFilters}
+          onTogglePRState={togglePRStateFilter}
+          labelFilterCount={labelFilters.size}
+          onLabelFilterPress={() => setLabelModalVisible(true)}
+          hideMyReplies={hideMyReplies}
+          onToggleHideMyReplies={username ? toggleHideMyReplies : undefined}
+          hiddenRepos={hiddenRepos}
+          onRestoreRepo={toggleRepoByName}
         />
-      )}
+
+        <Text style={styles.headerInfo}>{headerInfo}</Text>
+
+        {error && <Text style={styles.error}>{error}</Text>}
+
+        {failedRepos.length > 0 && (
+          <View style={styles.warningBanner}>
+            <Text style={styles.warningText}>
+              Failed to fetch: {failedRepos.map((r) => r.repo).join(', ')}
+            </Text>
+          </View>
+        )}
+
+        {enabledRepos.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No repositories configured</Text>
+            <Text style={styles.emptySubtitle}>
+              Go to Settings to add repositories to monitor.
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filtered}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={{ paddingBottom: navBarHeight }}
+            refreshControl={
+              <RefreshControl
+                refreshing={loading}
+                onRefresh={handleRefresh}
+                tintColor="#58a6ff"
+              />
+            }
+            ListEmptyComponent={
+              !loading ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyTitle}>No items found</Text>
+                  <Text style={styles.emptySubtitle}>
+                    Pull to refresh or adjust your filters.
+                  </Text>
+                </View>
+              ) : null
+            }
+          />
+        )}
+      </Animated.View>
 
       <LabelFilterModal
         visible={labelModalVisible}
@@ -210,6 +248,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0d1117',
+    overflow: 'hidden',
+  },
+  scrollWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
   searchRow: {
     backgroundColor: '#161b22',

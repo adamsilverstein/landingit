@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Linking,
   ScrollView,
+  Animated,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type {
@@ -20,6 +21,8 @@ import { notificationsMatchingRule } from '../../../shared/hooks/useNotification
 import { timeAgo } from '../../../shared/utils/timeAgo.js';
 import { useApp } from '../context/AppContext';
 import { useNotificationsContext } from '../context/NotificationsContext';
+import { AutoHidingHeader } from '../components/AutoHidingHeader';
+import { useAutoHidingHeader } from '../hooks/useAutoHidingHeader';
 import type { NotificationsStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<NotificationsStackParamList, 'Notifications'>;
@@ -59,6 +62,13 @@ export function NotificationsScreen({ navigation }: Props) {
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [unreadOnly, setUnreadOnly] = useState(true);
+  const {
+    translateY,
+    statusBarHeight,
+    navBarHeight,
+    totalHeaderHeight,
+    onScroll,
+  } = useAutoHidingHeader();
 
   const visible = useMemo(() => {
     let result = matches;
@@ -145,73 +155,93 @@ export function NotificationsScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        horizontal
-        style={styles.rulesBar}
-        contentContainerStyle={styles.rulesBarContent}
-        showsHorizontalScrollIndicator={false}
-      >
-        <TouchableOpacity
-          onPress={() => setUnreadOnly((p) => !p)}
-          style={[styles.chip, unreadOnly && styles.chipActive]}
-        >
-          <Text style={styles.chipText}>{unreadOnly ? 'Unread' : 'All'}</Text>
-        </TouchableOpacity>
-        {rules
-          .filter((r) => r.enabled)
-          .map((rule: NotificationRule) => {
-            const count = notificationsMatchingRule(rule, notifications).filter(
-              (n) => n.unread
-            ).length;
-            return (
-              <TouchableOpacity
-                key={rule.id}
-                onPress={() => applyRule(rule)}
-                disabled={count === 0}
-                style={[styles.chip, count === 0 && styles.chipDisabled]}
-              >
-                <Text style={styles.chipText}>
-                  {rule.name} ({count})
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('NotificationRules')}
-          style={styles.chip}
-        >
-          <Text style={styles.chipText}>⚙ Rules</Text>
-        </TouchableOpacity>
-      </ScrollView>
-
-      {error && <Text style={styles.error}>{error}</Text>}
-
-      <FlatList
-        data={visible}
-        renderItem={renderItem}
-        keyExtractor={(m) => m.notification.id}
-        refreshControl={
-          <RefreshControl
-            refreshing={loading}
-            onRefresh={refresh}
-            tintColor="#58a6ff"
-          />
-        }
-        ListEmptyComponent={
-          !loading ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>
-                {unreadOnly ? '🎉 Inbox zero' : 'No notifications'}
-              </Text>
-              <Text style={styles.emptySubtitle}>
-                {unreadOnly
-                  ? 'No unread notifications. Pull to refresh.'
-                  : 'Pull to refresh.'}
-              </Text>
-            </View>
-          ) : null
-        }
+      <AutoHidingHeader
+        title="Notifications"
+        translateY={translateY}
+        statusBarHeight={statusBarHeight}
       />
+
+      <Animated.View
+        style={[
+          styles.scrollWrapper,
+          {
+            paddingTop: totalHeaderHeight,
+            bottom: -navBarHeight,
+            transform: [{ translateY }],
+          },
+        ]}
+      >
+        <ScrollView
+          horizontal
+          style={styles.rulesBar}
+          contentContainerStyle={styles.rulesBarContent}
+          showsHorizontalScrollIndicator={false}
+        >
+          <TouchableOpacity
+            onPress={() => setUnreadOnly((p) => !p)}
+            style={[styles.chip, unreadOnly && styles.chipActive]}
+          >
+            <Text style={styles.chipText}>{unreadOnly ? 'Unread' : 'All'}</Text>
+          </TouchableOpacity>
+          {rules
+            .filter((r) => r.enabled)
+            .map((rule: NotificationRule) => {
+              const count = notificationsMatchingRule(rule, notifications).filter(
+                (n) => n.unread
+              ).length;
+              return (
+                <TouchableOpacity
+                  key={rule.id}
+                  onPress={() => applyRule(rule)}
+                  disabled={count === 0}
+                  style={[styles.chip, count === 0 && styles.chipDisabled]}
+                >
+                  <Text style={styles.chipText}>
+                    {rule.name} ({count})
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('NotificationRules')}
+            style={styles.chip}
+          >
+            <Text style={styles.chipText}>⚙ Rules</Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {error && <Text style={styles.error}>{error}</Text>}
+
+        <FlatList
+          data={visible}
+          renderItem={renderItem}
+          keyExtractor={(m) => m.notification.id}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={{ paddingBottom: navBarHeight }}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={refresh}
+              tintColor="#58a6ff"
+            />
+          }
+          ListEmptyComponent={
+            !loading ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyTitle}>
+                  {unreadOnly ? '🎉 Inbox zero' : 'No notifications'}
+                </Text>
+                <Text style={styles.emptySubtitle}>
+                  {unreadOnly
+                    ? 'No unread notifications. Pull to refresh.'
+                    : 'Pull to refresh.'}
+                </Text>
+              </View>
+            ) : null
+          }
+        />
+      </Animated.View>
 
       {selectedIds.size > 0 && (
         <View style={styles.bulkBar}>
@@ -233,7 +263,13 @@ export function NotificationsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0d1117' },
+  container: { flex: 1, backgroundColor: '#0d1117', overflow: 'hidden' },
+  scrollWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
   rulesBar: { backgroundColor: '#161b22', maxHeight: 44, flexGrow: 0 },
   rulesBarContent: { paddingHorizontal: 12, paddingVertical: 8, gap: 6 },
   chip: {
@@ -303,6 +339,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   bulkBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
